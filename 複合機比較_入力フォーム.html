@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複合機 提案比較書 作成ツール</title>
+<style>
+/* ═══════════════════════════════════════
+   変数
+═══════════════════════════════════════ */
+:root{
+  --navy:#1a5276; --navy-dk:#154360;
+  --green:#1e8449; --green-dk:#196f3d;
+  --gray:#5d6d7e;
+  --red:#c0392b;
+  --amber:#856404;
+  --border:#d5d8dc;
+  --text:#2c3e50; --text-sub:#7f8c8d;
+  --bg:#e8ecf0;
+}
+
+/* ═══════════════════════════════════════
+   画面UI（印刷時は非表示）
+═══════════════════════════════════════ */
+@media screen{
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+       background:var(--bg);color:var(--text);font-size:13px;}
+
+  /* アプリバー */
+  .app-bar{
+    background:var(--navy-dk);color:#fff;padding:0 24px;height:56px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .app-bar-title{font-size:15px;font-weight:bold;letter-spacing:.04em;}
+  .app-bar-sub{font-size:11px;opacity:.55;margin-left:10px;}
+  .btn-print{
+    background:var(--green);color:#fff;border:none;
+    padding:9px 22px;border-radius:5px;font-size:13px;font-weight:bold;
+    cursor:pointer;letter-spacing:.04em;transition:background .15s;
+    font-family:inherit;
+  }
+  .btn-print:hover{background:var(--green-dk);}
+
+  /* フォームラッパー */
+  .form-wrap{max-width:860px;margin:0 auto;padding:24px 16px 60px;}
+
+  /* フォームカード */
+  .fc{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);
+      margin-bottom:18px;overflow:hidden;}
+  .fc-head{
+    padding:11px 20px;font-size:13px;font-weight:bold;
+    letter-spacing:.05em;color:#fff;
+  }
+  .fc-head.blue{background:var(--navy);}
+  .fc-head.green{background:var(--green);}
+  .fc-head.gray{background:var(--gray);}
+  .fc-head.amber{background:var(--amber);}
+  .fc-body{padding:16px 20px;}
+
+  /* グリッド */
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 20px;}
+  .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px 20px;}
+  @media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+  /* フィールド */
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:11px;color:var(--text-sub);font-weight:bold;letter-spacing:.05em;}
+  .field input,.field select{
+    height:36px;padding:0 10px;border:1.5px solid var(--border);border-radius:5px;
+    font-size:13px;color:var(--text);background:#fafbfc;transition:border-color .15s;
+    font-family:inherit;
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--navy);background:#fff;}
+  .field input[type="number"]{text-align:right;}
+
+  hr.div{border:none;border-top:1.5px solid #f0f2f5;margin:14px 0;}
+
+  /* パターンテーブル */
+  .pt-tbl{width:100%;border-collapse:collapse;margin-top:4px;}
+  .pt-tbl thead th{
+    background:#f4f6f8;padding:7px 8px;text-align:left;
+    font-size:11px;color:var(--text-sub);font-weight:bold;
+    border-bottom:2px solid var(--border);white-space:nowrap;
+  }
+  .pt-tbl tbody td{padding:5px 6px;border-bottom:1px solid #f0f2f5;vertical-align:middle;}
+  .pt-tbl input{
+    width:100%;height:32px;padding:0 8px;border:1.5px solid var(--border);
+    border-radius:4px;font-size:12px;background:#fafbfc;font-family:inherit;
+  }
+  .pt-tbl input:focus{outline:none;border-color:var(--navy);}
+  .pt-tbl input[type="number"]{text-align:right;}
+
+  .btn-rm{
+    background:none;border:1px solid #e0e0e0;border-radius:4px;
+    padding:4px 8px;cursor:pointer;color:var(--red);font-size:12px;
+    font-weight:bold;transition:background .1s;width:100%;
+  }
+  .btn-rm:hover{background:#fee2e2;}
+  .btn-add{
+    margin-top:10px;background:none;border:1.5px dashed var(--border);
+    border-radius:6px;padding:8px;cursor:pointer;color:var(--navy);
+    font-size:12px;font-weight:bold;width:100%;transition:background .1s;
+  }
+  .btn-add:hover{background:#eaf2f8;}
+  .btn-be{
+    margin-top:6px;background:#eaf2f8;border:1.5px solid var(--navy);
+    border-radius:6px;padding:8px;cursor:pointer;color:var(--navy);
+    font-size:12px;font-weight:bold;width:100%;transition:background .1s;
+  }
+  .btn-be:hover{background:#d6e8f5;}
+
+  /* プレビューヘッダー */
+  .preview-hd{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:28px 0 12px;
+  }
+  .preview-hd-title{font-size:15px;font-weight:bold;color:var(--text);letter-spacing:.04em;}
+  .preview-hd-note{font-size:11px;color:var(--text-sub);}
+
+  /* 印刷プレビュー内でのページ枠 */
+  .page{
+    background:#fff;border-radius:6px;
+    box-shadow:0 4px 20px rgba(0,0,0,.1);border:1px solid var(--border);
+    padding:14mm 16mm;position:relative;overflow:hidden;
+    margin-bottom:20px;
+  }
+}
+
+/* ═══════════════════════════════════════
+   印刷設定
+═══════════════════════════════════════ */
+@media print{
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .screen-only{display:none!important;}
+  @page{size:A4 landscape;margin:14mm 16mm;}
+  .page{
+    width:267mm;min-height:180mm;padding:0;
+    page-break-after:always;position:relative;overflow:hidden;background:#fff;
+  }
+  .page:last-child{page-break-after:auto;}
+}
+
+/* ═══════════════════════════════════════
+   印刷ドキュメント スタイル
+   （画面プレビュー＆実印刷 共通）
+═══════════════════════════════════════ */
+.print-doc{
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  color:#2c3e50;font-size:11px;line-height:1.5;
+}
+
+/* ページ角の水玉装飾 */
+.page::before,.page::after{
+  content:'';position:absolute;width:120px;height:120px;
+  border-radius:50%;opacity:.08;pointer-events:none;
+}
+.page::before{top:-30px;left:-30px;
+  background:radial-gradient(circle,#1a5276 1px,transparent 1px);background-size:8px 8px;}
+.page::after{bottom:-30px;right:-30px;
+  background:radial-gradient(circle,#1e8449 1px,transparent 1px);background-size:8px 8px;}
+
+/* ページヘッダー */
+.ph{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding-bottom:10px;margin-bottom:14px;border-bottom:3px solid #1a5276;
+}
+.ph h1{font-size:18px;color:#1a5276;letter-spacing:.06em;font-weight:900;}
+.ph h1 small{font-size:11px;font-weight:normal;color:#7f8c8d;margin-left:8px;}
+.ph .meta{text-align:right;font-size:10px;color:#7f8c8d;line-height:1.7;}
+
+/* セクション見出し */
+.st{
+  font-size:13px;font-weight:bold;color:#1a5276;
+  margin:16px 0 10px;padding:6px 14px;
+  background:#eaf2f8;border-left:4px solid #1a5276;border-radius:0 4px 4px 0;
+}
+
+/* 比較2カラム */
+.cc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+.cc-card{border:1px solid #d5d8dc;border-radius:8px;overflow:hidden;}
+.cc-head{padding:12px 18px;color:#fff;font-size:13px;font-weight:bold;letter-spacing:.04em;}
+.cc-head.cur{background:#1a5276;}
+.cc-head.pro{background:#1e8449;}
+.cc-head small{display:block;font-size:10px;font-weight:normal;opacity:.85;margin-top:3px;}
+.cc-body{background:#fff;}
+.cr{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 18px;border-bottom:1px solid #eaecee;font-size:11px;
+}
+.cr:last-child{border-bottom:none;}
+.cr .lb{color:#7f8c8d;font-size:10px;}
+.cr .vl{font-weight:bold;color:#2c3e50;font-size:11px;}
+.cr .vl.cb{color:#1a5276;}
+.cr .vl.cg{color:#1e8449;}
+.cr.sh{background:#f8f9f9;padding:6px 18px;}
+.cr.sh .lb{font-size:9px;font-weight:bold;color:#5d6d7e;letter-spacing:.08em;}
+.cr.ch{background:#eafaf1;}
+.bdg{display:inline-block;font-size:9px;border-radius:3px;padding:1px 6px;margin-left:4px;font-weight:bold;}
+.bdg-dn{background:#d5f5e3;color:#1e8449;}
+.bdg-up{background:#d4e6f1;color:#1a5276;}
+
+/* 条件変更サマリー */
+.cs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.cs-box{
+  border:2px solid #d4e6f1;border-radius:8px;padding:12px 16px;
+  display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff;
+}
+.cs-lbl{font-size:9px;color:#7f8c8d;margin-bottom:6px;letter-spacing:.05em;font-weight:bold;}
+.cs-arr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:bold;}
+.cs-arr .fr{color:#1a5276;} .cs-arr .to{color:#1e8449;}
+.cs-arr .ar{color:#7f8c8d;font-size:11px;}
+.cs-note{font-size:9px;color:#7f8c8d;margin-top:4px;}
+
+/* ルールグリッド */
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;}
+.rb{border:1px solid #d5d8dc;border-radius:8px;overflow:hidden;}
+.rb-hd{padding:8px 14px;font-size:10px;font-weight:bold;letter-spacing:.04em;}
+.rb-hd.a{background:#fef9e7;color:#b7950b;border-bottom:2px solid #f9e79f;}
+.rb-hd.b{background:#eaf2f8;color:#1a5276;border-bottom:2px solid #d4e6f1;}
+.rb-bd{padding:10px 14px;font-size:10px;color:#2c3e50;line-height:1.7;}
+.rex{margin-top:6px;padding:6px 12px;border-radius:4px;font-size:10px;font-weight:bold;}
+.rex.a{background:#fef9e7;color:#b7950b;}
+.rex.b{background:#eaf2f8;color:#1a5276;}
+
+/* ページフッター */
+.pf{
+  position:absolute;bottom:0;left:0;right:0;
+  display:flex;justify-content:flex-end;align-items:center;
+  border-top:2px solid #1a5276;padding-top:6px;
+}
+.pf img{height:22px;opacity:.9;}
+
+/* シミュレーションテーブル */
+.st2{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px;border:2px solid #d5d8dc;}
+.st2 thead tr.r1 th{
+  padding:8px;text-align:center;color:#fff;font-size:10px;white-space:nowrap;
+  border-right:1px solid rgba(255,255,255,.3);
+}
+.st2 thead tr.r2 th{
+  padding:5px 8px;text-align:center;color:#fff;font-size:9px;white-space:nowrap;
+  font-weight:normal;border-right:1px solid rgba(255,255,255,.3);
+}
+.st2 thead th.thg{background:#5d6d7e;}
+.st2 thead th.thu{background:#5d6d7e;}
+.st2 thead th.thc{background:#1a5276;}
+.st2 thead th.thc2{background:#1a5276;opacity:.85;}
+.st2 thead th.thp{background:#1e8449;}
+.st2 thead th.thp2{background:#1e8449;opacity:.85;}
+.st2 thead th.thd{background:#5d6d7e;}
+.st2 tbody tr{border-bottom:1px solid #d5d8dc;}
+.st2 tbody tr:nth-child(even){background:#f8f9f9;}
+.st2 tbody tr.rbe{background:#fffff0!important;}
+.st2 tbody tr.rloss{background:#fff5f5!important;}
+.st2 tbody tr.rgain{background:#f0fff4!important;}
+.st2 td{
+  padding:7px 8px;text-align:center;vertical-align:middle;
+  font-size:10.5px;border-right:1px solid #d5d8dc;
+}
+.st2 td:last-child{border-right:none;}
+.st2 td .sub{font-size:9px;color:#7f8c8d;margin-top:2px;}
+.st2 td.cb{color:#1a5276;font-weight:bold;}
+.st2 td.cg{color:#1e8449;font-weight:bold;}
+.st2 td.dm{color:#1e8449;font-weight:bold;}
+.st2 td.dp{color:#c0392b;font-weight:bold;}
+.st2 td.dz{color:#7f8c8d;font-weight:bold;}
+.tb{display:inline-block;font-size:8px;border-radius:3px;padding:1px 5px;margin-left:2px;font-weight:bold;}
+.tb.cur{background:#d4e6f1;color:#1a5276;border:1px solid #d4e6f1;}
+.tb.pro{background:#fef9e7;color:#b7950b;border:1px solid #f9e79f;}
+
+/* 年間テーブル */
+.at{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px;border:2px solid #d5d8dc;}
+.at thead th{
+  padding:7px 8px;text-align:center;font-size:9px;color:#fff;
+  background:#5d6d7e;border-right:1px solid rgba(255,255,255,.3);
+}
+.at thead th.thc{background:#1a5276;}
+.at thead th.thp{background:#1e8449;}
+.at thead th.thd{background:#5d6d7e;}
+.at tbody tr{border-bottom:1px solid #d5d8dc;}
+.at tbody tr:nth-child(even){background:#f8f9f9;}
+.at td{
+  padding:7px 8px;text-align:center;font-size:10.5px;
+  vertical-align:middle;border-right:1px solid #d5d8dc;
+}
+.at td:last-child{border-right:none;}
+.at td.cb{color:#1a5276;font-weight:bold;}
+.at td.cg{color:#1e8449;font-weight:bold;}
+.at td.dm{color:#1e8449;font-weight:bold;}
+.at td.dp{color:#c0392b;font-weight:bold;}
+.at td.dz{color:#7f8c8d;font-weight:bold;}
+
+/* 前提条件ボックス */
+.premise{
+  font-size:10px;color:#2c3e50;margin-bottom:8px;line-height:1.7;
+  padding:10px 16px;background:#eaf2f8;border-radius:6px;
+  border-left:4px solid #1a5276;
+}
+.premise strong{color:#1a5276;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ 画面UI ══════════════ -->
+<div class="screen-only">
+
+  <div class="app-bar">
+    <div>
+      <span class="app-bar-title">複合機 提案比較書 作成ツール</span>
+      <span class="app-bar-sub">入力内容がそのまま印刷プレビューに反映されます</span>
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨 印刷 / PDF保存</button>
+  </div>
+
+  <div class="form-wrap">
+
+    <!-- ① 顧客情報 -->
+    <div class="fc">
+      <div class="fc-head gray">① 顧客情報</div>
+      <div class="fc-body">
+        <div class="g2">
+          <div class="field">
+            <label>顧客名（会社名）</label>
+            <input type="text" id="clientName" value="テスト株式会社" oninput="render()">
+          </div>
+          <div class="field">
+            <label>作成日</label>
+            <input type="text" id="docDate" value="2026年4月23日" oninput="render()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 現状の機器 -->
+    <div class="fc">
+      <div class="fc-head blue">② 現状の機器</div>
+      <div class="fc-body">
+        <div class="g2">
+          <div class="field"><label>メーカー</label>
+            <input type="text" id="curMaker" value="Canon" oninput="render()"></div>
+          <div class="field"><label>機種名</label>
+            <input type="text" id="curModel" value="現行機" oninput="render()"></div>
+        </div>
+        <hr class="div">
+        <div class="g4">
+          <div class="field"><label>月額リース料（円）</label>
+            <input type="number" id="curLease" value="10000" min="0" oninput="render()"></div>
+          <div class="field"><label>リース回数</label>
+            <input type="text" id="curLeaseTimes" value="60回（5年）" oninput="render()"></div>
+          <div class="field"><label>契約開始</label>
+            <input type="text" id="curFrom" value="2021年9月" oninput="render()"></div>
+          <div class="field"><label>契約満了</label>
+            <input type="text" id="curTo" value="2026年8月" oninput="render()"></div>
+        </div>
+        <hr class="div">
+        <div class="g3">
+          <div class="field"><label>基本料 / 最低保証額（円/月）</label>
+            <input type="number" id="curBasic" value="1000" min="0" oninput="render()"></div>
+          <div class="field"><label>モノクロ単価（円/枚）</label>
+            <input type="number" id="curMono" value="0.80" step="0.01" min="0" oninput="render()"></div>
+          <div class="field"><label>カラー単価（円/枚）</label>
+            <input type="number" id="curColor" value="8.00" step="0.01" min="0" oninput="render()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 提案の機器 -->
+    <div class="fc">
+      <div class="fc-head green">③ 提案の機器</div>
+      <div class="fc-body">
+        <div class="g2">
+          <div class="field"><label>メーカー</label>
+            <input type="text" id="propMaker" value="京セラ" oninput="render()"></div>
+          <div class="field"><label>機種名</label>
+            <input type="text" id="propModel" value="TASKalfa MZ3501ci" oninput="render()"></div>
+        </div>
+        <hr class="div">
+        <div class="g4">
+          <div class="field"><label>月額リース料（円）</label>
+            <input type="number" id="propLease" value="9800" min="0" oninput="render()"></div>
+          <div class="field"><label>リース回数</label>
+            <input type="text" id="propLeaseTimes" value="60回（5年）" oninput="render()"></div>
+          <div class="field"><label>契約開始（予定）</label>
+            <input type="text" id="propFrom" value="2026年9月" oninput="render()"></div>
+          <div class="field"><label>契約満了（予定）</label>
+            <input type="text" id="propTo" value="2031年8月" oninput="render()"></div>
+        </div>
+        <hr class="div">
+        <div class="g3">
+          <div class="field"><label>基本料 / 最低保証額（円/月）</label>
+            <input type="number" id="propBasic" value="1500" min="0" oninput="render()"></div>
+          <div class="field"><label>モノクロ単価（円/枚）</label>
+            <input type="number" id="propMono" value="0.70" step="0.01" min="0" oninput="render()"></div>
+          <div class="field"><label>カラー単価（円/枚）</label>
+            <input type="number" id="propColor" value="7.00" step="0.01" min="0" oninput="render()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ シミュレーションパターン -->
+    <div class="fc">
+      <div class="fc-head amber">④ シミュレーションパターン</div>
+      <div class="fc-body">
+        <table class="pt-tbl">
+          <thead>
+            <tr>
+              <th style="width:28%">パターン名</th>
+              <th style="width:20%">モノクロ枚数</th>
+              <th style="width:20%">カラー枚数</th>
+              <th style="width:18%">集計月数</th>
+              <th style="width:14%">削除</th>
+            </tr>
+          </thead>
+          <tbody id="ptBody"></tbody>
+        </table>
+        <button class="btn-add" onclick="addPt()">＋ パターンを追加</button>
+        <button class="btn-be"  onclick="addBe()">⚖ 損益分岐点を自動計算して追加（モノクロのみ）</button>
+      </div>
+    </div>
+
+    <!-- プレビューラベル -->
+    <div class="preview-hd">
+      <span class="preview-hd-title">📄 印刷プレビュー</span>
+      <span class="preview-hd-note">右上「印刷 / PDF保存」ボタンで出力できます</span>
+    </div>
+
+  </div><!-- /form-wrap -->
+</div><!-- /screen-only -->
+
+<!-- ══════════════ 印刷ドキュメント ══════════════ -->
+<div class="print-doc" id="printDoc"></div>
+
+<!-- ══════════════ JS ══════════════ -->
+<script>
+/* ─── ロゴ（Base64） ─── */
+const LOGO = 'data:image/png;base64,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';
+
+/* ─── パターンデータ ─── */
+let pts = [
+  {name:'低使用①',  mono:500,  color:0,   months:12},
+  {name:'低使用②',  mono:1500, color:0,   months:12},
+  {name:'中使用',    mono:2500, color:0,   months:12},
+  {name:'高使用①',  mono:3000, color:100, months:12},
+  {name:'高使用②',  mono:5000, color:300, months:12},
+];
+
+/* ─── ユーティリティ ─── */
+function gv(id){ return document.getElementById(id)?.value||''; }
+function gn(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function jpy(v){ return '¥'+Math.round(v).toLocaleString(); }
+function jpyD(v){ // 小数対応（単価用）
+  let r=parseFloat(v.toFixed(2));
+  return '¥'+r.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function countFee(basic,monoP,colorP,mono,color){
+  return Math.max(basic, monoP*mono + colorP*color);
+}
+
+/* ─── 損益分岐点計算（モノクロのみ） ─── */
+function calcBE(c,p){
+  // Region2: c above basic, p below basic
+  if(c.mono>0){
+    let n=(p.lease+p.basic-c.lease)/c.mono;
+    if(n>0 && c.mono*n>=c.basic && p.mono*n<=p.basic) return Math.ceil(n);
+  }
+  // Region3: c below basic, p above basic
+  if(p.mono>0){
+    let n=(c.lease+c.basic-p.lease)/p.mono;
+    if(n>0 && c.mono*n<=c.basic && p.mono*n>=p.basic) return Math.ceil(n);
+  }
+  // Region4: both above basic
+  if(Math.abs(c.mono-p.mono)>0.0001){
+    let n=(p.lease-c.lease)/(c.mono-p.mono);
+    if(n>0 && c.mono*n>=c.basic && p.mono*n>=p.basic) return Math.ceil(n);
+  }
+  return null;
+}
+
+/* ─── 差額バッジ ─── */
+function badge(from,to,isYen){
+  const d=to-from;
+  if(Math.abs(d)<0.0001) return '';
+  const abs=isYen?jpy(Math.abs(d)):jpyD(Math.abs(d));
+  if(d<0) return `<span class="bdg bdg-dn">▼${abs}</span>`;
+  return `<span class="bdg bdg-up">▲${abs}</span>`;
+}
+function diffCls(d){ return d<0?'dm':d>0?'dp':'dz'; }
+function diffTxt(d){
+  if(d===0) return '±¥0';
+  return (d<0?'▼':'▲')+'¥'+Math.abs(Math.round(d)).toLocaleString();
+}
+
+/* ─── パターンフォーム描画 ─── */
+function renderPtForm(){
+  const tb=document.getElementById('ptBody');
+  if(!tb) return;
+  tb.innerHTML=pts.map((p,i)=>`
+    <tr>
+      <td><input type="text" value="${esc(p.name)}" oninput="pts[${i}].name=this.value;render()"></td>
+      <td><input type="number" value="${p.mono}" min="0" oninput="pts[${i}].mono=+this.value;render()"></td>
+      <td><input type="number" value="${p.color}" min="0" oninput="pts[${i}].color=+this.value;render()"></td>
+      <td><input type="number" value="${p.months}" min="1" max="120" oninput="pts[${i}].months=+this.value;render()"></td>
+      <td><button class="btn-rm" onclick="removePt(${i})">✕</button></td>
+    </tr>`).join('');
+}
+function addPt(){
+  pts.push({name:`パターン${pts.length+1}`,mono:0,color:0,months:12});
+  renderPtForm(); render();
+}
+function removePt(i){ pts.splice(i,1); renderPtForm(); render(); }
+function addBe(){
+  const c={lease:gn('curLease'),basic:gn('curBasic'),mono:gn('curMono'),color:gn('curColor')};
+  const p={lease:gn('propLease'),basic:gn('propBasic'),mono:gn('propMono'),color:gn('propColor')};
+  const be=calcBE(c,p);
+  if(be===null){ alert('損益分岐点を計算できませんでした。\n単価差がない・条件によっては分岐点が存在しない場合があります。'); return; }
+  pts.push({name:`損益分岐点（${be.toLocaleString()}枚）`,mono:be,color:0,months:12});
+  renderPtForm(); render();
+}
+
+/* ─── メイン描画 ─── */
+function render(){
+  const cl=gv('clientName')||'○○株式会社';
+  const dt=gv('docDate')||'—';
+  const c={
+    maker:gv('curMaker')||'メーカー', model:gv('curModel')||'現行機',
+    lease:gn('curLease'), leaseTimes:gv('curLeaseTimes'),
+    from:gv('curFrom'), to:gv('curTo'),
+    basic:gn('curBasic'), mono:gn('curMono'), color:gn('curColor'),
+  };
+  const p={
+    maker:gv('propMaker')||'メーカー', model:gv('propModel')||'提案機',
+    lease:gn('propLease'), leaseTimes:gv('propLeaseTimes'),
+    from:gv('propFrom'), to:gv('propTo'),
+    basic:gn('propBasic'), mono:gn('propMono'), color:gv('propColor')?gn('propColor'):0,
+  };
+  // ※propColorが文字列として読まれる場合があるので確実にnumber化
+  p.color=parseFloat(document.getElementById('propColor')?.value)||0;
+
+  const leaseDiff=p.lease-c.lease;
+  const basicDiff=p.basic-c.basic;
+  const monoDiff =p.mono -c.mono;
+  const colorDiff=p.color-c.color;
+
+  /* ページ1 */
+  const p1=`<div class="page">
+  <div class="ph">
+    <h1>複合機 比較表 <small>現状・ご提案 条件比較</small></h1>
+    <div class="meta">${esc(cl)} 御中<br>${esc(dt)}</div>
+  </div>
+
+  <div class="st">機器・契約条件の比較</div>
+  <div class="cc">
+    <div class="cc-card">
+      <div class="cc-head cur">現状<small>${esc(c.maker)} ${esc(c.model)}</small></div>
+      <div class="cc-body">
+        <div class="cr sh"><span class="lb">リース条件</span></div>
+        <div class="cr"><span class="lb">月額リース料</span><span class="vl cb">${jpy(c.lease)}</span></div>
+        <div class="cr"><span class="lb">リース回数</span><span class="vl">${esc(c.leaseTimes)}</span></div>
+        <div class="cr"><span class="lb">契約期間</span><span class="vl">${esc(c.from)} 〜 ${esc(c.to)}</span></div>
+        <div class="cr sh"><span class="lb">カウント料金</span></div>
+        <div class="cr"><span class="lb">基本料（最低保証額）</span><span class="vl">${jpy(c.basic)} / 月</span></div>
+        <div class="cr"><span class="lb">モノクロ単価</span><span class="vl">${jpyD(c.mono)} / 枚</span></div>
+        <div class="cr"><span class="lb">カラー単価</span><span class="vl">${jpyD(c.color)} / 枚</span></div>
+      </div>
+    </div>
+    <div class="cc-card">
+      <div class="cc-head pro">ご提案<small>${esc(p.maker)} ${esc(p.model)}</small></div>
+      <div class="cc-body">
+        <div class="cr sh"><span class="lb">リース条件</span></div>
+        <div class="cr${leaseDiff?` ch`:''}"><span class="lb">月額リース料</span><span class="vl cg">${jpy(p.lease)}${badge(c.lease,p.lease,true)}</span></div>
+        <div class="cr"><span class="lb">リース回数</span><span class="vl">${esc(p.leaseTimes)}</span></div>
+        <div class="cr"><span class="lb">契約期間</span><span class="vl">${esc(p.from)} 〜 ${esc(p.to)}（予定）</span></div>
+        <div class="cr sh"><span class="lb">カウント料金</span></div>
+        <div class="cr${basicDiff?` ch`:''}"><span class="lb">基本料（最低保証額）</span><span class="vl cg">${jpy(p.basic)} / 月${badge(c.basic,p.basic,true)}</span></div>
+        <div class="cr${monoDiff?` ch`:''}"><span class="lb">モノクロ単価</span><span class="vl cg">${jpyD(p.mono)} / 枚${badge(c.mono,p.mono,false)}</span></div>
+        <div class="cr${colorDiff?` ch`:''}"><span class="lb">カラー単価</span><span class="vl cg">${jpyD(p.color)} / 枚${badge(c.color,p.color,false)}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="st">条件変更サマリー</div>
+  <div class="cs">
+    <div class="cs-box">
+      <div class="cs-lbl">月額リース料</div>
+      <div class="cs-arr"><span class="fr">${jpy(c.lease)}</span><span class="ar">→</span><span class="to">${jpy(p.lease)}</span></div>
+      <div class="cs-note">${leaseDiff===0?'変更なし':leaseDiff<0?`月▼${jpy(Math.abs(leaseDiff))}削減`:`月▲${jpy(Math.abs(leaseDiff))}増加`}</div>
+    </div>
+    <div class="cs-box">
+      <div class="cs-lbl">モノクロ単価</div>
+      <div class="cs-arr"><span class="fr">${jpyD(c.mono)}</span><span class="ar">→</span><span class="to">${jpyD(p.mono)}</span></div>
+      <div class="cs-note">${monoDiff===0?'変更なし':monoDiff<0?`▼${jpyD(Math.abs(monoDiff))}/枚 削減`:`▲${jpyD(Math.abs(monoDiff))}/枚 増加`}</div>
+    </div>
+    <div class="cs-box">
+      <div class="cs-lbl">カラー単価</div>
+      <div class="cs-arr"><span class="fr">${jpyD(c.color)}</span><span class="ar">→</span><span class="to">${jpyD(p.color)}</span></div>
+      <div class="cs-note">${colorDiff===0?'変更なし':colorDiff<0?`▼${jpyD(Math.abs(colorDiff))}/枚 削減`:`▲${jpyD(Math.abs(colorDiff))}/枚 増加`}</div>
+    </div>
+  </div>
+
+  <div class="st">カウント料金の仕組み（現状・ご提案 共通ルール）</div>
+  <div class="rg">
+    <div class="rb">
+      <div class="rb-hd a">CASE A ／ 単価×枚数の合計 ＜ 基本料 → 基本料が最低保証として請求</div>
+      <div class="rb-bd">
+        月間印刷枚数が少なく、単価×枚数の合計が基本料を下回る場合、基本料が最低保証額として請求されます。
+        <div class="rex a">
+          現状）モノ500枚：${jpyD(c.mono)}×500＝${jpy(c.mono*500)} → ${jpy(c.basic)}請求<br>
+          提案）モノ500枚：${jpyD(p.mono)}×500＝${jpy(p.mono*500)} → ${jpy(p.basic)}請求
+        </div>
+      </div>
+    </div>
+    <div class="rb">
+      <div class="rb-hd b">CASE B ／ 単価×枚数の合計 ≧ 基本料 → 実額のみ請求（基本料は相殺）</div>
+      <div class="rb-bd">
+        月間印刷枚数が多く、単価×枚数の合計が基本料以上となる場合、実額のみが請求されます。
+        <div class="rex b">
+          現状）モノ3,000枚：${jpyD(c.mono)}×3,000＝${jpy(c.mono*3000)} → ${jpy(c.mono*3000)}請求<br>
+          提案）モノ3,000枚：${jpyD(p.mono)}×3,000＝${jpy(p.mono*3000)} → ${jpy(p.mono*3000)}請求
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf"><img src="${LOGO}" alt=""></div>
+</div>`;
+
+  /* シミュレーション行を生成 */
+  const simRows=pts.map(pt=>{
+    const cFee=countFee(c.basic,c.mono,c.color,pt.mono,pt.color);
+    const pFee=countFee(p.basic,p.mono,p.color,pt.mono,pt.color);
+    const cTot=c.lease+cFee;
+    const pTot=p.lease+pFee;
+    const diff=pTot-cTot; // 負=提案が安い=メリット
+
+    const cAbove=(c.mono*pt.mono+c.color*pt.color)>=c.basic;
+    const pAbove=(p.mono*pt.mono+p.color*pt.color)>=p.basic;
+
+    const rc=diff<0?'rgain':diff>0?'rloss':'rbe';
+    const dc=diffCls(-diff); // -diffにして「節約」が正方向
+    const dt=diffText(-diff);
+
+    const cCalcDetail=`${jpy(c.mono*pt.mono)}+${jpy(c.color*pt.color)}=${jpy(c.mono*pt.mono+c.color*pt.color)}`;
+    const pCalcDetail=`${jpy(p.mono*pt.mono)}+${jpy(p.color*pt.color)}=${jpy(p.mono*pt.mono+p.color*pt.color)}`;
+
+    const cTbTag=!cAbove?`<span class="tb cur">基本料</span>`:'';
+    const pTbTag=!pAbove?`<span class="tb pro">基本料</span>`:'';
+
+    return {pt,cFee,pFee,cTot,pTot,diff,rc,dc,dt,cCalcDetail,pCalcDetail,cTbTag,pTbTag};
+  });
+
+  const simRowsHTML=simRows.map(r=>`
+    <tr class="${r.rc}">
+      <td>${Math.round(r.pt.mono+r.pt.color).toLocaleString()}枚</td>
+      <td>${Math.round(r.pt.mono).toLocaleString()}枚</td>
+      <td>${Math.round(r.pt.color).toLocaleString()}枚</td>
+      <td>${jpy(r.cFee)}${r.cTbTag}<div class="sub">${r.cCalcDetail}</div></td>
+      <td class="cb">${jpy(r.cTot)}</td>
+      <td>${jpy(r.pFee)}${r.pTbTag}<div class="sub">${r.pCalcDetail}</div></td>
+      <td class="cg">${jpy(r.pTot)}</td>
+      <td class="${r.dc}">${r.dt}</td>
+    </tr>`).join('');
+
+  const annualHTML=simRows.map(r=>{
+    const cAnn=r.cTot*r.pt.months;
+    const pAnn=r.pTot*r.pt.months;
+    const aDiff=pAnn-cAnn;
+    return `<tr>
+      <td>${Math.round(r.pt.mono+r.pt.color).toLocaleString()}枚（${r.pt.months}ヶ月間）</td>
+      <td class="cb">${jpy(cAnn)}</td>
+      <td class="cg">${jpy(pAnn)}</td>
+      <td class="${diffCls(-aDiff)}">${diffText(-aDiff)}</td>
+    </tr>`;}).join('');
+
+  /* ページ2 */
+  const p2=`<div class="page">
+  <div class="ph">
+    <h1>月額コストシミュレーション <small>使用枚数パターン別 試算表</small></h1>
+    <div class="meta">${esc(cl)} 御中<br>${esc(dt)}</div>
+  </div>
+
+  <div class="premise">
+    <strong>前提条件</strong>　月額合計 ＝ リース料 ＋ カウント料金　／　カウント料金 ＝ MAX（基本料、モノクロ単価×モノクロ枚数 ＋ カラー単価×カラー枚数）<br>
+    現状：リース${jpy(c.lease)}・基本料${jpy(c.basic)}・モノ${jpyD(c.mono)}・カラー${jpyD(c.color)}　／
+    ご提案：リース${jpy(p.lease)}・基本料${jpy(p.basic)}・モノ${jpyD(p.mono)}・カラー${jpyD(p.color)}
+  </div>
+
+  <div class="st">月額コスト試算</div>
+  <table class="st2">
+    <thead>
+      <tr class="r1">
+        <th rowspan="2" class="thg">合計枚数<br>（月間）</th>
+        <th colspan="2" class="thu">使用枚数内訳</th>
+        <th colspan="2" class="thc">現状（${esc(c.maker)} ${esc(c.model)}）</th>
+        <th colspan="2" class="thp">ご提案（${esc(p.maker)} ${esc(p.model)}）</th>
+        <th rowspan="2" class="thd">月額差額<br>（節約額）</th>
+      </tr>
+      <tr class="r2">
+        <th class="thu">モノクロ</th><th class="thu">カラー</th>
+        <th class="thc2">カウント料金</th><th class="thc2">月額合計</th>
+        <th class="thp2">カウント料金</th><th class="thp2">月額合計</th>
+      </tr>
+    </thead>
+    <tbody>${simRowsHTML}</tbody>
+  </table>
+
+  <div class="st" style="margin-top:14px;">集計期間別コスト差額</div>
+  <table class="at">
+    <thead>
+      <tr>
+        <th>合計枚数（月間）</th>
+        <th class="thc">現状 期間合計</th>
+        <th class="thp">ご提案 期間合計</th>
+        <th class="thd">差額（節約額）</th>
+      </tr>
+    </thead>
+    <tbody>${annualHTML}</tbody>
+  </table>
+
+  <div class="pf"><img src="${LOGO}" alt=""></div>
+</div>`;
+
+  document.getElementById('printDoc').innerHTML=p1+p2;
+}
+
+/* ─── 初期化 ─── */
+renderPtForm();
+render();
+</script>
+</body>
+</html>

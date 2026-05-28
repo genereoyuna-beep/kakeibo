@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複合機経費比較表</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:     #1e3a5f;
+  --teal:     #0d7fa5;
+  --teal-lt:  #e0f5fb;
+  --green:    #059669;
+  --green-lt: #d1fae5;
+  --purple:   #6c3483;
+  --purple-lt:#f3e8fd;
+  --amber:    #d97706;
+  --amber-lt: #fef3c7;
+  --gray:     #5d6d7e;
+  --gray-lt:  #f3f4f6;
+  --red:      #dc2626;
+  --border:   #d1d5db;
+  --bg:       #f4f5f7;
+  --text:     #1c2331;
+  --sub:      #6b7280;
+  --yellow-bg:#fffde7;
+  --yellow-bd:#f9a825;
+}
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ─── 画面ツールバー ─── */
+.screen-bar {
+  background: var(--navy);
+  color: #fff;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.screen-bar h1 { font-size: 14px; font-weight: bold; }
+.screen-bar-right { display: flex; gap: 10px; align-items: center; }
+.btn {
+  border: none; border-radius: 5px; padding: 8px 18px;
+  font-size: 13px; font-weight: bold; cursor: pointer;
+  font-family: inherit; letter-spacing: .04em; transition: background .15s;
+}
+.btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.4); }
+.btn-outline:hover { background: rgba(255,255,255,.1); }
+.btn-primary { background: var(--teal); color: #fff; }
+.btn-primary:hover { background: #0b6e91; }
+
+/* ─── 用紙ラップ ─── */
+.paper-wrap {
+  max-width: 1020px;
+  margin: 28px auto 60px;
+  padding: 0 16px;
+}
+
+/* ─── カード ─── */
+.doc-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+/* ─── ヘッダー ─── */
+.doc-header {
+  background: #fff;
+  padding: 20px 28px 16px;
+  border-bottom: 2px solid var(--navy);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.doc-eyebrow {
+  font-size: 10px;
+  color: var(--sub);
+  letter-spacing: .14em;
+  margin-bottom: 4px;
+}
+.doc-title {
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: .04em;
+  color: var(--navy);
+}
+.doc-title span { color: var(--teal); }
+.doc-header-right {
+  text-align: right;
+  font-size: 12px;
+  color: var(--sub);
+  line-height: 2;
+}
+.doc-header-right strong { color: var(--text); font-weight: 600; }
+
+/* ─── 本体 ─── */
+.doc-body { padding: 24px 28px 28px; }
+
+/* ─── 比較表 ─── */
+.compare-wrap { overflow-x: auto; }
+
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;   /* 項目詳細（中位）の基準 */
+  table-layout: fixed;
+}
+
+/* 列ヘッダー */
+table.compare thead th {
+  padding: 10px 12px;
+  font-size: 12.5px; /* 項目名（少し大きめ） */
+  font-weight: bold;
+  border-bottom: 2px solid var(--border);
+  text-align: center;
+}
+table.compare thead th.h-label {
+  background: #f3f4f6;
+  color: var(--sub);
+  text-align: left;
+  width: 140px;
+}
+table.compare thead th.h-mc {
+  border-left: 2px solid var(--border);
+}
+table.compare thead th.h-mc.mc-current {
+  background: #f5f6fa;
+  color: #444;
+  border-left-color: #bbb;
+}
+table.compare thead th.h-mc.mc-proposal-0 { background: var(--teal-lt);   color: #0a6a8a; border-left-color: var(--teal);   }
+table.compare thead th.h-mc.mc-proposal-1 { background: var(--green-lt);  color: #047857; border-left-color: var(--green);  }
+table.compare thead th.h-mc.mc-proposal-2 { background: var(--purple-lt); color: #5b2c6f; border-left-color: var(--purple); }
+table.compare thead th.h-mc.mc-proposal-3 { background: var(--amber-lt);  color: #b45309; border-left-color: var(--amber);  }
+table.compare thead th.h-mc.mc-proposal-4 { background: var(--gray-lt);   color: var(--gray); border-left-color: var(--gray); }
+
+/* データ行 */
+table.compare tbody tr.data-row td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+}
+table.compare tbody tr.data-row:last-child td { border-bottom: none; }
+table.compare tbody tr.data-row td.td-label {
+  color: var(--sub);
+  font-size: 12px;   /* 項目名（少し大きめ） */
+  font-weight: 500;
+  background: #fafbfc;
+  border-right: 2px solid var(--border);
+}
+table.compare tbody tr.data-row td.td-label.indent {
+  padding-left: 22px;
+  font-size: 11px;   /* インデント項目は中位と同じ */
+  color: #9ca3af;
+}
+table.compare tbody tr.data-row td.td-mc {
+  text-align: center;
+  background: #fff;
+  border-left: 1px solid #e9ecef;
+  font-variant-numeric: tabular-nums;
+}
+.yen-val {
+  font-variant-numeric: tabular-nums;
+}
+table.compare tbody tr.data-row:hover td { background: #f7f9fc; }
+table.compare tbody tr.data-row:hover td.td-label { background: #f1f4f8; }
+
+/* グループ行（セクション区切り） */
+table.compare tbody tr.grp-row td {
+  background: var(--navy);
+  color: rgba(255,255,255,.85);
+  font-size: 10.5px;  /* データより少し大きめ */
+  font-weight: bold;
+  letter-spacing: .12em;
+  padding: 5px 12px;
+}
+
+/* 機種画像セル */
+.mc-img-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.mc-img-cell img {
+  max-width: 120px;
+  max-height: 80px;
+  object-fit: contain;
+  display: block;
+  background: transparent;
+}
+.mc-img-placeholder {
+  width: 80px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f3f4f6; border-radius: 4px;
+  font-size: 10px; color: #bbb;
+}
+.mc-img-model {
+  font-size: 11.5px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.4;
+}
+.mc-img-maker {
+  font-size: 10px;
+  color: var(--sub);
+  text-align: center;
+}
+
+/* 太字・強調セル */
+td.td-strong {
+  font-weight: 700;
+  font-size: 13px;
+}
+td.td-total {
+  font-weight: 800;
+  font-size: 13.5px;
+}
+td.td-total.mc-current { color: #333; }
+td.td-total.mc-proposal-0 { color: var(--teal);   }
+td.td-total.mc-proposal-1 { color: var(--green);  }
+td.td-total.mc-proposal-2 { color: var(--purple); }
+td.td-total.mc-proposal-3 { color: var(--amber);  }
+td.td-total.mc-proposal-4 { color: var(--gray);   }
+
+/* ─── コスト比較セクション ─── */
+.cost-reduction-wrap {
+  margin-top: 16px;
+  border: 2px solid var(--navy);
+  border-radius: 8px;
+  overflow: hidden;
+}
+table.cost-reduction {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+table.cost-reduction thead th {
+  background: var(--navy);
+  color: rgba(255,255,255,.85);
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .06em;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,.15);
+}
+table.cost-reduction thead th:first-child { text-align: left; }
+table.cost-reduction thead th:last-child  { border-right: none; }
+table.cost-reduction thead th.mc-current    { background: #3a5270; color: rgba(255,255,255,.7); }
+table.cost-reduction thead th.mc-proposal-0 { background: #0a6a8a; color: #fff; }
+table.cost-reduction thead th.mc-proposal-1 { background: #047857; color: #fff; }
+table.cost-reduction thead th.mc-proposal-2 { background: #5b2c6f; color: #fff; }
+table.cost-reduction thead th.mc-proposal-3 { background: #b45309; color: #fff; }
+table.cost-reduction thead th.mc-proposal-4 { background: #4b5563; color: #fff; }
+table.cost-reduction tbody tr td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #dce6f4;
+  background: #eef3fb;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+table.cost-reduction tbody tr:last-child td { border-bottom: none; }
+table.cost-reduction tbody tr td:first-child {
+  text-align: left;
+  font-size: 12px;
+  color: var(--navy);
+  font-weight: 600;
+}
+.save-good { color: var(--red);   }
+.save-bad  { color: #999;          }
+.save-zero { color: #999;          }
+
+.cnt-div {
+  border-left: 1px dotted rgba(0,0,0,0.28);
+  margin-left: 6px;
+  padding-left: 6px;
+  font-size: 0.88em;
+}
+
+/* ─── 備考 ─── */
+.footnotes {
+  margin-top: 16px;
+  padding: 12px 18px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 3px solid var(--teal);
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+}
+.footnotes p {
+  font-size: 11.5px;
+  color: var(--sub);
+  line-height: 2;
+  white-space: pre-wrap;
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px 32px;
+  color: var(--sub);
+}
+
+/* ── プレビューハイライト ── */
+tr.hl-row td, tr.hl-row th, .hl-block, td.hl-cell, th.hl-cell {
+  background: #fffbe6 !important;
+  outline: 2px solid #f59e0b;
+  outline-offset: -1px;
+  transition: background .25s, outline .25s;
+}
+tr.grp-row.hl-row td {
+  background: #f59e0b !important;
+  color: #fff !important;
+}
+
+/* ── プレビューモード（iframeで表示時）── */
+body.preview-mode .screen-bar { display: none !important; }
+body.preview-mode { background: #c8cdd3; }
+/* プレビューモード: paper-wrap を A4横固定サイズに。opacity:0 でスケール前の表示を隠す */
+body.preview-mode .paper-wrap {
+  opacity: 0;
+}
+.no-data p { font-size: 15px; margin-bottom: 12px; }
+.no-data a { color: var(--teal); font-weight: bold; text-decoration: none; }
+
+/* ── ロゴ（備考の下 or コスト表の下、右寄せ） ── */
+.print-logo {
+  text-align: right;
+  padding: 10px 4px 0;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.print-logo img {
+  max-width: 140px;
+  max-height: 60px;
+  object-fit: contain;
+}
+
+/* 印刷スタイルは applyPrintCSS() で動的注入 */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.doc-card { animation: fadeIn .4s ease both; }
+</style>
+</head>
+<body>
+
+<div class="screen-bar">
+  <h1>複合機経費比較表 ─ プレビュー</h1>
+  <div class="screen-bar-right">
+    <button class="btn btn-outline" onclick="history.back()">← 入力画面に戻る</button>
+    <button class="btn btn-primary" onclick="window.print()">印刷 / PDF保存</button>
+  </div>
+</div>
+
+<div class="paper-wrap" id="root"></div>
+
+<script>
+const KEY            = 'fukugoki_v2';
+const PRINT_OPTS_KEY = 'fukugoki_print_opts';
+
+const COMPANY_LOGO = 'data:image/png;base64,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';
+
+const DEFAULT_OPTS = {
+  showImage: true, showDealer: true, showInstallDate: true,
+  showSpeed: false, showPaper: false, showSize: false, showWeight: false, showFeatures: false,
+  showCounter: true, showToner: true, showSimPages: true,
+  showCounterFee: true, showLease: true, showTotal: true,
+  showReduction: true,
+  orientation: 'landscape',
+};
+
+const esc  = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtY = n => (n===''||n===null||n===undefined||isNaN(parseFloat(n))) ? '─' : '<span class="yen-val">¥'+Math.floor(Number(n)).toLocaleString()+'</span>';
+const fmtN = n => (n===''||n===null||n===undefined||isNaN(parseFloat(n))) ? '─' : Number(n).toLocaleString();
+
+/* ISO日付 → 日本語表記 */
+function fmtDate(val) {
+  if (!val) return '─';
+  const v = String(val).trim();
+  const d = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (d) return `${d[1]}年${parseInt(d[2])}月${parseInt(d[3])}日`;
+  const m = v.match(/^(\d{4})-(\d{2})$/);
+  if (m) return `${m[1]}年${parseInt(m[2])}月`;
+  return v;
+}
+
+/* 常に横向き A4。列数に応じてフォントサイズと左右余白を自動調整 */
+const A4_W = 1080, A4_H = Math.round(1080 * 210 / 297); /* 763px */
+
+function applyPrintCSS(mcCount) {
+  let el = document.getElementById('dyn-print-css');
+  if (!el) { el = document.createElement('style'); el.id = 'dyn-print-css'; document.head.appendChild(el); }
+  const n = Math.max(mcCount || 1, 1);
+
+  const snap      = v => Math.round(v * 2) / 2;
+  /* フォント階層: 項目詳細 < セクション見出し < 項目名 < 表題 */
+  const cellFont  = snap(Math.min(11,   Math.max(7,   30 / n)));  /* 項目詳細（中位） */
+  const labelFont = snap(Math.min(12.5, Math.max(8.5, cellFont + 1.5))); /* 項目名（少し大きめ） */
+  const secFont   = snap(Math.min(11,   Math.max(7.5, cellFont + 0.5))); /* セクション区切り */
+  const smallFont = snap(Math.max(6.5,  cellFont - 1.5));                /* 備考・小テキスト */
+  const titleFont = 15;                                                   /* 表題（大きめ固定） */
+  /* 列数に応じた余白（上下左右均一）*/
+  const pad    = n <= 1 ? 32 : n <= 2 ? 24 : n <= 3 ? 16 : 8;  /* プレビュー用 px */
+  const padMm  = n <= 1 ? 8  : n <= 2 ? 6  : n <= 3 ? 4  : 2;  /* 印刷用 mm */
+
+  /* プレビュー・印刷で共通のレイアウトルール（テンプレート化） */
+  const layoutRules = (prefix) => `
+    ${prefix}.paper-wrap {
+      width: ${A4_W}px !important; height: ${A4_H}px !important;
+      max-width: none !important; margin: 0 !important;
+      padding: ${pad}px !important; box-sizing: border-box !important;
+      overflow: hidden !important;
+      display: flex !important; flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    ${prefix}.doc-card {
+      box-shadow: none !important; border-radius: 0 !important;
+      margin: 0 !important; animation: none !important; background: #fff !important;
+      width: 100% !important; box-sizing: border-box !important;
+      flex: 1 !important; display: flex !important; flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    ${prefix}.doc-header { padding: 8px 14px !important; flex-shrink: 0 !important; box-sizing: border-box !important; }
+    ${prefix}.doc-body {
+      padding: 8px 14px 0 !important; box-sizing: border-box !important;
+      flex: 1 !important; min-height: 0 !important;
+      display: flex !important; flex-direction: column !important;
+    }
+    ${prefix}.compare-wrap { overflow: visible !important; flex: 1 !important; min-height: 0 !important; width: 100% !important; }
+    ${prefix}.cost-col { flex-shrink: 0 !important; display: flex !important; flex-direction: column !important; }
+    ${prefix}table.compare { font-size: ${cellFont}px !important; line-height: 1.25 !important; height: 100% !important; }
+    ${prefix}table.compare td, ${prefix}table.compare th { padding: 2px 5px !important; }
+    ${prefix}table.compare thead th { font-size: ${labelFont}px !important; }
+    ${prefix}table.compare td.td-label { font-size: ${labelFont}px !important; }
+    ${prefix}table.compare td.td-label.indent { font-size: ${cellFont}px !important; }
+    ${prefix}table.cost-reduction { font-size: ${cellFont}px !important; line-height: 1.25 !important; }
+    ${prefix}table.cost-reduction td, ${prefix}table.cost-reduction th { padding: 2px 5px !important; }
+    ${prefix}.mc-img-cell img { max-width: 90px !important; max-height: 62px !important; }
+    ${prefix}.mc-img-placeholder { width: 90px !important; height: 62px !important; }
+    ${prefix}.mc-img-model { font-size: ${smallFont}px !important; }
+    ${prefix}.cost-reduction-wrap { margin-top: 8px !important; }
+    ${prefix}.footnotes { margin-top: 8px !important; padding: 6px 10px 0 !important; }
+    ${prefix}.footnotes p { font-size: ${smallFont}px !important; }
+    ${prefix}.grp-row td { padding: 3px 8px !important; font-size: ${secFont}px !important; }
+    ${prefix}.doc-title { font-size: ${titleFont}px !important; }
+    ${prefix}.print-logo { text-align: right !important; padding: 8px 0 0 !important; opacity: 0.85 !important; }
+    ${prefix}.print-logo img { max-width: 110px !important; max-height: 48px !important; }`;
+
+  el.textContent = `
+    /* ── プレビューモード（スクリーン） ── */
+    body.preview-mode .screen-bar { display: none !important; }
+    body.preview-mode, body.preview-mode html { overflow: hidden !important; }
+    ${layoutRules('body.preview-mode ')}
+
+    /* ── 印刷 ── */
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+      html { margin: 0 !important; padding: 0 !important; width: 297mm !important; height: 210mm !important; }
+      html, body { background: #fff !important; }
+      body { margin: 0 !important; padding: 0 !important; width: 297mm !important; height: 210mm !important; overflow: hidden !important; }
+      .screen-bar { display: none !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      ${layoutRules('')}
+      .paper-wrap { width: 297mm !important; height: 210mm !important; padding: ${padMm}mm !important; transform: none !important; opacity: 1 !important; }
+      .doc-header { padding-left: 0 !important; padding-right: 0 !important; }
+      .doc-body   { padding-left: 0 !important; padding-right: 0 !important; }
+    }`;
+}
+
+function applyPrintOrientation(orientation, mcCount) { applyPrintCSS(mcCount); }
+
+const PROP_CLASSES = ['mc-proposal-0','mc-proposal-1','mc-proposal-2','mc-proposal-3','mc-proposal-4'];
+
+function colClass(m, proposals) {
+  if (m.role === 'current') return 'mc-current';
+  const pi = proposals.indexOf(m);
+  return PROP_CLASSES[pi % PROP_CLASSES.length];
+}
+
+function calcCounter(m, monoPages, colorPages) {
+  const b   = parseFloat(m.basic) || 0;
+  const cnt = (parseFloat(m.mono) || 0) * monoPages
+            + (parseFloat(m.color) || 0) * colorPages;
+  return Math.floor(Math.max(b, cnt));
+}
+
+function calcTotal(m, fallbackMono, fallbackColor) {
+  return (parseFloat(m.lease) || 0) + calcCounter(m, fallbackMono, fallbackColor);
+}
+
+function periodLabel(months) {
+  const y = months / 12;
+  return Number.isInteger(y) ? `${y}年間` : `${months}ヶ月`;
+}
+
+/* ─── メイン描画 ─── */
+function render(injectedState) {
+  const root = document.getElementById('root');
+  let d;
+  if (injectedState) {
+    d = injectedState;
+  } else {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) {
+      root.innerHTML = `<div class="doc-card"><div class="no-data">
+        <p>入力データが見つかりません。</p>
+        <a href="複合機比較_入力.html">← 入力フォームに戻ってデータを入力してください</a>
+      </div></div>`;
+      return;
+    }
+    d = JSON.parse(raw);
+  }
+  const all  = d.machines || [];
+  const mcs  = all.filter(m => !m.skip);
+
+  if (mcs.length === 0) {
+    root.innerHTML = `<div class="doc-card"><div class="no-data">
+      <p>表示できる機器がありません。</p>
+      <a href="複合機比較_入力.html">← 入力フォームに戻って機器を設定してください</a>
+    </div></div>`;
+    return;
+  }
+
+  /* 印刷オプション */
+  const savedOpts = JSON.parse(localStorage.getItem(PRINT_OPTS_KEY) || '{}');
+  const opts = { ...DEFAULT_OPTS, ...savedOpts };
+  applyPrintCSS(mcs.length);
+
+  const current   = mcs.find(m => m.role === 'current');
+  const proposals = mcs.filter(m => m.role === 'proposal');
+
+  const monoPages  = parseFloat(d.monoCount)  || 0;
+  const colorPages = parseFloat(d.colorCount) || 0;
+
+  /* 列幅（比較表・コスト表で共通）
+     ラベル列: 2.2割 = 22%、機器列: 7.8割÷N = 78%/N
+     例: 2台→22:39:39、3台→22:26:26:26 */
+  const labelPct = 22;
+  const mcPct    = (78 / mcs.length).toFixed(2);
+  const colGroup = `<colgroup>
+    <col style="width:${labelPct}%">
+    ${mcs.map(() => `<col style="width:${mcPct}%">`).join('')}
+  </colgroup>`;
+
+  /* ── ヘルパー ── */
+  function thMC(m) {
+    const cls   = colClass(m, proposals);
+    const label = esc(m.label || (m.role === 'current' ? '現　状' : '─'));
+    return `<th class="h-mc ${cls}">${label}</th>`;
+  }
+
+  function cellTd(c, extra) {
+    if (c && typeof c === 'object' && 'html' in c) {
+      const ma = c.mid   ? ` data-mid="${c.mid}"`   : '';
+      const fa = c.field ? ` data-field="${c.field}"` : '';
+      return `<td class="td-mc${extra||''}"${ma}${fa}>${c.html}</td>`;
+    }
+    return `<td class="td-mc${extra||''}">${c}</td>`;
+  }
+
+  function dataRow(label, cells, labelCls, section) {
+    const lc = labelCls ? ` ${labelCls}` : '';
+    const ds = section ? ` data-section="${section}"` : '';
+    return `<tr class="data-row"${ds}>
+      <td class="td-label${lc}">${label}</td>
+      ${cells.map(c => cellTd(c, '')).join('')}
+    </tr>`;
+  }
+
+  function boldRow(label, cells, section) {
+    const ds = section ? ` data-section="${section}"` : '';
+    return `<tr class="data-row"${ds}>
+      <td class="td-label">${label}</td>
+      ${cells.map(c => cellTd(c, ' td-strong')).join('')}
+    </tr>`;
+  }
+
+  function totalRow(label, cells) {
+    return `<tr class="data-row">
+      <td class="td-label" style="font-weight:700;color:var(--text);">${label}</td>
+      ${cells.map((c, i) => {
+        const cls = colClass(mcs[i], proposals);
+        return `<td class="td-mc td-total ${cls}">${c}</td>`;
+      }).join('')}
+    </tr>`;
+  }
+
+  function modelCell(m) {
+    const imgHTML = (opts.showImage && m.image)
+      ? `<img src="${m.image}" alt="${esc(m.model)}">`
+      : (!opts.showImage ? '' : `<div class="mc-img-placeholder">NO IMAGE</div>`);
+    return `<div class="mc-img-cell">
+      ${imgHTML}
+      <span class="mc-img-model">${esc(m.model || '─')}</span>
+    </div>`;
+  }
+
+  function featVal(v) {
+    if (v === '○') return '○';
+    if (v === '△') return '△';
+    if (v === '✕') return '✕';
+    return '─';
+  }
+
+  /* ── 比較表ボディ行 ── */
+  const specsRows = opts.showSpeed || opts.showPaper || opts.showSize || opts.showWeight ? `
+    <tr class="grp-row" data-section="specs"><td colspan="${mcs.length+1}">仕様</td></tr>
+    ${opts.showSpeed  ? dataRow('印刷速度', mcs.map(m => {
+        const spd = m.speed || m.speedC || m.speedM;
+        return { html: spd ? `${spd} 枚/分` : '─', mid: m.id, field: 'speed' };
+      }), '', 'specs') : ''}
+    ${opts.showPaper  ? dataRow('対応用紙（最大）', mcs.map(m => ({ html: esc(m.paper||'─'), mid: m.id, field: 'paper' })), '', 'specs') : ''}
+    ${opts.showSize   ? dataRow('外形寸法 mm',      mcs.map(m => ({ html: esc(m.size||'─'),  mid: m.id, field: 'size' })), '', 'specs') : ''}
+    ${opts.showWeight ? dataRow('本体重量',          mcs.map(m => ({ html: m.weight ? '約 '+esc(m.weight)+' kg' : '─', mid: m.id, field: 'weight' })), '', 'specs') : ''}
+  ` : '';
+
+  const featRows = opts.showFeatures ? `
+    <tr class="grp-row" data-section="features"><td colspan="${mcs.length+1}">機能</td></tr>
+    ${dataRow('カラー印刷',       mcs.map(m => ({ html: featVal(m.featColor),  mid: m.id, field: 'featColor'  })), '', 'features')}
+    ${dataRow('両面印刷（自動）', mcs.map(m => ({ html: featVal(m.featDuplex), mid: m.id, field: 'featDuplex' })), '', 'features')}
+    ${dataRow('FAX',              mcs.map(m => ({ html: featVal(m.featFax),    mid: m.id, field: 'featFax'    })), '', 'features')}
+    ${dataRow('スキャン',         mcs.map(m => ({ html: featVal(m.featScan),   mid: m.id, field: 'featScan'   })), '', 'features')}
+    ${dataRow('Wi-Fi',            mcs.map(m => ({ html: featVal(m.featWifi),   mid: m.id, field: 'featWifi'   })), '', 'features')}
+  ` : '';
+
+  /* カウンターブロック：単価＋枚数を1行に統合 */
+  const counterBlock = (opts.showCounter || opts.showToner || opts.showSimPages || opts.showCounterFee) ? `
+    <tr class="grp-row" data-section="counter"><td colspan="${mcs.length+1}">カウンター</td></tr>
+    ${(opts.showCounter || opts.showSimPages) ? `
+      ${dataRow(
+        'モノクロ' + (opts.showSimPages && monoPages > 0 ? `（想定${fmtN(monoPages)}枚）` : ''),
+        mcs.map(m => ({ html: (opts.showCounter && m.mono) ? '¥' + m.mono + '/枚' : '─', mid: m.id, field: 'mono' })),
+        'indent', 'counter'
+      )}
+      ${dataRow(
+        'カラー' + (opts.showSimPages && colorPages > 0 ? `（想定${fmtN(colorPages)}枚）` : ''),
+        mcs.map(m => ({ html: (opts.showCounter && m.color) ? '¥' + m.color + '/枚' : '─', mid: m.id, field: 'color' })),
+        'indent', 'counter'
+      )}
+      ${opts.showCounter ? dataRow('合算基本料金', mcs.map(m => ({ html: fmtY(m.basic), mid: m.id, field: 'basic' })), 'indent', 'counter') : ''}
+    ` : ''}
+    ${opts.showToner      ? dataRow('トナー', mcs.map(m => ({ html: esc(m.toner || '─'), mid: m.id, field: 'toner' })), '', 'counter') : ''}
+    ${opts.showCounterFee ? boldRow('カウンター料金', mcs.map(m => fmtY(calcCounter(m, monoPages, colorPages))), 'counter') : ''}
+  ` : '';
+
+  /* 月額費用ブロック：リース + 総合計のみ */
+  const feeSection = (opts.showLease || opts.showTotal) ? `
+    <tr class="grp-row" data-section="lease"><td colspan="${mcs.length+1}">月額費用</td></tr>
+    ${opts.showLease ? boldRow('月額リース料金', mcs.map(m => ({ html: fmtY(m.lease), mid: m.id, field: 'lease' })), 'lease') : ''}
+    ${opts.showTotal ? totalRow('総　合　計',    mcs.map(m => fmtY(calcTotal(m, monoPages, colorPages)))) : ''}
+  ` : '';
+
+  const compareTable = `
+  <div class="compare-wrap">
+    <table class="compare">
+      ${colGroup}
+      <thead>
+        <tr data-section="machine-label">
+          <th class="h-label"></th>
+          ${mcs.map(m => thMC(m)).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="grp-row" data-section="machine"><td colspan="${mcs.length+1}">機器情報</td></tr>
+        ${dataRow('メーカー',
+            mcs.map(m => {
+              const parts = [esc(m.maker||'─')];
+              return { html: parts.join('<br>'), mid: m.id, field: 'maker' };
+            }), '', 'machine')}
+        <tr class="data-row" data-section="machine">
+          <td class="td-label">機種名</td>
+          ${mcs.map(m => `<td class="td-mc" data-mid="${m.id}" data-field="model">${modelCell(m)}</td>`).join('')}
+        </tr>
+        ${opts.showInstallDate ? dataRow('導入年月', mcs.map(m => ({ html: esc(fmtDate(m.installDate)), mid: m.id, field: 'installDate' })), '', 'machine') : ''}
+        ${specsRows}
+        ${featRows}
+        ${counterBlock}
+        ${feeSection}
+      </tbody>
+    </table>
+  </div>`;
+
+  /* ── コスト比較セクション ── */
+  const allPeriods = [12, parseInt(d.leasePeriod) || 60];
+
+  const reductionHeaders = mcs.map(m => {
+    const cls   = colClass(m, proposals);
+    const label = esc(m.label || (m.role === 'current' ? '現　状' : '─'));
+    return `<th class="${cls}">${label}</th>`;
+  }).join('');
+
+  /* 費用合計 */
+  const totalPeriodRows = allPeriods.map(months => {
+    const label = periodLabel(months) + '費用合計';
+    const cells = mcs.map(m => {
+      const t = calcTotal(m, monoPages, colorPages) * months;
+      return `<span class="yen-val" style="font-weight:700">¥${Math.floor(t).toLocaleString()}</span>`;
+    });
+    return `<tr><td>${label}</td>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+  }).join('');
+
+  /* 削減額：現状と提案を同一の枚数条件（グローバル設定値）で比較 */
+  const savingsPeriodRows = (current && proposals.length > 0) ? (() => {
+    return allPeriods.map(months => {
+      const label    = periodLabel(months) + 'コスト削減額';
+      const curTotal = calcTotal(current, monoPages, colorPages);
+      const cells = mcs.map(m => {
+        if (m.role === 'current') return `<span style="color:#bbb">─</span>`;
+        const propTotal = calcTotal(m, monoPages, colorPages);
+        const save = (curTotal - propTotal) * months;
+        if (Math.abs(save) < 1) return `<span class="save-zero">─</span>`;
+        if (save > 0) return `<span class="yen-val save-good">▼ ¥${Math.floor(save).toLocaleString()}</span>`;
+        return `<span class="yen-val save-bad">▲ ¥${Math.floor(Math.abs(save)).toLocaleString()}</span>`;
+      });
+      return `<tr><td style="font-weight:700">${label}</td>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+    }).join('');
+  })() : '';
+
+  const separatorRow = (current && proposals.length > 0)
+    ? `<tr><td colspan="${mcs.length+1}" style="height:2px;background:var(--navy);padding:0"></td></tr>`
+    : '';
+
+  const reductionSection = opts.showReduction ? `
+  <div class="cost-reduction-wrap">
+    <table class="cost-reduction">
+      ${colGroup}
+      <thead>
+        <tr>
+          <th>コスト比較</th>
+          ${reductionHeaders}
+        </tr>
+      </thead>
+      <tbody>
+        ${totalPeriodRows}
+        ${separatorRow}
+        ${savingsPeriodRows}
+      </tbody>
+    </table>
+  </div>` : '';
+
+  /* ── 備考 ── */
+  const notesSection = (d.docNotes || '').trim()
+    ? `<div class="footnotes" data-section="notes"><p>${esc(d.docNotes)}</p></div>`
+    : '';
+
+  const logoHTML = `<div class="print-logo"><img src="${COMPANY_LOGO}" alt="Yamacoh Inc."></div>`;
+
+  root.innerHTML = `
+  <div class="doc-card">
+    <div class="doc-header" data-section="header">
+      <div class="doc-title-area">
+
+        <h1 class="doc-title">複合機 <span>経費比較表</span></h1>
+      </div>
+      <div class="doc-header-right">
+        ${d.clientName ? `<span style="font-size:15px;font-weight:700;color:var(--text)">${esc(d.clientName.trim().endsWith('御中') ? d.clientName.trim() : d.clientName.trim() + '御中')}</span><br>` : ''}
+        ${d.docDate ? `<span>${esc(fmtDate(d.docDate))}</span>` : ''}
+      </div>
+    </div>
+
+    <div class="doc-body">
+      ${compareTable}
+      <div class="cost-col">
+        ${reductionSection}
+        ${notesSection}
+        ${logoHTML}
+      </div>
+    </div>
+  </div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  render();
+
+  /* プレビューモード（?preview=1 でiframe内表示）- スケールは親からのpostMessageで行う */
+  if (new URLSearchParams(location.search).get('preview')) {
+    document.body.classList.add('preview-mode');
+  }
+});
+
+/* 親 iframe から受け取ったコンテナサイズでスケール計算（window.innerWidth は使わない） */
+function scalePreview(containerW, containerH) {
+  const wrap = document.querySelector('.paper-wrap');
+  if (!wrap || !containerW || !containerH) return;
+  const pad     = 8;
+  const scale   = Math.min((containerW - pad * 2) / A4_W, (containerH - pad * 2) / A4_H);
+  const offsetX = Math.max(0, (containerW - A4_W * scale) / 2);
+  wrap.style.transformOrigin = 'top left';
+  wrap.style.transform = `translateX(${offsetX}px) scale(${scale})`;
+  wrap.style.opacity   = '1';
+  /* html/body の幅を iframe の表示領域に固定し、paper-wrap の横溢れで body が伸びるのを防ぐ */
+  document.documentElement.style.width    = containerW + 'px';
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.width    = containerW + 'px';
+  document.body.style.height   = Math.ceil(A4_H * scale + pad) + 'px';
+  document.body.style.overflow = 'hidden';
+}
+
+/* 入力ページからのメッセージ受信 */
+let _currentHighlight = null; // { section } | { mid, field } | null
+
+function applyHighlight(hl) {
+  document.querySelectorAll('.hl-row, .hl-block, .hl-cell').forEach(el => {
+    el.classList.remove('hl-row', 'hl-block', 'hl-cell');
+  });
+  if (!hl) return;
+  if (hl.mid && hl.field) {
+    document.querySelectorAll(`[data-mid="${hl.mid}"][data-field="${hl.field}"]`).forEach(el => {
+      el.classList.add('hl-cell');
+    });
+  } else if (hl.section) {
+    document.querySelectorAll(`[data-section="${hl.section}"]`).forEach(el => {
+      el.classList.add(el.tagName === 'TR' ? 'hl-row' : 'hl-block');
+    });
+  }
+}
+
+window.addEventListener('message', e => {
+  if (!e.data || !e.data.type) return;
+  if (e.data.type === 'print') {
+    window.print();
+    return;
+  }
+  if (e.data.type === 'render') {
+    render(e.data.state || null);
+    applyHighlight(_currentHighlight);
+    if (new URLSearchParams(location.search).get('preview')) {
+      scalePreview(e.data.containerW, e.data.containerH);
+    }
+  }
+  if (e.data.type === 'scale') {
+    if (new URLSearchParams(location.search).get('preview')) {
+      scalePreview(e.data.containerW, e.data.containerH);
+    }
+  }
+  if (e.data.type === 'highlight') {
+    if (e.data.mid && e.data.field) {
+      _currentHighlight = { mid: e.data.mid, field: e.data.field };
+    } else {
+      _currentHighlight = e.data.section ? { section: e.data.section } : null;
+    }
+    applyHighlight(_currentHighlight);
+  }
+});
+</script>
+</body>
+</html>

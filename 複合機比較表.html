@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>複合機 現状 vs 提案 比較表</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      padding: 40px 20px;
+    }
+    .wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .doc-header {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2e6da4 100%);
+      color: white;
+      padding: 28px 36px;
+      border-radius: 10px 10px 0 0;
+      margin-bottom: 0;
+    }
+    .doc-header h1 {
+      font-size: 22px;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .doc-header p {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+    .card {
+      background: white;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 36px;
+      margin-bottom: 28px;
+    }
+
+    /* ---- 比較テーブル ---- */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .compare-table thead tr {
+      background: #1a3a5c;
+      color: white;
+    }
+    .compare-table thead th {
+      padding: 14px 18px;
+      text-align: center;
+      font-size: 15px;
+    }
+    .compare-table thead th.item-col {
+      width: 30%;
+      text-align: left;
+    }
+    .compare-table thead th.current-col {
+      width: 35%;
+      background: #2c5282;
+    }
+    .compare-table thead th.proposal-col {
+      width: 35%;
+      background: #276749;
+    }
+    .compare-table tbody tr:nth-child(even) {
+      background: #f7fafc;
+    }
+    .compare-table tbody tr:hover {
+      background: #ebf4ff;
+    }
+    .compare-table td {
+      padding: 13px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .compare-table td.item-label {
+      font-weight: bold;
+      color: #4a5568;
+      font-size: 13px;
+    }
+    .compare-table td.current-val {
+      text-align: center;
+      color: #2c5282;
+    }
+    .compare-table td.proposal-val {
+      text-align: center;
+      color: #276749;
+      font-weight: bold;
+    }
+    .compare-table td.proposal-val.saving {
+      color: #c05621;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 6px;
+      vertical-align: middle;
+      font-weight: normal;
+    }
+    .badge-same {
+      background: #e2e8f0;
+      color: #718096;
+    }
+    .badge-down {
+      background: #c6f6d5;
+      color: #276749;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #1a3a5c;
+      margin: 28px 0 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #2e6da4;
+    }
+
+    /* ---- コストメリット ---- */
+    .benefit-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 32px 36px;
+      margin-bottom: 28px;
+    }
+    .benefit-title {
+      font-size: 17px;
+      font-weight: bold;
+      color: #276749;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .benefit-title::before {
+      content: "¥";
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #276749;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .benefit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .benefit-box {
+      background: #f0fff4;
+      border: 1px solid #9ae6b4;
+      border-radius: 8px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .benefit-box .label {
+      font-size: 12px;
+      color: #4a5568;
+      margin-bottom: 8px;
+    }
+    .benefit-box .value {
+      font-size: 26px;
+      font-weight: bold;
+      color: #276749;
+      line-height: 1.1;
+    }
+    .benefit-box .sub {
+      font-size: 12px;
+      color: #718096;
+      margin-top: 4px;
+    }
+    .note-box {
+      background: #fffbeb;
+      border-left: 4px solid #f6ad55;
+      border-radius: 0 6px 6px 0;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #744210;
+      line-height: 1.7;
+    }
+    .note-box strong { color: #c05621; }
+
+    /* ---- 契約情報 ---- */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .info-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .info-box-header {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      color: white;
+    }
+    .info-box-header.current { background: #2c5282; }
+    .info-box-header.proposal { background: #276749; }
+    .info-box-body {
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 2;
+      color: #4a5568;
+    }
+    .info-box-body span {
+      float: right;
+      font-weight: bold;
+      color: #1a202c;
+    }
+    .info-box-body .row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0f4f8;
+      padding: 4px 0;
+    }
+    .info-box-body .row:last-child { border-bottom: none; }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 10px;
+    }
+    .highlight-row td {
+      background: #fff5f5 !important;
+      font-weight: bold;
+    }
+    .section-row td {
+      background: #edf2f7 !important;
+      font-size: 12px;
+      font-weight: bold;
+      color: #4a5568;
+      letter-spacing: 0.05em;
+      padding: 7px 18px;
+      border-bottom: 1px solid #cbd5e0;
+    }
+
+    /* ---- シミュレーション表 ---- */
+    .sim-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+    .sim-table thead tr {
+      background: #2d3748;
+      color: white;
+    }
+    .sim-table thead th {
+      padding: 11px 14px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .sim-table thead th.left { text-align: left; }
+    .sim-table thead th.group-count {
+      background: #4a5568;
+    }
+    .sim-table thead th.group-current {
+      background: #2c5282;
+    }
+    .sim-table thead th.group-proposal {
+      background: #276749;
+    }
+    .sim-table thead th.group-saving {
+      background: #744210;
+    }
+    .sim-table tbody tr:nth-child(even) { background: #f7fafc; }
+    .sim-table tbody tr:hover { background: #ebf8ff; }
+    .sim-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .sim-table td.pattern-label {
+      text-align: left;
+      font-weight: bold;
+      color: #4a5568;
+      font-size: 12px;
+    }
+    .sim-table td.count-cell { color: #2d3748; }
+    .sim-table td.current-cell { color: #2c5282; font-weight: bold; }
+    .sim-table td.proposal-cell { color: #276749; font-weight: bold; }
+    .sim-table td.saving-cell {
+      color: #c05621;
+      font-weight: bold;
+    }
+    .sim-table td.count-note {
+      font-size: 11px;
+      color: #718096;
+      font-weight: normal;
+    }
+    .sim-subhead {
+      background: #e2e8f0 !important;
+    }
+    .sim-subhead td {
+      font-size: 11px !important;
+      color: #718096 !important;
+      font-weight: normal !important;
+      padding: 5px 14px !important;
+      border-bottom: 1px solid #cbd5e0 !important;
+    }
+    .tag-basic {
+      display: inline-block;
+      font-size: 10px;
+      background: #fed7aa;
+      color: #c05621;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ヘッダー -->
+  <div class="doc-header">
+    <h1>複合機 現状 vs 提案 比較表</h1>
+    <p>作成日：2026年4月9日　　対象：テスト株式会社 御中</p>
+  </div>
+
+  <!-- 比較テーブル -->
+  <div class="card">
+    <div class="section-title">機器・コスト比較</div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th class="item-col">項目</th>
+          <th class="current-col">現状（Canon機）</th>
+          <th class="proposal-col">提案（京セラ機）</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="item-label">機種名</td>
+          <td class="current-val">Canon 現行機</td>
+          <td class="proposal-val">TASKalfa MZ3501ci</td>
+        </tr>
+        <tr>
+          <td class="item-label">メーカー</td>
+          <td class="current-val">キヤノン</td>
+          <td class="proposal-val">京セラドキュメントソリューションズ</td>
+        </tr>
+        <!-- リース条件セクション -->
+        <tr class="section-row">
+          <td colspan="3">リース条件</td>
+        </tr>
+        <tr>
+          <td class="item-label">月額リース料</td>
+          <td class="current-val">¥10,000</td>
+          <td class="proposal-val">¥9,800 <span class="badge badge-down">▼ ¥200</span></td>
+        </tr>
+        <tr>
+          <td class="item-label">リース回数</td>
+          <td class="current-val">60回（5年）</td>
+          <td class="proposal-val">60回（5年）</td>
+        </tr>
+        <tr>
+          <td class="item-label">契約開始</td>
+          <td class="current-val">2021年9月</td>
+          <td class="proposal-val">2026年9月（予定）</td>
+        </tr>
+        <tr>
+          <td class="item-label">契約満了</td>
+          <td class="current-val">2026年8月</td>
+          <td class="proposal-val">2031年8月（予定）</td>
+        </tr>
+        <!-- カウント料金セクション -->
+        <tr class="section-row">
+          <td colspan="3">カウント料金（※単価×枚数の合計が基本料を超えた場合、基本料は相殺）</td>
+        </tr>
+        <tr>
+          <td class="item-label">基本料（最低保証額）</td>
+          <td class="current-val">¥1,000 / 月</td>
+          <td class="proposal-val">¥1,000 / 月 <span class="badge badge-same">変更なし</span></td>
+        </tr>
+        <tr>
+          <td class="item-label">モノクロ単価</td>
+          <td class="current-val">¥0.80 / 枚</td>
+          <td class="proposal-val">¥0.80 / 枚 <span class="badge badge-same">変更なし</span></td>
+        </tr>
+        <tr>
+          <td class="item-label">カラー単価</td>
+          <td class="current-val">¥8.00 / 枚</td>
+          <td class="proposal-val">¥8.00 / 枚 <span class="badge badge-same">変更なし</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- カウント料金の仕組み説明 -->
+    <div style="margin-top:16px;background:#f0f4ff;border:1px solid #c3dafe;border-radius:8px;padding:14px 18px;font-size:13px;color:#3730a3;line-height:1.8;">
+      <strong>【カウント料金の仕組み】</strong><br>
+      月額カウント料金 ＝ <strong>単価 × 枚数</strong> の合計で算出します。<br>
+      ただし、<strong>単価 × 枚数の合計 ≥ 基本料（¥1,000）</strong> の場合、基本料は相殺され別途請求されません。<br>
+      <strong>単価 × 枚数の合計 ＜ 基本料（¥1,000）</strong> の場合は、基本料¥1,000が最低保証額として請求されます。<br>
+      <span style="color:#6b7280;font-size:12px;">例）モノクロ500枚のみ → ¥0.80×500＝¥400 ＜ ¥1,000 → カウント料金 ¥1,000 ／ モノクロ1,500枚 → ¥0.80×1,500＝¥1,200 ≥ ¥1,000 → カウント料金 ¥1,200（基本料は相殺）</span>
+    </div>
+    <p style="font-size:11px;color:#a0aec0;margin-top:8px;">※ カウント料金は現状・提案とも同一条件のため、リース料の差額¥200/月がそのままコスト削減効果となります。</p>
+  </div>
+
+  <!-- シミュレーション表 -->
+  <div class="benefit-card">
+    <div class="benefit-title" style="color:#2d3748;">
+      <span style="background:#2d3748; font-size:13px;">表</span>
+      月額コストシミュレーション
+    </div>
+    <p style="font-size:13px;color:#4a5568;margin-bottom:4px;">使用枚数パターン別に月額合計を試算しています。自社の使用状況に近いパターンでご確認ください。</p>
+    <p style="font-size:12px;color:#718096;margin-bottom:0;">月額合計 ＝ リース料 ＋ カウント料金　／　カウント料金 ＝ MAX（基本料¥1,000、単価×枚数合計）</p>
+
+    <table class="sim-table">
+      <thead>
+        <tr>
+          <th class="left" rowspan="2" style="width:16%;">パターン</th>
+          <th colspan="3" class="group-count">使用枚数 / カウント料金</th>
+          <th colspan="2" class="group-current">現状（Canon）</th>
+          <th colspan="2" class="group-proposal">提案（京セラ）</th>
+          <th class="group-saving">月間<br>削減額</th>
+        </tr>
+        <tr>
+          <th class="group-count" style="font-size:11px;">モノクロ</th>
+          <th class="group-count" style="font-size:11px;">カラー</th>
+          <th class="group-count" style="font-size:11px;">カウント料金</th>
+          <th class="group-current" style="font-size:11px;">リース料</th>
+          <th class="group-current" style="font-size:11px;">月額合計</th>
+          <th class="group-proposal" style="font-size:11px;">リース料</th>
+          <th class="group-proposal" style="font-size:11px;">月額合計</th>
+          <th class="group-saving" style="font-size:11px;">削減額</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- パターン1 -->
+        <tr>
+          <td class="pattern-label">低使用<br><span style="font-weight:normal;font-size:11px;color:#a0aec0;">モノクロ中心・少量</span></td>
+          <td class="count-cell">500枚</td>
+          <td class="count-cell">0枚</td>
+          <td class="count-cell">
+            ¥1,000
+            <span class="tag-basic">基本料適用</span><br>
+            <span class="count-note">¥0.80×500＝¥400 → 基本料以下のため¥1,000</span>
+          </td>
+          <td class="current-cell">¥10,000</td>
+          <td class="current-cell">¥11,000</td>
+          <td class="proposal-cell">¥9,800</td>
+          <td class="proposal-cell">¥10,800</td>
+          <td class="saving-cell">▼ ¥200</td>
+        </tr>
+        <!-- パターン2 -->
+        <tr>
+          <td class="pattern-label">中使用①<br><span style="font-weight:normal;font-size:11px;color:#a0aec0;">モノクロのみ・標準</span></td>
+          <td class="count-cell">1,500枚</td>
+          <td class="count-cell">0枚</td>
+          <td class="count-cell">
+            ¥1,200<br>
+            <span class="count-note">¥0.80×1,500＝¥1,200 → 基本料超過のため実額</span>
+          </td>
+          <td class="current-cell">¥10,000</td>
+          <td class="current-cell">¥11,200</td>
+          <td class="proposal-cell">¥9,800</td>
+          <td class="proposal-cell">¥11,000</td>
+          <td class="saving-cell">▼ ¥200</td>
+        </tr>
+        <!-- パターン3 -->
+        <tr>
+          <td class="pattern-label">中使用②<br><span style="font-weight:normal;font-size:11px;color:#a0aec0;">モノクロ＋カラー混在</span></td>
+          <td class="count-cell">1,500枚</td>
+          <td class="count-cell">100枚</td>
+          <td class="count-cell">
+            ¥2,000<br>
+            <span class="count-note">¥0.80×1,500＋¥8×100＝¥2,000</span>
+          </td>
+          <td class="current-cell">¥10,000</td>
+          <td class="current-cell">¥12,000</td>
+          <td class="proposal-cell">¥9,800</td>
+          <td class="proposal-cell">¥11,800</td>
+          <td class="saving-cell">▼ ¥200</td>
+        </tr>
+        <!-- パターン4 -->
+        <tr>
+          <td class="pattern-label">高使用①<br><span style="font-weight:normal;font-size:11px;color:#a0aec0;">モノクロ大量・カラー中</span></td>
+          <td class="count-cell">3,000枚</td>
+          <td class="count-cell">200枚</td>
+          <td class="count-cell">
+            ¥4,000<br>
+            <span class="count-note">¥0.80×3,000＋¥8×200＝¥4,000</span>
+          </td>
+          <td class="current-cell">¥10,000</td>
+          <td class="current-cell">¥14,000</td>
+          <td class="proposal-cell">¥9,800</td>
+          <td class="proposal-cell">¥13,800</td>
+          <td class="saving-cell">▼ ¥200</td>
+        </tr>
+        <!-- パターン5 -->
+        <tr>
+          <td class="pattern-label">高使用②<br><span style="font-weight:normal;font-size:11px;color:#a0aec0;">大量印刷・カラー多め</span></td>
+          <td class="count-cell">5,000枚</td>
+          <td class="count-cell">500枚</td>
+          <td class="count-cell">
+            ¥8,000<br>
+            <span class="count-note">¥0.80×5,000＋¥8×500＝¥8,000</span>
+          </td>
+          <td class="current-cell">¥10,000</td>
+          <td class="current-cell">¥18,000</td>
+          <td class="proposal-cell">¥9,800</td>
+          <td class="proposal-cell">¥17,800</td>
+          <td class="saving-cell">▼ ¥200</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;background:#fffbeb;border-left:4px solid #f6ad55;border-radius:0 6px 6px 0;padding:12px 16px;font-size:13px;color:#744210;line-height:1.7;">
+      <strong>シミュレーション結果のポイント：</strong>カウント料金の条件は現状・提案とも同一のため、
+      印刷枚数・カラー比率にかかわらず<strong>必ず月額¥200のコスト削減</strong>が実現します。
+    </div>
+  </div>
+
+  <!-- コストメリット -->
+  <div class="benefit-card">
+    <div class="benefit-title">コストメリット（リース料削減効果）</div>
+    <div class="benefit-grid">
+      <div class="benefit-box">
+        <div class="label">月間削減額</div>
+        <div class="value">¥200</div>
+        <div class="sub">毎月の節約</div>
+      </div>
+      <div class="benefit-box">
+        <div class="label">年間削減額</div>
+        <div class="value">¥2,400</div>
+        <div class="sub">12ヶ月換算</div>
+      </div>
+      <div class="benefit-box">
+        <div class="label">60ヶ月（5年間）削減額</div>
+        <div class="value">¥12,000</div>
+        <div class="sub">リース全期間合計</div>
+      </div>
+    </div>
+    <div class="note-box">
+      <strong>ポイント：</strong>カウント料金（モノクロ・カラー単価・基本料）は現状と変わらないため、
+      印刷枚数に関わらず<strong>月額¥200（年間¥2,400）</strong>のコスト削減が確実に見込めます。<br>
+      リース全期間（60ヶ月）での累計削減効果は <strong>¥12,000</strong> となります。<br>
+      また、現行 Canon 機のリースは <strong>2026年8月に満了</strong> のため、切り替えのタイミングとしても最適です。
+    </div>
+  </div>
+
+  <!-- 契約詳細 -->
+  <div class="benefit-card" style="padding-bottom:24px;">
+    <div class="benefit-title" style="color:#2c5282;">
+      <span style="background:#2c5282;">i</span>
+      契約詳細
+    </div>
+    <div class="info-grid">
+      <div class="info-box">
+        <div class="info-box-header current">現状 ／ Canon機</div>
+        <div class="info-box-body">
+          <div class="row"><span class="lbl">リース月額</span><span>¥10,000</span></div>
+          <div class="row"><span class="lbl">リース回数</span><span>60回</span></div>
+          <div class="row"><span class="lbl">契約開始</span><span>2021年9月</span></div>
+          <div class="row"><span class="lbl">契約満了</span><span>2026年8月</span></div>
+          <div class="row"><span class="lbl">カウント基本料</span><span>¥1,000/月</span></div>
+          <div class="row"><span class="lbl">モノクロ単価</span><span>¥0.80/枚</span></div>
+          <div class="row"><span class="lbl">カラー単価</span><span>¥8.00/枚</span></div>
+        </div>
+      </div>
+      <div class="info-box">
+        <div class="info-box-header proposal">提案 ／ 京セラ TASKalfa MZ3501ci</div>
+        <div class="info-box-body">
+          <div class="row"><span class="lbl">リース月額</span><span>¥9,800</span></div>
+          <div class="row"><span class="lbl">リース回数</span><span>60回</span></div>
+          <div class="row"><span class="lbl">契約開始</span><span>2026年9月（予定）</span></div>
+          <div class="row"><span class="lbl">契約満了</span><span>2031年8月（予定）</span></div>
+          <div class="row"><span class="lbl">カウント基本料</span><span>¥1,000/月</span></div>
+          <div class="row"><span class="lbl">モノクロ単価</span><span>¥0.80/枚</span></div>
+          <div class="row"><span class="lbl">カラー単価</span><span>¥8.00/枚</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">本資料は提案内容をもとに作成したものであり、実際の契約内容とは異なる場合があります。詳細はご担当営業にお問い合わせください。</p>
+</div>
+</body>
+</html>

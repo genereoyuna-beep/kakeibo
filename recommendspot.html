@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sydney スポットガイド</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+JP:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root {
+  --cream: #FAF7F2;
+  --terracotta: #C4622D;
+  --sandstone: #D4A87A;
+  --ocean: #2C4A6B;
+  --ocean-light: #4A7A9B;
+  --gold: #C9A84C;
+  --sage: #7A9B8A;
+  --text-dark: #1E1812;
+  --text-mid: #5A4A3A;
+  --text-light: #8A7A6A;
+  --border: #E2D8C8;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Serif JP', serif;
+  background: var(--cream);
+  color: var(--text-dark);
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ── Header ── */
+.site-header {
+  background: var(--ocean);
+  padding: 26px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 40px;
+  color: #fff;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.site-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  color: rgba(212,168,122,0.75);
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+.print-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fff;
+  padding: 9px 20px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.18s;
+}
+.print-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Main content ── */
+.content {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 32px 56px;
+}
+
+/* ── Category section ── */
+.category { margin-bottom: 52px; }
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.category-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 44px; height: 1.5px;
+  background: var(--cat-color, var(--terracotta));
+}
+.category-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cat-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12px;
+  color: var(--text-light);
+  font-style: italic;
+  font-weight: 400;
+  margin-left: 2px;
+}
+.add-spot-btn {
+  background: none;
+  border: 1px dashed var(--cat-color, var(--terracotta));
+  color: var(--cat-color, var(--terracotta));
+  padding: 6px 15px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.add-spot-btn:hover { background: var(--cat-color, var(--terracotta)); color: #fff; }
+
+/* ── Cards grid ── */
+.spots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.empty-msg {
+  grid-column: 1/-1;
+  color: var(--text-light);
+  font-size: 13px;
+  font-style: italic;
+  padding: 6px 0;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+/* ── Spot card ── */
+.spot-card {
+  background: #FFFDF8;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.spot-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(30,24,18,0.08); }
+.card-bar { height: 3px; background: var(--cat-color, var(--terracotta)); }
+.card-body { padding: 17px 17px 15px; }
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+.spot-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--text-dark);
+  flex: 1;
+  padding-right: 6px;
+}
+.del-btn {
+  background: none;
+  border: none;
+  color: #CCC;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 2px;
+  line-height: 1;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.del-btn:hover { color: #D44; background: #FEE; }
+.spot-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12px;
+  color: var(--cat-color, var(--terracotta));
+  text-decoration: none;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  margin-bottom: 11px;
+  transition: opacity 0.15s;
+}
+.spot-map-link:hover { opacity: 0.65; text-decoration: underline; }
+.spot-map-link::before { content: '◎'; font-style: normal; font-size: 9px; }
+.spot-desc {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.85;
+  margin-bottom: 11px;
+  font-weight: 300;
+}
+.spot-tip {
+  background: rgba(0,0,0,0.028);
+  border-left: 2px solid var(--cat-color, var(--terracotta));
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--text-mid);
+  font-style: italic;
+  line-height: 1.7;
+  border-radius: 0 2px 2px 0;
+}
+.spot-tip::before { content: '✦ '; font-size: 8px; font-style: normal; }
+
+/* ── Map section ── */
+.map-section {
+  max-width: 980px;
+  margin: 0 auto 72px;
+  padding: 0 32px;
+}
+.map-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.map-section-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 44px; height: 1.5px;
+  background: var(--ocean);
+}
+.map-section-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+}
+.map-section-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12px;
+  color: var(--text-light);
+  font-style: italic;
+}
+#map {
+  width: 100%;
+  height: 460px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.map-legend {
+  display: flex;
+  gap: 22px;
+  margin-top: 11px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12.5px;
+  color: var(--text-mid);
+  font-style: italic;
+}
+.legend-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+}
+
+/* ── Modal ── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(30,24,18,0.48);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: #FFFDF8;
+  border-radius: 3px;
+  padding: 34px 30px;
+  width: 100%;
+  max-width: 420px;
+  margin: 16px;
+  box-shadow: 0 20px 56px rgba(30,24,18,0.22);
+}
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--text-dark);
+  margin-bottom: 22px;
+}
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin-bottom: 5px;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus { border-color: var(--ocean-light); }
+.field textarea { resize: vertical; min-height: 68px; line-height: 1.65; }
+.modal-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 22px;
+}
+.btn-add {
+  flex: 1;
+  background: var(--ocean);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.18s;
+}
+.btn-add:hover { background: var(--ocean-light); }
+.btn-add:disabled { background: #AAA; cursor: wait; }
+.btn-cancel {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  padding: 10px 18px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.18s;
+}
+.btn-cancel:hover { background: var(--border); }
+
+/* ── Print ── */
+@media print {
+  @page { size: A4; margin: 15mm 14mm 18mm; }
+  body { background: #fff; }
+  .print-btn, .add-spot-btn, .del-btn, .overlay { display: none !important; }
+  .site-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .spot-tip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .spot-card { border: 1px solid #DDD; page-break-inside: avoid; break-inside: avoid; box-shadow: none !important; transform: none !important; }
+  .category { page-break-inside: avoid; margin-bottom: 28px; }
+  .category-header { page-break-after: avoid; }
+  .map-section { page-break-before: always; margin-bottom: 0; }
+  #map { height: 380px; border: 1px solid #DDD; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .leaflet-tile { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .map-legend { margin-top: 8px; }
+  .legend-dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div>
+    <h1 class="site-title">SYDNEY</h1>
+    <p class="site-sub">Spot Guide</p>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨 印刷</button>
+</header>
+
+<!-- Spot sections (JS rendered) -->
+<main class="content" id="main-content"></main>
+
+<!-- Map -->
+<section class="map-section">
+  <div class="map-section-header">
+    <h2 class="map-section-title">🗺 地図で見る</h2>
+    <span class="map-section-en">Map View</span>
+  </div>
+  <div id="map"></div>
+  <div class="map-legend" id="map-legend"></div>
+</section>
+
+<!-- Add modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 class="modal-title">スポットを追加</h3>
+    <form id="add-form">
+      <div class="field">
+        <label>カテゴリ</label>
+        <select id="f-cat">
+          <option value="food">🍽️ グルメ・レストラン</option>
+          <option value="sight">🏛️ 観光・景色</option>
+          <option value="shop">🛍️ ショッピング</option>
+          <option value="hotel">🏨 ホテル</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>スポット名 <span style="color:#E44">*</span></label>
+        <input id="f-name" type="text" placeholder="例: Manly Beach" required>
+      </div>
+      <div class="field">
+        <label>住所・エリア</label>
+        <input id="f-addr" type="text" placeholder="例: マンリー・ビーチ">
+      </div>
+      <div class="field">
+        <label>説明</label>
+        <textarea id="f-desc" placeholder="このスポットについての説明"></textarea>
+      </div>
+      <div class="field">
+        <label>ヒント・おすすめポイント</label>
+        <textarea id="f-tip" placeholder="訪問時のコツや見どころ"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="cancel-btn">キャンセル</button>
+        <button type="submit" class="btn-add" id="submit-btn">追加する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Category definitions ───────────────────────────────────
+const CATS = {
+  food:  { label: 'グルメ・レストラン', emoji: '🍽️', en: 'Food & Dining',  color: '#C4622D' },
+  sight: { label: '観光・景色',         emoji: '🏛️', en: 'Sightseeing',    color: '#2C4A6B' },
+  shop:  { label: 'ショッピング',        emoji: '🛍️', en: 'Shopping',       color: '#C9A84C' },
+  hotel: { label: 'ホテル',             emoji: '🏨', en: 'Hotels',         color: '#7A9B8A' },
+}
+
+// ── Default spot data ──────────────────────────────────────
+const DEFAULTS = [
+  { id:1,  cat:'food',  name:'Quay Restaurant',         addr:'上海・ウルル通 5番地',    desc:'シドニーハーバーを望む最高級レストラン。オーストラリアの食材を使った創造的なモダン料理は国際的にも高評価。',       tip:'夜景が美しい夕食時の予約がおすすめ。事前予約は必須です。',                     lat:-33.8599, lng:151.2098 },
+  { id:2,  cat:'food',  name:"Tetsuya's",               addr:'ケント通り529番地',        desc:'日本料理とフランス料理が融合した伝説的なレストラン。シェフ和久田哲也氏が作り上げる繊細なコース料理。',              tip:'世界的に有名なコースは要予約。特別な記念日に最適です。',                        lat:-33.8731, lng:151.2022 },
+  { id:3,  cat:'food',  name:'The Rocks Markets',       addr:'ジョージ通り沿い',         desc:'週末に開催されるマーケットで地元のフードや手工芸品を楽しめる。歴史的な石畳の街並みの中でのんびり食べ歩き。',     tip:'土曜・日曜の午前中がベスト。新鮮なストリートフードが揃います。',                 lat:-33.8599, lng:151.2082 },
+  { id:4,  cat:'sight', name:'Sydney Opera House',      addr:'ベネロング・ポイント',      desc:'ユネスコ世界遺産にも登録されたシドニーの象徴。独特のシェル構造は建築の奇跡とも呼ばれる。内部ガイドツアーも必見。', tip:'バックステージツアーで普段見られない舞台裏を見学できます。',                     lat:-33.8568, lng:151.2153 },
+  { id:5,  cat:'sight', name:'Sydney Harbour Bridge',   addr:'ハーバーブリッジ',         desc:'橋の頂上まで登れるブリッジクライムが人気。シドニー湾を一望する絶景パノラマビューは感動的。',                  tip:'日の出・日没時のクライムツアーは特に美しい。天候確認をお忘れなく。',              lat:-33.8523, lng:151.2108 },
+  { id:6,  cat:'sight', name:'Bondi Beach',             addr:'ボンダイビーチ',           desc:'シドニーを代表するビーチ。白い砂浜と青い海が広がり、サーフィン文化の発祥地でもある。ビーチ沿いのカフェも充実。',  tip:'Bondi to Coogee の海岸ウォークは絶景コース。約6kmです。',                    lat:-33.8908, lng:151.2743 },
+  { id:7,  cat:'shop',  name:'Queen Victoria Building', addr:'ジョージ通り455番地',      desc:'1898年竣工のゴシック・ロマネスク様式の歴史的建造物をそのままショッピングモールに転換。建築美も楽しめる。',      tip:'建物内の装飾や時計は必見。写真撮影スポットとしても人気です。',                   lat:-33.8732, lng:151.2069 },
+  { id:8,  cat:'shop',  name:'Pitt Street Mall',        addr:'ピット通り',               desc:'シドニー最大のショッピングエリア。国内外のブランドショップが集結し、Westfield Sydney など大型モールも隣接。',  tip:'セール時期（6月末・12月末）は特にお得。平日の午前中が混雑を避けやすいです。',   lat:-33.8712, lng:151.2076 },
+  { id:9,  cat:'shop',  name:'Paddington Markets',      addr:'牛津通り395番地',          desc:'地元のデザイナーやアーティストによるハンドメイド品が集まる週末マーケット。ユニークな一点物のお土産探しに最適。',  tip:'毎週土曜開催。近隣のパディントン通りのブティックもあわせて巡ると楽しい。',      lat:-33.8836, lng:151.2274 },
+  { id:10, cat:'hotel', name:'Park Hyatt Sydney',       addr:'カンバーランド通り7番地',   desc:'シドニーハーバーの絶景を誇る最高級ホテル。オペラハウスと橋を間近に望む客室は唯一無二の体験を提供。',          tip:'ハーバービュールームは早めの予約がマスト。プールからの眺望も格別です。',         lat:-33.8592, lng:151.2104 },
+  { id:11, cat:'hotel', name:'The Langham Sydney',      addr:'ケント通り89-113番地',      desc:'格調高いラグジュアリーホテル。優雅なインテリアと一流のサービスで、シドニー中心部に位置する快適な拠点。',         tip:'アフタヌーンティーが人気。週末はすぐ予約が埋まるのでご注意を。',                  lat:-33.8702, lng:151.2040 },
+  { id:12, cat:'hotel', name:'QT Sydney',               addr:'マーケット通り49番地',      desc:'アート感あふれるブティックホテル。歴史的な建物をモダンにリノベーションし、個性的なデザインが話題を集める。',     tip:'館内レストラン Gowings Bar & Grill も便利です。',                          lat:-33.8723, lng:151.2082 },
+]
+
+// ── State & persistence ────────────────────────────────────
+function loadSpots() {
+  try {
+    const saved = localStorage.getItem('sydney-guide-spots')
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULTS))
+  } catch { return JSON.parse(JSON.stringify(DEFAULTS)) }
+}
+function saveSpots() {
+  localStorage.setItem('sydney-guide-spots', JSON.stringify(spots))
+}
+
+let spots = loadSpots()
+let nextId = spots.length ? Math.max(...spots.map(s => s.id)) + 1 : 13
+
+// ── Helpers ────────────────────────────────────────────────
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+function mapsUrl(name, addr) {
+  const q = encodeURIComponent([name, addr, 'Sydney'].filter(Boolean).join(' '))
+  return `https://www.google.com/maps/search/?api=1&query=${q}`
+}
+
+// ── Render ─────────────────────────────────────────────────
+function renderCard(spot) {
+  const color = CATS[spot.cat].color
+  const addrText = spot.addr || '地図を開く'
+  return `
+    <div class="spot-card" data-id="${spot.id}" style="--cat-color:${color}">
+      <div class="card-bar"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <h3 class="spot-name">${esc(spot.name)}</h3>
+          <button class="del-btn" onclick="deleteSpot(${spot.id})" title="削除">×</button>
+        </div>
+        <a class="spot-map-link" href="${mapsUrl(spot.name, spot.addr)}" target="_blank" rel="noopener">${esc(addrText)}</a>
+        ${spot.desc ? `<p class="spot-desc">${esc(spot.desc)}</p>` : ''}
+        ${spot.tip  ? `<p class="spot-tip">${esc(spot.tip)}</p>`  : ''}
+      </div>
+    </div>`
+}
+
+function renderAll() {
+  const main = document.getElementById('main-content')
+  main.innerHTML = Object.entries(CATS).map(([key, cat]) => {
+    const catSpots = spots.filter(s => s.cat === key)
+    const cards = catSpots.length
+      ? catSpots.map(renderCard).join('')
+      : '<p class="empty-msg">スポットがありません</p>'
+    return `
+      <section class="category" style="--cat-color:${cat.color}">
+        <div class="category-header">
+          <h2 class="category-title">
+            ${cat.emoji} ${esc(cat.label)}<span class="cat-en">${esc(cat.en)}</span>
+          </h2>
+          <button class="add-spot-btn" onclick="openModal('${key}')">＋ スポットを追加</button>
+        </div>
+        <div class="spots-grid">${cards}</div>
+      </section>`
+  }).join('')
+  updateMapMarkers()
+}
+
+// ── Delete ─────────────────────────────────────────────────
+function deleteSpot(id) {
+  if (!confirm('このスポットを削除しますか？')) return
+  spots = spots.filter(s => s.id !== id)
+  saveSpots()
+  renderAll()
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function openModal(cat) {
+  document.getElementById('f-cat').value = cat
+  document.getElementById('f-name').value = ''
+  document.getElementById('f-addr').value = ''
+  document.getElementById('f-desc').value = ''
+  document.getElementById('f-tip').value  = ''
+  document.getElementById('overlay').classList.add('open')
+  setTimeout(() => document.getElementById('f-name').focus(), 60)
+}
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open')
+}
+document.getElementById('cancel-btn').addEventListener('click', closeModal)
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal()
+})
+
+// ── Add form submit (with geocoding) ───────────────────────
+document.getElementById('add-form').addEventListener('submit', async e => {
+  e.preventDefault()
+  const name = document.getElementById('f-name').value.trim()
+  if (!name) return
+
+  const btn = document.getElementById('submit-btn')
+  btn.textContent = '検索中...'
+  btn.disabled = true
+
+  const addr = document.getElementById('f-addr').value.trim()
+  let lat = null, lng = null
+  try {
+    const q = encodeURIComponent(`${name} ${addr} Sydney Australia`)
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`)
+    const data = await res.json()
+    if (data.length) { lat = parseFloat(data[0].lat); lng = parseFloat(data[0].lon) }
+  } catch { /* geocoding failed — add without map pin */ }
+
+  spots.push({
+    id: nextId++, cat: document.getElementById('f-cat').value,
+    name, addr,
+    desc: document.getElementById('f-desc').value.trim(),
+    tip:  document.getElementById('f-tip').value.trim(),
+    lat, lng
+  })
+  saveSpots()
+  closeModal()
+  btn.textContent = '追加する'
+  btn.disabled = false
+  renderAll()
+})
+
+// ── Map ────────────────────────────────────────────────────
+let map, markersLayer
+
+function initMap() {
+  map = L.map('map').setView([-33.868, 151.209], 13)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map)
+  markersLayer = L.layerGroup().addTo(map)
+
+  document.getElementById('map-legend').innerHTML = Object.values(CATS).map(c =>
+    `<div class="legend-item">
+      <div class="legend-dot" style="background:${c.color}"></div>${c.label}
+    </div>`
+  ).join('')
+
+  updateMapMarkers()
+}
+
+function updateMapMarkers() {
+  if (!markersLayer) return
+  markersLayer.clearLayers()
+  spots.forEach(spot => {
+    if (spot.lat == null || spot.lng == null) return
+    const color = CATS[spot.cat].color
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:13px;height:13px;background:${color};border:2.5px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,
+      iconSize: [13, 13],
+      iconAnchor: [6.5, 6.5],
+    })
+    const popup = `
+      <div style="font-family:'Noto Serif JP',serif;min-width:140px">
+        <div style="font-weight:500;font-size:13px;margin-bottom:3px">${esc(spot.name)}</div>
+        <div style="font-size:11px;color:#888;margin-bottom:6px">${CATS[spot.cat].emoji} ${CATS[spot.cat].label}</div>
+        <a href="${mapsUrl(spot.name, spot.addr)}" target="_blank" rel="noopener"
+           style="font-size:11px;color:#2C4A6B;text-decoration:none">
+          Google Maps で開く →
+        </a>
+      </div>`
+    L.marker([spot.lat, spot.lng], { icon }).bindPopup(popup).addTo(markersLayer)
+  })
+}
+
+// ── Boot ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll()
+  initMap()
+})
+
+// Leaflet needs invalidateSize() when print layout changes the container size
+window.addEventListener('beforeprint', () => { if (map) map.invalidateSize() })
+window.addEventListener('afterprint',  () => { if (map) map.invalidateSize() })
+</script>
+</body>
+</html>

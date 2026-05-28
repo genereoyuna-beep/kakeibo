@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出荷明細管理 — 株式会社　菜果</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ed; --surface: #fff; --border: #ddd8d0; --border-light: #eae6df;
+  --text: #1e1a16; --muted: #8a8278; --accent: #3d6b4c; --accent-light: #eaf1ec;
+  --accent-hover: #325b3f; --danger: #b83232; --warn: #c47a00; --warn-light: #fff8e8;
+  --radius: 6px; --shadow-sm: 0 1px 4px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); font-size:13px; line-height:1.5; }
+
+/* ── HEADER ── */
+.app-header { background:var(--text); color:#fff; padding:0 24px; height:48px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
+.header-brand { display:flex; align-items:baseline; gap:10px; }
+.header-brand h1 { font-family:'Noto Serif JP',serif; font-size:14px; font-weight:400; letter-spacing:0.1em; }
+.header-brand span { font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:0.06em; }
+.header-nav { display:flex; gap:4px; }
+.nav-btn { padding:6px 14px; border-radius:4px; font-size:12px; font-weight:500; cursor:pointer; border:none; font-family:'Noto Sans JP',sans-serif; background:transparent; color:rgba(255,255,255,0.65); transition:all 0.15s; letter-spacing:0.04em; }
+.nav-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.nav-btn.active { background:rgba(255,255,255,0.18); color:#fff; }
+
+/* ── TABS ── */
+.tabs-bar { background:var(--surface); border-bottom:2px solid var(--border); display:flex; align-items:flex-end; padding:0 24px; gap:2px; overflow-x:auto; position:sticky; top:48px; z-index:150; }
+.tab { padding:10px 18px 9px; font-size:12px; font-weight:500; border:1px solid transparent; border-bottom:none; border-radius:5px 5px 0 0; cursor:pointer; color:var(--muted); background:none; white-space:nowrap; transition:all 0.15s; display:flex; align-items:center; gap:8px; font-family:'Noto Sans JP',sans-serif; position:relative; bottom:-2px; }
+.tab:hover { color:var(--text); background:var(--bg); }
+.tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.tab .tab-close { font-size:14px; color:rgba(255,255,255,0.6); cursor:pointer; display:none; padding:0 2px; }
+.tab.active .tab-close { display:inline; }
+.tab.active .tab-close:hover { color:#fff; }
+.tab-add { padding:8px 14px; font-size:18px; color:var(--muted); cursor:pointer; background:none; border:none; font-family:inherit; position:relative; bottom:-2px; transition:color 0.15s; }
+.tab-add:hover { color:var(--accent); }
+
+/* ── PAGE LAYOUT ── */
+.page { max-width:1400px; margin:0 auto; padding:24px; display:flex; flex-direction:column; gap:20px; }
+
+/* ── CARDS ── */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+.card-header { padding:12px 18px; border-bottom:1px solid var(--border-light); display:flex; align-items:center; justify-content:space-between; background:#faf9f7; }
+.card-header h2 { font-size:12px; font-weight:600; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; }
+.card-body { padding:18px; }
+
+/* ── SETTINGS ── */
+.settings-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.settings-card-header { padding:12px 16px; background:#faf9f7; border-bottom:1px solid var(--border-light); }
+.settings-card-header h3 { font-size:12px; font-weight:700; color:var(--text); }
+.settings-card-header p { font-size:10px; color:var(--muted); margin-top:2px; }
+.settings-card-body { padding:14px 16px; }
+.tag-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; min-height:32px; }
+.tag { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; background:var(--accent-light); border:1px solid #b8d4c0; border-radius:20px; font-size:11px; color:var(--accent); font-weight:500; }
+.tag-del { background:none; border:none; cursor:pointer; color:#8ab89a; font-size:13px; line-height:1; padding:0; transition:color 0.15s; }
+.tag-del:hover { color:var(--danger); }
+.tag-add-row { display:flex; gap:6px; }
+.tag-input { flex:1; padding:6px 9px; border:1px solid var(--border); border-radius:4px; font-family:'Noto Sans JP',sans-serif; font-size:12px; outline:none; background:var(--bg); transition:border-color 0.15s; }
+.tag-input:focus { border-color:var(--accent); background:#fff; }
+.empty-tags { font-size:11px; color:var(--muted); font-style:italic; }
+
+/* ── FORM FIELDS ── */
+.field-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+.field-grid-8 { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; }
+.field-group label { display:block; font-size:10px; font-weight:600; color:var(--muted); letter-spacing:0.06em; margin-bottom:4px; text-transform:uppercase; }
+.field-group select, .field-group input[type="text"], .field-group input[type="date"] { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:4px; font-family:'Noto Sans JP',sans-serif; font-size:12px; color:var(--text); background:var(--bg); outline:none; transition:border-color 0.15s; }
+.field-group select:focus, .field-group input:focus { border-color:var(--accent); background:#fff; }
+
+/* ── DATA TABLES ── */
+.data-table-wrap { overflow-x:auto; }
+.data-table { width:100%; border-collapse:collapse; font-size:12px; }
+.data-table th { background:#f0ede8; font-size:10px; font-weight:600; letter-spacing:0.06em; color:var(--muted); text-transform:uppercase; padding:8px 10px; border-bottom:2px solid var(--border); white-space:nowrap; text-align:center; }
+.data-table th.left { text-align:left; }
+.data-table td { padding:7px 8px; border-bottom:1px solid var(--border-light); vertical-align:middle; text-align:center; }
+.data-table td.left { text-align:left; }
+.data-table td input[type="number"] { width:58px; padding:4px 5px; border:1px solid var(--border); border-radius:3px; font-family:'Noto Sans JP',sans-serif; font-size:12px; background:var(--bg); outline:none; text-align:center; transition:border-color 0.15s; }
+.data-table td input[type="date"] { width:130px; padding:4px 6px; border:1px solid var(--border); border-radius:3px; font-family:'Noto Sans JP',sans-serif; font-size:12px; background:var(--bg); outline:none; transition:border-color 0.15s; }
+.data-table td select { padding:4px 6px; border:1px solid var(--border); border-radius:3px; font-family:'Noto Sans JP',sans-serif; font-size:12px; background:var(--bg); outline:none; max-width:130px; transition:border-color 0.15s; }
+.data-table td input:focus, .data-table td select:focus { border-color:var(--accent); background:#fff; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:#faf9f7; }
+.total-cell { font-weight:600; background:#f0ede8 !important; }
+.balance-cell { font-weight:600; }
+.balance-ok { color:var(--accent); }
+.balance-warn { color:var(--warn); }
+.balance-over { color:var(--danger); }
+
+/* ── BUTTONS ── */
+.btn { padding:7px 16px; border-radius:4px; font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:500; cursor:pointer; border:none; letter-spacing:0.04em; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-sm { padding:4px 10px; font-size:11px; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-danger { background:none; border:1px solid transparent; color:var(--muted); }
+.btn-danger:hover { color:var(--danger); }
+.btn-invoice { background:var(--text); color:#fff; }
+.btn-invoice:hover { background:#333; }
+.btn-ghost { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.2); }
+.btn-ghost:hover { background:rgba(255,255,255,0.2); color:#fff; }
+.add-row-btn { display:flex; align-items:center; gap:6px; width:100%; padding:8px; margin-top:6px; background:none; border:1.5px dashed var(--border); border-radius:4px; color:var(--muted); font-size:11px; font-family:'Noto Sans JP',sans-serif; cursor:pointer; justify-content:center; transition:all 0.15s; }
+.add-row-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+
+/* ── COLLAPSE ── */
+.collapse-toggle { background:none; border:none; font-family:inherit; font-size:12px; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:6px; padding:0; }
+.collapse-toggle:hover { color:var(--accent); }
+
+/* ── MODAL ── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:var(--bg); border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,0.3); width:860px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+.modal-header { padding:16px 20px; background:var(--text); color:#fff; display:flex; align-items:center; justify-content:space-between; }
+.modal-header h3 { font-size:14px; font-weight:500; letter-spacing:0.06em; }
+.modal-body { overflow-y:auto; padding:24px; display:flex; justify-content:center; }
+
+/* ── INVOICE ── */
+.invoice-a4 { background:#fff; width:760px; padding:24px 32px; box-shadow:0 4px 20px rgba(0,0,0,0.15); font-family:'Noto Sans JP',sans-serif; font-size:10.5px; color:#000; }
+.inv-half { padding-bottom:8px; }
+.inv-sep { border:none; border-top:1.5px dashed #888; margin:8px 0; }
+
+/* タイトル行 */
+.inv-hrow { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.inv-title { font-size:15px; font-weight:700; color:#000; }
+.inv-date { font-size:10.5px; color:#000; }
+
+/* 挨拶・行先・会社情報（3カラム） */
+.inv-info { display:flex; align-items:stretch; margin-bottom:8px; gap:0; }
+.inv-greetings { flex:2; font-size:10.5px; color:#000; line-height:2; }
+.inv-recipient-col { flex:1.2; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:2px; }
+.inv-recipient-name { font-size:12px; font-weight:700; color:#000; }
+.inv-sama { font-size:11px; color:#000; }
+.inv-sender { flex:1.5; text-align:right; font-size:10.5px; color:#000; line-height:1.9; }
+.inv-sender-name { font-size:12px; font-weight:700; }
+
+/* テーブル */
+.inv-tbl { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:6px; }
+.inv-tbl th { background:#fff; color:#000; padding:3px 5px; text-align:center; font-weight:700; border:1px solid #000; white-space:nowrap; }
+.inv-tbl td { padding:3px 5px; border:1px solid #000; text-align:center; vertical-align:middle; color:#000; height:18px; }
+.inv-tbl td.tl { text-align:left; }
+.inv-tbl td.tot { font-weight:700; }
+
+/* フッター */
+.inv-footer { display:flex; justify-content:space-between; align-items:flex-end; }
+.inv-closing { font-size:10.5px; color:#000; }
+.inv-delivery-box { border:1px solid #000; padding:3px 16px 3px 8px; font-size:10.5px; min-width:120px; }
+.inv-delivery-label { margin-right:6px; }
+.inv-delivery-val { }
+
+/* ── MISC ── */
+.empty-state { text-align:center; padding:28px; color:var(--muted); font-size:12px; }
+.hidden { display:none !important; }
+.section-label { font-size:10px; font-weight:600; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+
+/* ── PRINT ── */
+@media print {
+  @page { size:A4; margin:10mm 12mm; }
+  body * { visibility:hidden; }
+  .invoice-print-area, .invoice-print-area * { visibility:visible; }
+  .invoice-print-area { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#fff; }
+  .invoice-a4 { box-shadow:none; width:100%; padding:0; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-brand">
+    <h1>出荷明細管理</h1>
+    <span>株式会社　菜果</span>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" id="nav-main" onclick="switchView('main')">📋 管理表</button>
+    <button class="nav-btn" id="nav-settings" onclick="switchView('settings')">⚙ マスタ設定</button>
+  </nav>
+</header>
+
+<div class="tabs-bar" id="tabs-bar"></div>
+
+<div id="view-main"><div class="page" id="main-content"></div></div>
+<div id="view-settings" class="hidden"><div class="page" id="settings-content"></div></div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>送り状プレビュー</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="printInvoice()">🖨 印刷</button>
+        <button class="btn btn-ghost btn-sm" onclick="savePDF()">📄 PDF保存</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ 閉じる</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="invoice-print-area">
+        <div class="invoice-a4" id="invoice-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const STORAGE_KEY = 'saika_v4';
+
+const MASTER_DEFS = [
+  { key:'destinations', label:'行先',    hint:'出荷行のドロップダウンに表示' },
+  { key:'shippers',     label:'荷主',    hint:'品目情報の選択肢に表示' },
+  { key:'items',        label:'品目',    hint:'品目情報の選択肢に表示' },
+  { key:'origins',      label:'産地',    hint:'品目情報の選択肢に表示' },
+  { key:'brands',       label:'ブランド', hint:'品目情報の選択肢に表示' },
+  { key:'specOptions',  label:'規格',    hint:'規格ラベルの選択肢に表示' },
+  { key:'deliveries',   label:'配送便',  hint:'出荷行のドロップダウンに表示' },
+];
+
+function emptyMaster() {
+  const m = {};
+  MASTER_DEFS.forEach(d => m[d.key] = []);
+  // シートごとの選択値
+  m.shipper = ''; m.item = ''; m.origin = ''; m.brand = '';
+  m.specs = Array(8).fill('');
+  return m;
+}
+
+function defaultSheet(name) {
+  return {
+    id: Date.now() + Math.random(),
+    name: name || '新規シート',
+    master: emptyMaster(),
+    incoming: [],
+    outgoing: [],
+  };
+}
+
+let state = { sheets:[], activeId:null, view:'main' };
+
+const INITIAL_SHEETS = [
+  {"name":"全般","master":{"destinations":["双利","阪栄","米子青果","さとう福知山センター","さとう新神戸センター","サニーマート(LFC)","フジ・アグリフーズ","高松青果","ローヤル","山福青果","トムデリカ","アグロフレッシュ","松山青果","有限会社 PKC","明光商事","鳥取中央青果","近畿通商"],"shippers":["ワタリ","明光商事","アグロフレッシュ"],"items":["ニンニクの芽","ニンニク","みかん","ブルーベリー","白ネギ","南水","トレビス","さつ姫","レタス","フルーツ人参","青ネギ","ごぼう","アスパラ","中野の煌めき","オクラ","サンフジ","くわい","シャインマスカット","不知火","せとか","デコポン","レモン","ぶどう"],"origins":["中国","熊本","メキシコ","長野","群馬","滋賀","北海道","兵庫","青森","愛媛","フィリピン","茨城","静岡","和歌山","沖縄","広島","オースト"],"brands":[],"specOptions":["黄\n70g\n50束","赤\n70g\n50長","緑\n70g\n50短","真空\n75g\n20","750g\n12","80g\n6","2L \n5kg","5L\n1kg\n10阪栄","4L\n1kg\n10阪栄","1.5kg\n8","4kg \n12玉","4kg \nバラ","10kg \nバラ","10kg \nLM","19玉","3P25","M 5kg","250g\n40","80g6","3L\n1kg\n10","特秀18玉","特秀20玉","60g\n10入\nOPP","125g12","3P×30\n(阪栄)","1.3kg\n10","6房","10kg","4L \n5kg","3L \n10kg","2L \n10kg","2P×10","2P×8 \n4L","2P×8 \n5L","2P×9","4kg","赤 \n8kg","緑 \n8kg","ﾊﾞﾗ \n20kg"],"deliveries":["シンエイ","阪栄","光浪運送","全日本ライン","大東陸運","四国運輪","三共","名変","自家取り","幸新陸送","田中運輸","錦運送"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"ｿﾉﾘｸ","master":{"destinations":["北九州青果","長崎でじま青果","鹿児島青果","福岡中央市場 (株)梅崎","F・K・JAPAN","福岡大同","大分大同"],"shippers":["ワタリ","ユニオン"],"items":["ニンニクの芽","ニンニク","シャインマスカット","赤玉ねぎ"],"origins":["中国","長野","熊本","北海道","NZ"],"brands":[],"specOptions":["黄\n70g\n50束","赤\n70g\n50長","緑\n70g\n50短","真空\n75g\n20","5kg","350g\n10","4Ｐ","5Ｐ"],"deliveries":["ソノリク"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"大東","master":{"destinations":["双利","阪栄","米子青果","さとう福知山センター","さとう新神戸センター","サニーマート(LFC)","フジ・アグリフーズ","広印","フジ兵庫PC","高松青果","ローヤル"],"shippers":["ワタリ"],"items":["ニンニクの芽","ニンニク","みかん","ブルーベリー","白ネギ","南水","トレビス","シナノホッペ","さつ姫","スジナイン","甘平","さつ姫（選別品）"],"origins":["中国","熊本","メキシコ","長野","北海道","鹿児島","愛媛"],"brands":[],"specOptions":["3L\n 1kg\n10","2L\n 70g\n50緑","L \n70g\n50","真空\n75g\n20","750g\n12","80g\n12","2L \n5kg","5L\n1kg\n10阪栄","4L\n1kg\n10阪栄","1.5kg\n8","4kg\n 12玉","10kg\nバラ","2P8","2L\n10kg","L\n10kg","LM\n10kg","125g\n12","2kg","5kg"],"deliveries":["シンエイ","阪栄","光浪運送","全日本ライン","大東陸運","四国運輪","ボスワン"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"新井","master":{"destinations":["大田JDS 東京促成外販部","ワタリ青果","京浜興産","ワタリ成田流通センター","NTワタリ青果","横浜丸中青果","FOR ALL LINE","京都青果合同","東京千住青果","香川県中部青果","東京シティ こだわり野菜コーナー","豊洲シティ青果成田","足利青果","浦和中央青果","PKC(米子青果場内）","東京多摩青果(株)","鳥取中央青果"],"shippers":["ワタリ"],"items":["ニンニクの芽","ブルーベリー","トレビス","ニンニク","みかん","紅はるか","スナップエンドウ","ﾆﾝﾆｸ特栽","ﾆﾝﾆｸRoyal","ﾆﾝﾆｸ阪栄","絹さや","ムーンルージュ","中野の煌めき","シャインマスカット","愛果","京芋","パプリカ","ぐんま名月","王林","さつまいも","サンフジ","純情はるか","不知火","せとか","市田柿","インカのめざめ","セロリ","天草","デコポン","甘平","ぶどう","アスパラ"],"origins":["中国","アメリカ","長野","北海道","熊本","茨城","ペルー","滋賀","群馬","愛媛","宮崎","静岡","和歌山","韓国","沖縄","岩手","兵庫","オースト","メキシコ"],"brands":[],"specOptions":["L\n70g\n50","2L\n 70g\n50","125g\n12","4kg","バラ \n4kg","12玉 \n4kg","阪栄4L\n 1kg\n10","70g\n20","SS\n10kg","L\n15kg","2L \n15kg","3L\n15kg","3L\n 1kg\n10","特栽\n 3P\n10","4.5kg","12玉","126g\n10","126g\n30","11玉","36玉","特秀\n14玉","15玉","特秀\n20玉","秀\n16玉","7房","9房","3L \n15kg","M \n5kg","10kg \n混","3kg \n5玉","3kg \n6玉","10kg","赤 \n5kg","黄 \n5kg","5kg","1.3k\n10","4P\n12","L \n10kg","170g\n30","5kg \nL","赤 \n8kg","緑 \n8kg","80g\n80","480g\n10\nMIX"],"deliveries":["新井陸運"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"神優","master":{"destinations":["金正青果(配送センター)","奈良中央青果","神戸中央青果","33 石黒ユニオン","大阪東部場外 協栄産業","114 VFやまや","大阪デリカフーズ","大果北部","中井青果気付 ロピア","森田商店（本場47）","毎日急行","和歌山青果","52 岸本","大阪中央青果","福岡ソノリク関西","15 藤村青果","福岡ソノリク(新棟)","杉村倉庫","15　藤村青果","双利","森田商店北部センター","東果大阪","東京促成青果（オーケー）","リューキプランニング","大果大阪","東部青果","WSP2","ローヤル名変","京果","神果","岸武青果"],"shippers":["ワタリ","近畿通商","アグロフレッシュ","ユニオン","ローヤル"],"items":["ニンニクの芽","ブルーベリー","トレビス","二十世紀梨","ニンニク","アスパラ","みかん","スナップエンドウ","シャインマスカット","刀根柿","南水","絹さや","オクラ","インカのめざめ","長なす","セロリ","くわい","ドラゴンフルーツ","不知火","紅まどんな","チェリー","純情はるか","市田柿","南瓜","せとか","ミネオラオレンジ","たけのこ","ネバリスター"],"origins":["中国","アメリカ","長野","奈良","オーストラリア","熊本","北海道","ペルー","和歌山","フィリピン","滋賀","群馬","メキシコ","愛媛","ベトナム","沖縄","静岡","佐賀"],"brands":[],"specOptions":["黄70g50束","赤70g50長","緑70g50短","125g12","4kg","12玉","4kg 12玉","4kg ﾊﾞﾗ","3L 1kg10","4L 1kg10","2L 32玉","LL 6.5kg","特栽 77g120","S 10kg","M 10kg","L 10kg","真空75g20","6.5kg","60g30OPP","4.5kg原体","5kg","5玉","6玉","7玉","8玉","9玉","10玉","11玉","13玉","80g6","125玉","2kg","特栽126ｇ10","1.5kg8","3P30慣行","180g26","XL","2Ｓ","80g12","2L 15kg","24玉","10kg","30g\n250","3L","Ｌ","2P10","170g\n30"],"deliveries":["神優"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"岐阜","master":{"destinations":["武生青果","菜果中部","グリーンネット","高岡市場 宮崎青果","セントライ青果","丸忠（名古屋北部市場）","丸進青果第一倉庫","天ノ坊青果","石川丸果","丸進第一センター","緑州通商","愛知デリカフーズ","北陸CGC"],"shippers":["ワタリ"],"items":["ニンニクの芽","ニンニク","オクラ","ブルーベリー","トレビス","シャインマスカット","南瓜","スジナイン","ムキニンニク"],"origins":["中国","フィリピン","チリ","滋賀","群馬","長野","静岡","熊本","沖縄","鹿児島"],"brands":[],"specOptions":["L\n70g\n50","2L\n70g\n50","2L\n1kg\n10","3L\n1kg\n10","4L\n1kg\n10","5L\n1kg\n10","60g\n30","125g\n12","4kg\n12玉","4kg\nﾊﾞﾗ","真空\n75g\n20","6房","7房","8房","9房","12玉","13玉","2kg"],"deliveries":["神優岐阜"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"岡三","master":{"destinations":["福山大協青果","広印青果","両備ストア","徳島青果","香川中部青果","高松青果","岡山丸果","岡山大同青果","津山中央青果","高知青果","高松大一","岩国広印","広島東部","マルヨシセンター","おおたけ","マルスイ青果","観音寺卸売市場"],"shippers":["ワタリ","漢和","ユニオン","神戸洋行","ローヤル"],"items":["ニンニクの芽","ニンニク","南水","秋映","みかん","ブルーベリー","シナノドルチェ","オクラ","シナノスイート","秋王","ムーンルージュ","赤玉ねぎ","有機椎茸","青ネギ","シャインマスカット","トレビス","パプリカ","くわい","ハニーキウイ","不知火","いんかのめざめ","国産キウイ","アスパラ","南瓜","甘平","たけのこ","ミネオラ","ムキニンニク"],"origins":["中国","長野","熊本","アメリカ","メキシコ","フィリピン","福岡","岐阜","愛媛","オランダ","韓国","NZ","北海道","沖縄","静岡"],"brands":["八女"],"specOptions":["黄70g50束","赤70g50長","緑70g50短","真空75g20白","1.5kg8","2P10","750g12","2S 10kg","S 10kg","M 10kg","L 10kg","125g6","125g12","5L阪栄1kg10","L 70g50","4L 500g20","80g6","5Ｐ","10kﾊﾞﾗ","180g26","3P30慣行","600g8","130g12","3L 1kg10","2L 1kg10","2Ｐ8","200g30慣行","1kg10","2P8","5kg 3L","2kg","5Ｐ5kg","4kg 12玉","白2本5kg","赤 5kg","5kg 2L","4P×12","10k混","30s","33s","36s","80g80","6P×15"],"deliveries":["岡三物流"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"生田","master":{"destinations":["姫路大同青果","しらさぎ青果","びわ湖青果","誠考","四日市合同","名青","三五屋青果"],"shippers":["ワタリ","ユニオン"],"items":["ニンニクの芽","ニンニク","ブルーベリー","セロリ","赤玉ねぎ","トレビス","南瓜"],"origins":["中国","アメリカ","長野","和歌山","NZ","沖縄"],"brands":[],"specOptions":["黄70g50束","赤70g50長","緑70g50短","125g12","4Ｐ","5Ｐ","10kg","3L 1kg10","4kg 12玉","9玉","10玉","11玉","12玉","13玉"],"deliveries":["生田陸運"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"WF","master":{"destinations":["山高青果","ＫＫフレッシュ","おおたけ","大果大阪","まつの","羽方青果"],"shippers":["Ｗ・Ｆ"],"items":["レモン","選別品レモン"],"origins":["アメリカ"],"brands":[],"specOptions":["140s"],"deliveries":["岡三物流","自家取り","神優"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"AW","master":{"destinations":["大黒天物産 木津川センター","九州屋京都事務所","さとう","石川丸果","京果合同"],"shippers":["ワタリ","ローヤル"],"items":["オクラ","長芋","さつ姫","ブルーベリー","トレビス","インカのめざめ"],"origins":["タイ","青森","北海道","フィリピン","メキシコ","滋賀","熊本"],"brands":[],"specOptions":["70g×50","700g×15","500g18","60g30","80g6","4kgバラ","4kg 12玉"],"deliveries":["エア・ウォーターライン"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"他倉庫入れ","master":{"destinations":["東洋安治川","Ｌ4杉村","上組兵庫センター","WSP2"],"shippers":["ユニオン","ワタリ","ウィズ・Ｐ","新井運輸","南九"],"items":["赤玉ねぎ","トレビス","セロリ","ビーツ","アーリーレッド","パプリカ赤","パプリカ黄","パプリカ橙","絹さや","スナップ","ﾆﾝﾆｸRoyal","アスパラ","ドラゴンフルーツ","不知火","みかん","芽キャベツ","ぶどう"],"origins":["NZ","アメリカ","メキシコ","オースト","北海道","国産","ペルー","長野","中国","群馬","滋賀","韓国","熊本","ベトナム","静岡","沖縄","和歌山"],"brands":[],"specOptions":["12s","バルク","36s","5入","4.5kg","10kgﾊﾞﾗ","126g30","4kg 12玉","4kg バラ","AM","100g65","26玉","3L 5kg","M 10kg","L 10kg","2L 10kg","2P10","450g×15","赤250g×10","緑250g×11"],"deliveries":["神優"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"翌日摩耶入れ","master":{"destinations":["摩耶ソノリク"],"shippers":["ユニオン","ワタリ","ウィズ・Ｐ","新井運輸"],"items":["赤玉ねぎ","トレビス","セロリ","ビーツ","アーリーレッド","パプリカ赤","パプリカ黄","パプリカ橙","絹さや","スナップ"],"origins":["NZ","アメリカ","メキシコ","オースト","北海道","国産","ペルー"],"brands":[],"specOptions":["12s","バルク","36s","5入","4.5kg","10kg"],"deliveries":["神優"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"摩耶入れ","master":{"destinations":["摩耶ソノリク","米軍艦隊"],"shippers":["ユニオン","ワタリ","ウィズ・Ｐ","新井運輸"],"items":["赤玉ねぎ","トレビス","セロリ","ビーツ","アーリーレッド","パプリカ赤","パプリカ黄","パプリカ橙","絹さや","スナップ"],"origins":["NZ","アメリカ","メキシコ","オースト","北海道","国産","ペルー","中国","オランダ"],"brands":[],"specOptions":["12s","バルク","36s","5入","5kg","10kg","10kgバラ"],"deliveries":["神優"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"ウィズ","master":{"destinations":["井上商店","生野商店","下浦商店","渡谷","万果","福岡ソノリク","ベジフレッシュ","名古屋青果","岡山大同青果","福山大協青果","山宗","丸昇","柿良青果","岸武青果","豊橋中央青果","東一川崎中央青果","八百重"],"shippers":["ウィズ・Ｐ","ｾﾞﾛｲﾁｶﾝﾊﾟﾆｰ"],"items":["トレビス"],"origins":["アメリカ"],"brands":[],"specOptions":["12s","バルク"],"deliveries":["新井運輸","光物流","神優","岡三物流","浜渡し","エルエス"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]},
+  {"name":"ユニオン","master":{"destinations":["福岡大同","大分大同","高松大一","岩国広印","高松青果","高知青果","広島東部","奈良丸栄","丸温松山","四日市合同","名青","ﾊｰﾄﾌｧｰﾑ","東洋安治川","金正配送ｾﾝﾀｰ","丸八青果","鳥取中央","高知県印","浜中","丸倉青果","京印","ベジテック","HANA","カネ井青果","摩耶ソノリク","観音寺青果","ﾔﾏﾔ山本","双利","冨田","アグロ","フードニア京都","フジデリカ","佐世保青果","山宗","オルト","シンクフーズ","ウィズ・Ｐ","ローヤル"],"shippers":["ユニオン","菜果","神戸洋行","ﾌｧｰｽﾄＴ","ウィズ・Ｐ"],"items":["赤玉ねぎ","トレビス","セロリ","ビーツ","ｱｰﾘｰﾚｯﾄﾞ","カボチャ"],"origins":["NZ","アメリカ","メキシコ","オースト","北海道","国産"],"brands":[],"specOptions":["10kＢ","10kﾊﾞﾗ","50個","2Ｐ25","1Ｐ10","3Ｐ","4Ｐ","5Ｐ","6Ｐ","8Ｐ","12s","バルク","10kg","20kg","24s","36s","48s"],"deliveries":["福岡ソノリク","岡三物流","ＧＣＬ","ONL","生田陸運","自社取り","神優","ON","錦運送","新井運輸","幸新陸送","四国運輪","浜渡し","スイキュー","別便","ベルカーゴ","IPPRIDE","名変"],"shipper":"","item":"","origin":"","brand":"","specs":["","","","","","","",""]},"incoming":[],"outgoing":[]}
+];
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if(s) state = JSON.parse(s); } catch(e){}
+  if (!state.sheets || !state.sheets.length) {
+    let ts = Date.now();
+    state.sheets = INITIAL_SHEETS.map(sh => ({
+      id: (ts++) + Math.random(),
+      name: sh.name,
+      master: sh.master,
+      incoming: [],
+      outgoing: [],
+    }));
+    state.activeId = state.sheets[0].id;
+  }
+  if (!state.activeId) state.activeId = state.sheets[0].id;
+  // マスタ構造の補完（旧バージョン対応）
+  state.sheets.forEach(sheet => {
+    if (!sheet.master) sheet.master = emptyMaster();
+    MASTER_DEFS.forEach(d => { if (!sheet.master[d.key]) sheet.master[d.key] = []; });
+    if (!sheet.master.specs) sheet.master.specs = Array(8).fill('');
+    if (!sheet.master.specOptions) sheet.master.specOptions = [];
+  });
+  if (!state.view) state.view = 'main';
+}
+
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function activeSheet() { return state.sheets.find(s=>s.id===state.activeId) || state.sheets[0]; }
+function escHtml(s) {
+  if (s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════
+// VIEW
+// ════════════════════════════════════════════
+function switchView(v) {
+  state.view = v;
+  document.getElementById('view-main').classList.toggle('hidden', v!=='main');
+  document.getElementById('view-settings').classList.toggle('hidden', v!=='settings');
+  document.getElementById('tabs-bar').style.display = '';
+  document.getElementById('nav-main').classList.toggle('active', v==='main');
+  document.getElementById('nav-settings').classList.toggle('active', v==='settings');
+  v==='settings' ? renderSettings() : renderMainContent();
+}
+
+// ════════════════════════════════════════════
+// SHEET MANAGEMENT
+// ════════════════════════════════════════════
+function addSheet() {
+  const name = prompt('シート名を入力', 'シート'+(state.sheets.length+1));
+  if (!name) return;
+  const s = defaultSheet(name);
+  state.sheets.push(s); state.activeId = s.id;
+  saveState(); renderAll();
+}
+function switchSheet(id) {
+  state.activeId = id; saveState(); renderAll();
+}
+function deleteSheet(id) {
+  if (state.sheets.length<=1) { alert('最後のシートは削除できません'); return; }
+  if (!confirm('このシートを削除しますか？（データも削除されます）')) return;
+  state.sheets = state.sheets.filter(s=>s.id!==id);
+  if (state.activeId===id) state.activeId = state.sheets[0].id;
+  saveState(); renderAll();
+}
+function renameSheet(id) {
+  const sheet = state.sheets.find(s=>s.id===id);
+  if (!sheet) return;
+  const name = prompt('シート名を変更', sheet.name);
+  if (!name) return;
+  sheet.name = name; saveState(); renderAll();
+}
+
+// ════════════════════════════════════════════
+// MASTER SETTINGS (per-sheet)
+// ════════════════════════════════════════════
+function addMasterItem(key, inputId) {
+  const input = document.getElementById(inputId);
+  const val = (input.value||'').trim();
+  if (!val) return;
+  const m = activeSheet().master;
+  if (!m[key].includes(val)) { m[key].push(val); saveState(); renderSettings(); }
+  input.value = '';
+  setTimeout(()=>{ const el=document.getElementById(inputId); if(el)el.focus(); },50);
+}
+function deleteMasterItem(key, idx) {
+  activeSheet().master[key].splice(idx,1);
+  saveState(); renderSettings();
+}
+function onTagKey(e, key, inputId) {
+  if (e.key==='Enter') { e.preventDefault(); addMasterItem(key,inputId); }
+}
+
+function renderSettings() {
+  const sheet = activeSheet();
+  const m = sheet.master;
+
+  const html = `
+    <div class="card" style="margin-bottom:4px;">
+      <div class="card-body" style="padding:12px 18px;">
+        <div style="font-size:12px;color:var(--muted);">
+          シート <strong style="color:var(--text);">「${escHtml(sheet.name)}」</strong> のマスタ設定です。各シートで独立して管理されます。
+        </div>
+      </div>
+    </div>
+    <div class="settings-grid">
+      ${MASTER_DEFS.map(({key,label,hint}) => {
+        const items = m[key]||[];
+        const inputId = `ti-${key}`;
+        const tags = items.length
+          ? items.map((v,i)=>`<span class="tag">${escHtml(v)}<button class="tag-del" onclick="deleteMasterItem('${key}',${i})">×</button></span>`).join('')
+          : `<span class="empty-tags">未登録</span>`;
+        return `
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <h3>${label}</h3><p>${hint}</p>
+            </div>
+            <div class="settings-card-body">
+              <div class="tag-list">${tags}</div>
+              <div class="tag-add-row">
+                <input type="text" class="tag-input" id="${inputId}"
+                  placeholder="${label}を入力…"
+                  onkeydown="onTagKey(event,'${key}','${inputId}')">
+                <button class="btn btn-primary btn-sm" onclick="addMasterItem('${key}','${inputId}')">追加</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  document.getElementById('settings-content').innerHTML = html;
+}
+
+// ════════════════════════════════════════════
+// SHEET MASTER VALUES (品目情報)
+// ════════════════════════════════════════════
+function updateMasterVal(field, value) {
+  const m = activeSheet().master;
+  if (field.startsWith('spec')) {
+    m.specs[parseInt(field.replace('spec',''))] = value;
+  } else {
+    m[field] = value;
+  }
+  saveState(); renderMainContent();
+}
+
+function makeSelect(field, current, list, placeholder) {
+  if (list && list.length) {
+    const opts = list.map(o=>`<option value="${escHtml(o)}" ${o===current?'selected':''}>${escHtml(o)}</option>`).join('');
+    return `<select onchange="updateMasterVal('${field}',this.value)">
+      <option value="">-- 選択 --</option>${opts}</select>`;
+  }
+  return `<input type="text" value="${escHtml(current)}"
+    oninput="updateMasterVal('${field}',this.value)"
+    placeholder="${placeholder}（マスタ設定で選択肢を登録できます）">`;
+}
+
+// ════════════════════════════════════════════
+// CALCULATIONS
+// ════════════════════════════════════════════
+function totalIncoming(sheet) {
+  const t = Array(8).fill(0);
+  sheet.incoming.forEach(r=>r.qty.forEach((v,i)=>t[i]+=Number(v)||0));
+  return t;
+}
+function totalOutgoingUpTo(sheet, idx) {
+  const t = Array(8).fill(0);
+  sheet.outgoing.slice(0,idx+1).forEach(r=>r.qty.forEach((v,i)=>t[i]+=Number(v)||0));
+  return t;
+}
+function balance(sheet, idx) {
+  const inc = totalIncoming(sheet);
+  const out = totalOutgoingUpTo(sheet,idx);
+  return inc.map((v,i)=>v-out[i]);
+}
+function activeSpecIdx(sheet) {
+  return sheet.master.specs.map((s,i)=>s.trim()?i:-1).filter(i=>i>=0);
+}
+
+// ════════════════════════════════════════════
+// INCOMING / OUTGOING
+// ════════════════════════════════════════════
+function addIncoming() {
+  activeSheet().incoming.push({id:Date.now(),date:'',qty:Array(8).fill('')});
+  saveState(); renderMainContent();
+}
+function updIncoming(id,field,val) {
+  const r = activeSheet().incoming.find(r=>r.id===id);
+  if (!r) return;
+  field==='date' ? r.date=val : r.qty[+field]=val;
+  saveState(); renderMainContent();
+}
+function delIncoming(id) {
+  const s=activeSheet(); s.incoming=s.incoming.filter(r=>r.id!==id);
+  saveState(); renderMainContent();
+}
+
+function addOutgoing() {
+  activeSheet().outgoing.push({id:Date.now(),date:'',destination:'',delivery:'',qty:Array(8).fill('')});
+  saveState(); renderMainContent();
+}
+function updOutgoing(id,field,val) {
+  const r = activeSheet().outgoing.find(r=>r.id===id);
+  if (!r) return;
+  ['date','destination','delivery'].includes(field) ? r[field]=val : r.qty[+field]=val;
+  saveState(); renderMainContent();
+}
+function delOutgoing(id) {
+  const s=activeSheet(); s.outgoing=s.outgoing.filter(r=>r.id!==id);
+  saveState(); renderMainContent();
+}
+
+// ════════════════════════════════════════════
+// INVOICE
+// ════════════════════════════════════════════
+let _currentInvoiceRow = null;
+const INV_ROWS = 12; // テーブル行数（PDFテンプレートに合わせる）
+
+function openInvoice(outId) {
+  const sheet = activeSheet();
+  const row = sheet.outgoing.find(r=>r.id===outId);
+  if (!row) return;
+  _currentInvoiceRow = row;
+  const ai = activeSpecIdx(sheet);
+  const specs = sheet.master.specs;
+  function fmtDate(v) { if(!v) return ''; const[y,m,d]=v.split('-'); return `${y}年${+m}月${+d}日`; }
+
+  // 規格ヘッダー（空列は非表示）
+  const specTh = ai.map(i=>`<th>${escHtml(specs[i])}</th>`).join('');
+  const specTd = ai.map(i=>`<td>${Number(row.qty[i])||''}</td>`).join('');
+  const specEmpty = ai.map(()=>'<td></td>').join('');
+  const total  = ai.reduce((s,i)=>s+(Number(row.qty[i])||0),0);
+  const dateStr = fmtDate(row.date);
+
+  // 産地/ブランド 結合表示
+  const sanchi = [escHtml(sheet.master.origin), escHtml(sheet.master.brand)].filter(Boolean).join('　');
+
+  // 空白パディング行
+  let bodyRows = `<tr>
+    <td class="tl">${escHtml(sheet.master.shipper)}</td>
+    <td class="tl">${escHtml(sheet.master.item)}</td>
+    <td>${sanchi}</td>
+    ${specTd}
+    <td class="tot">${total||''}</td>
+  </tr>`;
+  for(let i=1; i<INV_ROWS; i++) {
+    bodyRows += `<tr><td></td><td></td><td></td>${specEmpty}<td></td></tr>`;
+  }
+
+  const half = `
+    <div class="inv-half">
+      <div class="inv-hrow">
+        <div class="inv-title">送り状/荷捌き案内</div>
+        <div class="inv-date">${dateStr}</div>
+      </div>
+      <div class="inv-info">
+        <div class="inv-greetings">
+          <div>いつもお世話になりありがとうございます。</div>
+          <div>下記の通り荷捌きのご案内申し上げます。</div>
+        </div>
+        <div class="inv-recipient-col">
+          <div class="inv-recipient-name">${escHtml(row.destination)||'　'}</div>
+          <div class="inv-sama">様</div>
+        </div>
+        <div class="inv-sender">
+          <div class="inv-sender-name">株式会社　菜果</div>
+          <div>神戸市兵庫区築地町3-51</div>
+          <div>078-652-8510</div>
+        </div>
+      </div>
+      <table class="inv-tbl">
+        <thead><tr>
+          <th>荷主</th><th>品目</th><th>産地/ブランド</th>
+          ${specTh}<th>合計</th>
+        </tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+      <div class="inv-footer">
+        <div class="inv-closing">以上、よろしくお願いいたします。</div>
+        <div class="inv-delivery-box">
+          <span class="inv-delivery-label">配送便</span><span class="inv-delivery-val">${escHtml(row.delivery)}</span>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('invoice-content').innerHTML = half+'<hr class="inv-sep">'+half;
+  document.getElementById('invoice-modal').classList.add('open');
+}
+function printInvoice() { window.print(); }
+function savePDF() {
+  const row = _currentInvoiceRow;
+  const prev = document.title;
+  if (row) {
+    const dest = (row.destination||'').replace(/[\/\\:*?"<>|]/g,'');
+    const d = row.date ? row.date.replace(/-/g,'') : '';
+    document.title = `送り状_${dest}${d?'_'+d:''}`;
+  }
+  window.print();
+  setTimeout(()=>{ document.title = prev; }, 1000);
+}
+function closeModal() { document.getElementById('invoice-modal').classList.remove('open'); }
+document.getElementById('invoice-modal').addEventListener('click', e=>{
+  if(e.target===document.getElementById('invoice-modal')) closeModal();
+});
+
+// ════════════════════════════════════════════
+// RENDER TABS
+// ════════════════════════════════════════════
+function renderTabs() {
+  const bar = document.getElementById('tabs-bar');
+  bar.innerHTML = '';
+  state.sheets.forEach(sheet => {
+    const t = document.createElement('button');
+    t.className = 'tab'+(sheet.id===state.activeId?' active':'');
+    t.innerHTML = `<span ondblclick="renameSheet('${sheet.id}')" title="ダブルクリックで名前変更">${escHtml(sheet.name)}</span>`
+                + `<span class="tab-close" onclick="event.stopPropagation();deleteSheet('${sheet.id}')">×</span>`;
+    t.addEventListener('click', ()=>switchSheet(sheet.id));
+    bar.appendChild(t);
+  });
+  const add = document.createElement('button');
+  add.className='tab-add'; add.textContent='＋'; add.title='シートを追加';
+  add.addEventListener('click',addSheet);
+  bar.appendChild(add);
+}
+
+// ════════════════════════════════════════════
+// RENDER MAIN CONTENT
+// ════════════════════════════════════════════
+let masterCollapsed = false;
+function toggleMaster() {
+  masterCollapsed = !masterCollapsed;
+  const mb=document.getElementById('master-body'), ar=document.getElementById('master-arrow');
+  if(mb) mb.style.display = masterCollapsed?'none':'';
+  if(ar) ar.textContent = masterCollapsed?'▶':'▼';
+}
+
+function renderMainContent() {
+  const sheet = activeSheet();
+  const m = sheet.master;
+  const ai = activeSpecIdx(sheet);
+
+  // ── 品目情報 ──
+  const masterHTML = `
+  <div class="card">
+    <div class="card-header">
+      <h2>品目情報</h2>
+      <button class="collapse-toggle" onclick="toggleMaster()">
+        <span id="master-arrow">▼</span> 表示 / 非表示
+      </button>
+    </div>
+    <div class="card-body" id="master-body">
+      <div class="field-grid">
+        <div class="field-group"><label>荷主</label>${makeSelect('shipper',m.shipper,m.shippers,'荷主')}</div>
+        <div class="field-group"><label>品目</label>${makeSelect('item',m.item,m.items,'品目')}</div>
+        <div class="field-group"><label>産地</label>${makeSelect('origin',m.origin,m.origins,'産地')}</div>
+        <div class="field-group"><label>ブランド</label>${makeSelect('brand',m.brand,m.brands,'ブランド')}</div>
+      </div>
+      <div class="section-label">規格ラベル（最大8種）</div>
+      <div class="field-grid-8">
+        ${m.specs.map((s,i)=>`<div class="field-group">${makeSelect('spec'+i,s,m.specOptions,'規格'+(i+1))}</div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  // ── 入荷管理 ──
+  const incTot = totalIncoming(sheet);
+  const specTh = ai.map(i=>`<th>${escHtml(m.specs[i])}</th>`).join('');
+  const incRows = !sheet.incoming.length
+    ? `<tr><td colspan="${2+ai.length+1}" class="empty-state">入荷データがありません</td></tr>`
+    : sheet.incoming.map(row=>{
+        const tot=ai.reduce((s,i)=>s+(Number(row.qty[i])||0),0);
+        return `<tr>
+          <td><input type="date" value="${row.date}" onchange="updIncoming(${row.id},'date',this.value)"></td>
+          ${ai.map(i=>`<td><input type="number" min="0" value="${row.qty[i]||''}" oninput="updIncoming(${row.id},${i},this.value)" placeholder="0"></td>`).join('')}
+          <td class="total-cell">${tot||''}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="delIncoming(${row.id})">✕</button></td>
+        </tr>`;
+      }).join('');
+  const incTotRow = ai.length
+    ? `<tr style="background:#f0ede8;font-weight:700;">
+        <td class="left" style="font-size:10px;color:var(--muted)">合計入荷</td>
+        ${ai.map(i=>`<td class="total-cell">${incTot[i]||''}</td>`).join('')}
+        <td class="total-cell">${ai.reduce((s,i)=>s+incTot[i],0)||''}</td>
+        <td></td></tr>` : '';
+
+  const incomingHTML = `
+  <div class="card">
+    <div class="card-header"><h2>入荷管理</h2></div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead><tr><th class="left">入庫日</th>${specTh}<th>合計</th><th></th></tr></thead>
+        <tbody>${incRows}${incTotRow}</tbody>
+      </table>
+    </div>
+    <div class="card-body" style="padding:10px 18px;">
+      <button class="add-row-btn" onclick="addIncoming()">＋ 入荷を追加</button>
+    </div>
+  </div>`;
+
+  // ── 出荷管理 ──
+  const destOpts = m.destinations.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('');
+  const delOpts  = m.deliveries.map(d=>`<option value="${escHtml(d)}">${escHtml(d)}</option>`).join('');
+  const outRows = !sheet.outgoing.length
+    ? `<tr><td colspan="${4+ai.length+2}" class="empty-state">出荷データがありません</td></tr>`
+    : sheet.outgoing.map((row,ri)=>{
+        const bal = balance(sheet,ri);
+        const balTot = ai.reduce((s,i)=>s+bal[i],0);
+        const tot = ai.reduce((s,i)=>s+(Number(row.qty[i])||0),0);
+        const over = ai.some(i=>bal[i]<0);
+        const warn = !over && balTot<10;
+        const cls = over?'balance-over':warn?'balance-warn':'balance-ok';
+        const dSel = m.destinations.length
+          ? `<select onchange="updOutgoing(${row.id},'destination',this.value)" style="min-width:110px;">
+              <option value="">-- 選択 --</option>
+              ${m.destinations.map(d=>`<option value="${escHtml(d)}" ${d===row.destination?'selected':''}>${escHtml(d)}</option>`).join('')}
+            </select>`
+          : `<input type="text" value="${escHtml(row.destination)}" oninput="updOutgoing(${row.id},'destination',this.value)" placeholder="行先" style="width:110px;">`;
+        const dlSel = m.deliveries.length
+          ? `<select onchange="updOutgoing(${row.id},'delivery',this.value)" style="min-width:100px;">
+              <option value="">-- 選択 --</option>
+              ${m.deliveries.map(d=>`<option value="${escHtml(d)}" ${d===row.delivery?'selected':''}>${escHtml(d)}</option>`).join('')}
+            </select>`
+          : `<input type="text" value="${escHtml(row.delivery)}" oninput="updOutgoing(${row.id},'delivery',this.value)" placeholder="配送便" style="width:100px;">`;
+        return `<tr>
+          <td><input type="date" value="${row.date}" onchange="updOutgoing(${row.id},'date',this.value)"></td>
+          <td>${dSel}</td>
+          <td>${dlSel}</td>
+          ${ai.map(i=>`<td><input type="number" min="0" value="${row.qty[i]||''}" oninput="updOutgoing(${row.id},${i},this.value)" placeholder="0"></td>`).join('')}
+          <td class="total-cell">${tot||''}</td>
+          <td class="balance-cell ${cls}">${balTot}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-invoice btn-sm" onclick="openInvoice(${row.id})">送り状</button>
+            <button class="btn btn-danger btn-sm" onclick="delOutgoing(${row.id})">✕</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+  const outgoingHTML = `
+  <div class="card">
+    <div class="card-header">
+      <h2>出荷管理</h2>
+      <div style="font-size:10px;color:var(--muted);">
+        <span style="color:var(--accent);font-weight:600;">●</span> 残数十分
+        <span style="color:var(--warn);font-weight:600;">●</span> 残少（10未満）
+        <span style="color:var(--danger);font-weight:600;">●</span> 超過
+      </div>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th class="left">出荷日</th><th class="left">行先</th><th class="left">配送便</th>
+          ${specTh}<th>合計</th><th>残数</th><th></th>
+        </tr></thead>
+        <tbody>${outRows}</tbody>
+      </table>
+    </div>
+    <div class="card-body" style="padding:10px 18px;">
+      <button class="add-row-btn" onclick="addOutgoing()">＋ 出荷を追加</button>
+    </div>
+  </div>`;
+
+  document.getElementById('main-content').innerHTML = masterHTML+incomingHTML+outgoingHTML;
+  if (masterCollapsed) {
+    const mb=document.getElementById('master-body'),ar=document.getElementById('master-arrow');
+    if(mb) mb.style.display='none'; if(ar) ar.textContent='▶';
+  }
+}
+
+function renderAll() {
+  renderTabs();
+  state.view==='settings' ? renderSettings() : renderMainContent();
+}
+
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+loadState();
+renderTabs();
+switchView(state.view||'main');
+</script>
+</body>
+</html>

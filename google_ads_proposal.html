@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google広告運用提案書 | 共有ノート for kintone</title>
+<style>
+/* ===================== CSS変数 ===================== */
+:root {
+  --primary:       #1a4a8a;
+  --primary-light: #d0e2f5;
+  --primary-pale:  #eef4fb;
+  --accent:        #0d7d5f;
+  --accent-light:  #c9ead9;
+  --accent-pale:   #eaf7f2;
+  --orange:        #c0570d;
+  --orange-light:  #fde8d0;
+  --orange-pale:   #fff5ec;
+  --gray:          #4a5568;
+  --gray-light:    #e2e8f0;
+  --gray-pale:     #f7f9fc;
+  --border:        #cbd5e0;
+  --text:          #1a202c;
+  --text-sub:      #718096;
+  --white:         #ffffff;
+}
+
+/* ===================== リセット ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif; font-size: 11pt; color: var(--text); background: #dde3ee; }
+
+/* ===================== ページ共通 ===================== */
+.page {
+  width: 297mm;
+  min-height: 210mm;
+  background: var(--white);
+  margin: 20px auto;
+  padding: 0;
+  box-shadow: 0 6px 30px rgba(0,0,0,.12);
+  border-radius: 6px;
+  overflow: hidden;
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ヘッダー */
+.page-header {
+  background: var(--primary);
+  color: var(--white);
+  padding: 14px 30px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.page-header .slide-num {
+  font-size: 9pt;
+  opacity: 0.7;
+  background: rgba(255,255,255,.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.page-header .slide-title {
+  font-size: 15pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.page-header .header-right {
+  text-align: right;
+  font-size: 9pt;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
+/* コンテンツエリア */
+.page-body {
+  flex: 1;
+  padding: 20px 30px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* フッター */
+.page-footer {
+  background: var(--gray-pale);
+  border-top: 3px solid var(--primary);
+  padding: 7px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8.5pt;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+.footer-brand {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 9.5pt;
+}
+
+/* ===================== 表紙ページ ===================== */
+.cover-page {
+  background: linear-gradient(145deg, #0f2d5e 0%, #1a4a8a 50%, #1e6fa0 100%);
+  color: var(--white);
+  min-height: 210mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0;
+}
+.cover-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 60px;
+}
+.cover-badge {
+  display: inline-block;
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.4);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 9pt;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+.cover-title {
+  font-size: 30pt;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+.cover-sub {
+  font-size: 13pt;
+  opacity: 0.85;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+.cover-divider {
+  width: 60px;
+  height: 4px;
+  background: #4db6f0;
+  border-radius: 2px;
+  margin-bottom: 28px;
+}
+.cover-meta {
+  display: flex;
+  gap: 30px;
+  font-size: 10pt;
+  opacity: 0.8;
+}
+.cover-meta-item strong {
+  display: block;
+  font-size: 8.5pt;
+  opacity: 0.7;
+  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+}
+.cover-decoration {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40%;
+  height: 100%;
+  opacity: 0.07;
+  font-size: 200pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ===================== セクション見出し ===================== */
+.section-heading {
+  border-left: 5px solid var(--primary);
+  background: var(--primary-pale);
+  padding: 7px 14px;
+  font-size: 12pt;
+  font-weight: 700;
+  color: var(--primary);
+  border-radius: 0 4px 4px 0;
+  flex-shrink: 0;
+}
+.section-heading.accent {
+  border-left-color: var(--accent);
+  background: var(--accent-pale);
+  color: var(--accent);
+}
+.section-heading.orange {
+  border-left-color: var(--orange);
+  background: var(--orange-pale);
+  color: var(--orange);
+}
+
+/* ===================== テーブル ===================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 9.5pt;
+}
+th {
+  background: var(--primary);
+  color: var(--white);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  border-right: 1px solid rgba(255,255,255,.25);
+  letter-spacing: 0.02em;
+}
+th:last-child { border-right: none; }
+td {
+  padding: 7px 10px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.4;
+  vertical-align: top;
+}
+td:last-child { border-right: none; }
+tr:nth-child(even) td { background: var(--gray-pale); }
+tr:last-child td { border-bottom: none; }
+.th-accent { background: var(--accent) !important; }
+.th-orange { background: var(--orange) !important; }
+.td-highlight { background: var(--accent-pale) !important; font-weight: 600; color: var(--accent); }
+.td-num { text-align: center; font-weight: 700; color: var(--primary); }
+
+/* ===================== カード ===================== */
+.card-grid {
+  display: grid;
+  gap: 12px;
+}
+.card-grid-2 { grid-template-columns: 1fr 1fr; }
+.card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.card-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.card {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 9.5pt;
+}
+.card-header {
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 10pt;
+  background: var(--primary);
+  color: var(--white);
+}
+.card-header.accent { background: var(--accent); }
+.card-header.orange { background: var(--orange); }
+.card-header.gray { background: var(--gray); }
+.card-body {
+  padding: 10px 12px;
+  background: var(--white);
+  line-height: 1.65;
+}
+.card-body ul {
+  padding-left: 16px;
+  margin: 0;
+}
+.card-body li { margin-bottom: 3px; }
+
+/* ===================== KWタグ ===================== */
+.kw-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kw-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 8.5pt;
+  font-weight: 600;
+  border: 1.5px solid;
+}
+.kw-primary { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.kw-accent { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+.kw-orange { background: var(--orange-light); color: var(--orange); border-color: var(--orange); }
+.kw-gray { background: var(--gray-light); color: var(--gray); border-color: var(--border); text-decoration: line-through; }
+
+/* ===================== フロー図 ===================== */
+.flow-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+.flow-step {
+  background: var(--primary);
+  color: var(--white);
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 9pt;
+  font-weight: 600;
+  min-width: 70px;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+.flow-step.accent { background: var(--accent); }
+.flow-step.orange { background: var(--orange); }
+.flow-step.gray { background: var(--gray); }
+.flow-step.light { background: var(--primary-light); color: var(--primary); }
+.flow-arrow {
+  color: var(--primary);
+  font-size: 16pt;
+  font-weight: 700;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ===================== ロードマップ ===================== */
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.roadmap-card {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+}
+.roadmap-header {
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 11pt;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.roadmap-header .month-badge {
+  font-size: 18pt;
+  font-weight: 800;
+  line-height: 1;
+}
+.roadmap-header .month-sub {
+  font-size: 9pt;
+  opacity: 0.85;
+  font-weight: 500;
+}
+.roadmap-body {
+  padding: 10px 14px;
+  background: var(--white);
+}
+.roadmap-body .task {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 7px;
+  font-size: 9pt;
+  line-height: 1.5;
+}
+.roadmap-body .task-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7pt;
+  color: white;
+  margin-top: 2px;
+}
+
+/* ===================== KPI指標 ===================== */
+.kpi-metric {
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--primary-pale);
+  border: 1.5px solid var(--primary-light);
+  border-radius: 8px;
+}
+.kpi-metric .metric-value {
+  font-size: 20pt;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.1;
+}
+.kpi-metric .metric-label {
+  font-size: 8.5pt;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+/* ===================== ポイントボックス ===================== */
+.point-box {
+  background: var(--primary-pale);
+  border: 1.5px solid var(--primary-light);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 14px;
+  font-size: 9.5pt;
+  line-height: 1.6;
+}
+.point-box.accent {
+  background: var(--accent-pale);
+  border-color: var(--accent-light);
+  border-left-color: var(--accent);
+}
+.point-box.orange {
+  background: var(--orange-pale);
+  border-color: var(--orange-light);
+  border-left-color: var(--orange);
+}
+
+/* ===================== 2カラムレイアウト ===================== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.two-col-6040 {
+  display: grid;
+  grid-template-columns: 6fr 4fr;
+  gap: 14px;
+}
+.two-col-4060 {
+  display: grid;
+  grid-template-columns: 4fr 6fr;
+  gap: 14px;
+}
+
+/* ===================== ラベルリスト ===================== */
+.label-list { display: flex; flex-direction: column; gap: 6px; }
+.label-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
+.label-item .label {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 8pt;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.label-primary { background: var(--primary); color: white; }
+.label-accent { background: var(--accent); color: white; }
+.label-orange { background: var(--orange); color: white; }
+.label-gray { background: var(--gray); color: white; }
+
+/* ===================== 比較表 ===================== */
+.compare-header { background: var(--gray) !important; }
+
+/* ===================== ハイライトテキスト ===================== */
+.highlight { color: var(--primary); font-weight: 700; }
+.highlight-accent { color: var(--accent); font-weight: 700; }
+.highlight-orange { color: var(--orange); font-weight: 700; }
+
+/* ===================== サブタイトル ===================== */
+.sub-title {
+  font-size: 10pt;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+
+/* ===================== 印刷設定 ===================== */
+@media print {
+  body { background: white; }
+  .page { margin: 0; box-shadow: none; border-radius: 0; page-break-after: always; }
+  @page { size: A4 landscape; margin: 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+@media screen {
+  body { padding: 20px 0 40px; }
+}
+
+/* ===================== ツールアイコン ===================== */
+.tool-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 8.5pt;
+  font-weight: 600;
+}
+.tool-gtm { background: #e8f0fe; color: #1a73e8; border: 1px solid #1a73e8; }
+.tool-ga4 { background: #fce8e6; color: #d93025; border: 1px solid #d93025; }
+.tool-gsc { background: #e6f4ea; color: #0d7d5f; border: 1px solid #0d7d5f; }
+.tool-gads { background: #fef7e0; color: #f9ab00; border: 1px solid #f9ab00; }
+
+/* 矢印アイコン */
+.arrow-down {
+  text-align: center;
+  color: var(--primary);
+  font-size: 14pt;
+  line-height: 1;
+  padding: 2px 0;
+}
+
+/* ステップ番号 */
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 8.5pt;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== 表紙 ===================== -->
+<div class="page cover-page" style="position:relative;">
+  <div class="cover-inner">
+    <div class="cover-badge">Google広告運用提案書</div>
+    <div class="cover-title">
+      kintoneプラグイン販売<br>
+      Google広告運用<br>
+      <span style="color:#4db6f0;">戦略提案</span>
+    </div>
+    <div class="cover-divider"></div>
+    <div class="cover-sub">
+      共有ノート for kintone ／ 月予算 ¥30,000 ／ 初心者向け運用ガイド
+    </div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><strong>対象サービス</strong>sharenote.yamacoh.net</div>
+      <div class="cover-meta-item"><strong>月間予算</strong>¥30,000</div>
+      <div class="cover-meta-item"><strong>作成日</strong>2026年5月27日</div>
+      <div class="cover-meta-item"><strong>対象者</strong>kintone導入済み企業担当者</div>
+    </div>
+  </div>
+  <div class="cover-decoration">🔍</div>
+</div>
+
+
+<!-- ===================== SLIDE 1: 目次 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">目次 — 本提案書の構成</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">INDEX</div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="card-grid card-grid-2" style="flex:1;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="card">
+          <div class="card-header">01. 目的</div>
+          <div class="card-body">Google広告を使う理由 ／ kintone商材との相性</div>
+        </div>
+        <div class="card">
+          <div class="card-header">02. ターゲット分析</div>
+          <div class="card-body">狙うユーザー ／ 顕在層 ／ 困りごと検索</div>
+        </div>
+        <div class="card">
+          <div class="card-header">03. 想定検索キーワード</div>
+          <div class="card-body">メインKW一覧 ／ 除外KW ／ 優先度整理</div>
+        </div>
+        <div class="card">
+          <div class="card-header">04. 広告戦略</div>
+          <div class="card-body">検索広告中心 ／ 月3万円の戦い方 ／ やること・やらないこと</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="card">
+          <div class="card-header" style="background:var(--accent);">05. KPI設計</div>
+          <div class="card-body">広告〜購入までの全KPIを目標値付きで整理</div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:var(--accent);">06. GTM / GA4 の役割</div>
+          <div class="card-body">ツール説明 ／ 最低限計測すべきイベント</div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:var(--accent);">07. Search Console活用</div>
+          <div class="card-body">検索クエリ分析 ／ キーワード発見 ／ 除外KW検討</div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:var(--accent);">08. 初期運用ロードマップ</div>
+          <div class="card-body">3ヶ月の行動計画 ／ 各フェーズのやること</div>
+        </div>
+      </div>
+    </div>
+    <div class="point-box">
+      📌 <strong>本資料の目的：</strong>Google広告の知識がない方でも、<strong>「何をすれば売上につながるか」</strong>を理解し、すぐに動き出せる状態にすることです。
+    </div>
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 2: 目的 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">01. 目的 — なぜGoogle広告を使うのか</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">01 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="section-heading">Google広告を使う目的</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-primary">目的①</span>
+            <span>kintoneをすでに使っている担当者が「困ったとき」に検索するタイミングで広告を表示し、<strong>サービスを認知してもらう</strong></span>
+          </div>
+          <div class="label-item">
+            <span class="label label-primary">目的②</span>
+            <span>無料プランのダウンロードを増やし、<strong>お試し利用 → 購入</strong>という流れを作る</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-primary">目的③</span>
+            <span>買切版（¥9,800）の購入を増やし、<strong>月次売上を安定させる</strong></span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">重要</span>
+            <span>SEOは時間がかかる。広告は<strong>すぐに検索結果の上位</strong>に表示できる唯一の方法</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="section-heading accent">kintone商材 × Google広告の相性</div>
+        <div class="card-grid" style="gap:8px;">
+          <div class="card">
+            <div class="card-header accent">✅ 相性が良い理由 ①</div>
+            <div class="card-body">
+              kintoneは<strong>企業の業務担当者</strong>が日常的に使うツール。<br>
+              「kintone ○○できない」「kintone 機能追加」など<strong>具体的な悩みで検索する</strong>ため、広告が刺さりやすい
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header accent">✅ 相性が良い理由 ②</div>
+            <div class="card-body">
+              買切版¥9,800という<strong>低価格で意思決定しやすい</strong>商材。<br>
+              検索 → LP閲覧 → 購入まで<strong>1〜2日で完結</strong>するケースが多い
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header accent">✅ 相性が良い理由 ③</div>
+            <div class="card-body">
+              「kintone プラグイン」などのキーワードは<strong>競合が少なく</strong>、<br>
+              月3万円でも<strong>十分な広告枠</strong>を確保できる見込み
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ユーザーフロー図 -->
+    <div class="section-heading" style="margin-top:4px;">想定ユーザーフロー（2パターン）</div>
+    <div class="two-col">
+      <div>
+        <div class="sub-title" style="margin-bottom:6px;">📋 パターン①：無料お試し → 購入</div>
+        <div class="flow-container" style="flex-wrap:wrap;gap:4px;">
+          <div class="flow-step" style="background:#4a5568;font-size:8pt;padding:6px 10px;">Google検索</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="font-size:8pt;padding:6px 10px;">広告クリック</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step light" style="font-size:8pt;padding:6px 10px;">LP閲覧</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="background:var(--accent);font-size:8pt;padding:6px 10px;">無料DL</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="background:var(--accent);font-size:8pt;padding:6px 10px;">お試し</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="background:var(--orange);font-size:8pt;padding:6px 10px;">購入</div>
+        </div>
+      </div>
+      <div>
+        <div class="sub-title" style="margin-bottom:6px;">⚡ パターン②：即決購入</div>
+        <div class="flow-container" style="flex-wrap:wrap;gap:4px;">
+          <div class="flow-step" style="background:#4a5568;font-size:8pt;padding:6px 10px;">Google検索</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="font-size:8pt;padding:6px 10px;">広告クリック</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step light" style="font-size:8pt;padding:6px 10px;">LP閲覧</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="background:var(--orange);font-size:8pt;padding:6px 10px;">購入</div>
+        </div>
+        <div class="point-box orange" style="margin-top:8px;font-size:8.5pt;">
+          💡 買切版¥9,800は意思決定ハードルが低く、即決購入が発生しやすい
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 3: ターゲット分析 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">02. ターゲット分析 — 誰に届けるか</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">02 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <!-- 4ターゲット -->
+    <div class="section-heading">狙うユーザー像（4種類）</div>
+    <div class="card-grid card-grid-4">
+      <div class="card">
+        <div class="card-header" style="font-size:9pt;">👨‍💻 情シス担当</div>
+        <div class="card-body">
+          <ul>
+            <li>kintone管理者権限を持つ</li>
+            <li>機能拡張の相談を受ける立場</li>
+            <li>「効率化」「自動化」に関心</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="font-size:9pt;">🚀 DX推進担当</div>
+        <div class="card-body">
+          <ul>
+            <li>社内ツール導入の意思決定者</li>
+            <li>費用対効果を重視</li>
+            <li>「kintone活用」を推進中</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="font-size:9pt;">⚙️ kintone管理者</div>
+        <div class="card-body">
+          <ul>
+            <li>日常的にkintoneを触る</li>
+            <li>現場の要望をシステムに反映</li>
+            <li>プラグイン導入経験あり</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="font-size:9pt;">📋 業務改善担当</div>
+        <div class="card-body">
+          <ul>
+            <li>現場の課題を解決したい</li>
+            <li>kintoneをもっと活用したい</li>
+            <li>「もっと便利にしたい」ニーズ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顕在層 vs 潜在層 -->
+    <div class="two-col" style="margin-top:4px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading">顕在層を中心に狙う（重要）</div>
+        <table>
+          <tr>
+            <th>層</th>
+            <th>状態</th>
+            <th>月3万円での優先度</th>
+          </tr>
+          <tr>
+            <td><strong class="highlight">顕在層</strong></td>
+            <td>「kintone プラグイン 欲しい」と検索している</td>
+            <td class="td-highlight">★★★ 最優先</td>
+          </tr>
+          <tr>
+            <td><strong>準顕在層</strong></td>
+            <td>「kintone ノート管理 方法」と検索している</td>
+            <td style="color:var(--orange);font-weight:600;">★★☆ 補助的に</td>
+          </tr>
+          <tr>
+            <td>潜在層</td>
+            <td>kintoneに困っているが検索していない</td>
+            <td style="color:var(--gray);">★☆☆ 今はやらない</td>
+          </tr>
+        </table>
+        <div class="point-box">
+          💡 <strong>月3万円の予算では顕在層だけに集中する。</strong>ディスプレイ広告や動画広告など潜在層向けの施策は今は不要。
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading accent">「困りごと検索」を狙う</div>
+        <div class="card">
+          <div class="card-header accent">困りごと検索とは？</div>
+          <div class="card-body">
+            ユーザーが<strong>今まさに困っているとき</strong>に入力する検索キーワードのこと。<br>
+            購買意欲が最も高いタイミングで広告を表示できる。
+          </div>
+        </div>
+        <div class="card-grid" style="gap:8px;">
+          <div class="point-box" style="font-size:8.5pt;">
+            😤 「kintoneでノート管理できない」<br>
+            → 共有ノートが解決！
+          </div>
+          <div class="point-box" style="font-size:8.5pt;">
+            😤 「kintone Notion 使いたい」<br>
+            → 共有ノートが解決！
+          </div>
+          <div class="point-box" style="font-size:8.5pt;">
+            😤 「kintone Wiki 社内 作りたい」<br>
+            → 共有ノートが解決！
+          </div>
+          <div class="point-box" style="font-size:8.5pt;">
+            😤 「kintone 手順書 管理」<br>
+            → 共有ノートが解決！
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 4: キーワード ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">03. 想定検索キーワード — 何で検索されるか</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">03 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <div class="two-col-6040">
+      <!-- メインKW -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading">メインキーワード一覧（優先度付き）</div>
+        <table>
+          <tr>
+            <th>優先度</th>
+            <th>キーワード</th>
+            <th>マッチタイプ</th>
+            <th>狙う理由</th>
+          </tr>
+          <tr>
+            <td class="td-highlight">◎ 最優先</td>
+            <td>kintone ノート 管理</td>
+            <td class="td-num">完全一致</td>
+            <td>製品の核心機能に直結</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">◎ 最優先</td>
+            <td>kintone プラグイン ノート</td>
+            <td class="td-num">完全一致</td>
+            <td>購入意欲が最高の顕在層</td>
+          </tr>
+          <tr>
+            <td class="td-highlight">◎ 最優先</td>
+            <td>kintone Wiki 作成</td>
+            <td class="td-num">完全一致</td>
+            <td>社内Wiki＝共有ノートの価値</td>
+          </tr>
+          <tr>
+            <td style="color:var(--primary);font-weight:600;">○ 優先</td>
+            <td>kintone プラグイン</td>
+            <td class="td-num">フレーズ</td>
+            <td>プラグイン購入意欲あり</td>
+          </tr>
+          <tr>
+            <td style="color:var(--primary);font-weight:600;">○ 優先</td>
+            <td>kintone 手順書 管理</td>
+            <td class="td-num">完全一致</td>
+            <td>手順書管理は主要ユースケース</td>
+          </tr>
+          <tr>
+            <td style="color:var(--primary);font-weight:600;">○ 優先</td>
+            <td>kintone 社内 マニュアル</td>
+            <td class="td-num">完全一致</td>
+            <td>マニュアル整備ニーズに合致</td>
+          </tr>
+          <tr>
+            <td style="color:var(--primary);font-weight:600;">○ 優先</td>
+            <td>kintone Notion 連携</td>
+            <td class="td-num">完全一致</td>
+            <td>Notion風エディタが差別化</td>
+          </tr>
+          <tr>
+            <td style="color:var(--gray);">△ 補助</td>
+            <td>kintone ナレッジ 管理</td>
+            <td class="td-num">フレーズ</td>
+            <td>ナレッジ管理は副次価値</td>
+          </tr>
+          <tr>
+            <td style="color:var(--gray);">△ 補助</td>
+            <td>kintone 情報 共有</td>
+            <td class="td-num">フレーズ</td>
+            <td>情報共有ニーズは広いが競合多</td>
+          </tr>
+          <tr>
+            <td style="color:var(--gray);">△ 補助</td>
+            <td>kintone カスタマイズ プラグイン</td>
+            <td class="td-num">フレーズ</td>
+            <td>カスタマイズ検討層</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- 除外KW & マッチタイプ説明 -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading orange">除外キーワード（広告費を無駄にしない）</div>
+        <div class="card">
+          <div class="card-header orange">除外KWとは？</div>
+          <div class="card-body" style="font-size:9pt;">
+            「これで検索した人には広告を表示しない」と指定するキーワード。<br>
+            <strong>無関係なクリックによる広告費の無駄遣いを防ぐ。</strong>
+          </div>
+        </div>
+        <div class="kw-grid">
+          <span class="kw-tag kw-gray">kintone 無料</span>
+          <span class="kw-tag kw-gray">kintone とは</span>
+          <span class="kw-tag kw-gray">kintone 比較</span>
+          <span class="kw-tag kw-gray">kintone 求人</span>
+          <span class="kw-tag kw-gray">kintone 転職</span>
+          <span class="kw-tag kw-gray">kintone 資格</span>
+          <span class="kw-tag kw-gray">kintone 勉強</span>
+          <span class="kw-tag kw-gray">kintone 使い方</span>
+          <span class="kw-tag kw-gray">kintone 入門</span>
+          <span class="kw-tag kw-gray">cybozu</span>
+          <span class="kw-tag kw-gray">kintone 料金</span>
+          <span class="kw-tag kw-gray">kintone 導入</span>
+        </div>
+
+        <div class="section-heading" style="margin-top:4px;">マッチタイプとは？（初心者向け）</div>
+        <table>
+          <tr>
+            <th>タイプ</th>
+            <th>表示条件</th>
+            <th>推奨</th>
+          </tr>
+          <tr>
+            <td><strong>完全一致</strong></td>
+            <td>指定したキーワードと<strong>ほぼ同じ</strong>検索のみ</td>
+            <td class="td-highlight">最初はこれだけ</td>
+          </tr>
+          <tr>
+            <td><strong>フレーズ一致</strong></td>
+            <td>キーワードを含む検索（前後に語句あり可）</td>
+            <td style="color:var(--orange);font-weight:600;">慣れたら追加</td>
+          </tr>
+          <tr>
+            <td>インテントマッチ</td>
+            <td>意味が近いと判断された幅広い検索</td>
+            <td style="color:var(--gray);">今はやらない</td>
+          </tr>
+        </table>
+        <div class="point-box orange" style="font-size:8.5pt;">
+          ⚠️ 最初から「インテントマッチ」を使うと、無関係な検索にも広告が表示されて<strong>予算が一瞬でなくなる</strong>ので注意。
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 5: 広告戦略 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">04. 広告戦略 — 月3万円での戦い方</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">04 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading">広告の基本方針</div>
+        <table>
+          <tr>
+            <th>項目</th>
+            <th>方針</th>
+          </tr>
+          <tr>
+            <td>広告種別</td>
+            <td><strong class="highlight">検索広告に集中</strong>（ディスプレイ・動画は今は使わない）</td>
+          </tr>
+          <tr>
+            <td>マッチタイプ</td>
+            <td><strong class="highlight">完全一致 中心</strong>（フレーズ一致は一部補助的に）</td>
+          </tr>
+          <tr>
+            <td>1日の予算</td>
+            <td><strong>約1,000円/日</strong>（月3万円 ÷ 30日）</td>
+          </tr>
+          <tr>
+            <td>入札戦略</td>
+            <td><strong>目標コンバージョン単価</strong> or <strong>クリック数最大化</strong>（最初はクリック数最大化）</td>
+          </tr>
+          <tr>
+            <td>地域設定</td>
+            <td><strong>日本全国</strong>（特定地域の絞り込みは不要）</td>
+          </tr>
+          <tr>
+            <td>時間帯</td>
+            <td><strong>平日 9:00〜18:00</strong>を優先（BtoB担当者の検索時間帯）</td>
+          </tr>
+          <tr>
+            <td>デバイス</td>
+            <td><strong>PC優先</strong>（業務中のPC検索が多い想定）</td>
+          </tr>
+        </table>
+
+        <div class="section-heading" style="margin-top:4px;">月3万円の予算配分イメージ</div>
+        <table>
+          <tr>
+            <th>キャンペーン</th>
+            <th>月予算</th>
+            <th>目的</th>
+          </tr>
+          <tr>
+            <td>【最優先】ノート管理系KW</td>
+            <td class="td-num">¥15,000</td>
+            <td>核心ニーズへのリーチ</td>
+          </tr>
+          <tr>
+            <td>【優先】プラグイン検索系KW</td>
+            <td class="td-num">¥10,000</td>
+            <td>購買意欲の高い顕在層</td>
+          </tr>
+          <tr>
+            <td>【補助】Wiki・マニュアル系KW</td>
+            <td class="td-num">¥5,000</td>
+            <td>ユースケース別の集客</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading accent">✅ 初心者がやるべきこと</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-accent">優先</span>
+            <span>レスポンシブ検索広告（RSA）で広告文を3〜4パターン作成し、Googleに自動最適化させる</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">優先</span>
+            <span>広告見出しに<strong>「kintone」「プラグイン」「無料で試せる」</strong>など具体的なキーワードを含める</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">優先</span>
+            <span>サイトリンク表示オプションを設定（「無料プランを見る」「料金ページ」など）</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">優先</span>
+            <span>週1回は「検索語句レポート」を確認し、無駄なキーワードを除外する</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">優先</span>
+            <span>コンバージョン計測を必ずセットアップ（DLボタン・購入完了ページ）</span>
+          </div>
+        </div>
+
+        <div class="section-heading orange" style="margin-top:4px;">❌ やらなくて良いこと（初期段階）</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-orange">後回し</span>
+            <span>ディスプレイ広告（バナー）：潜在層向けで費用対効果が見えにくい</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">後回し</span>
+            <span>YouTube動画広告：制作コストが高く、BtoB担当者には効きにくい</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">後回し</span>
+            <span>リマーケティング（再訪問者への広告）：データが溜まってから（3ヶ月目以降）</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">後回し</span>
+            <span>P-MAXキャンペーン：AIに全部任せる形式。データが少ないうちは効果が不明確</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">後回し</span>
+            <span>SNS広告（Meta等）：kintone担当者はGoogle検索で解決策を探すため、今は不要</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 広告文サンプル -->
+    <div class="section-heading">広告文サンプル（レスポンシブ検索広告）</div>
+    <div class="card-grid card-grid-3" style="gap:8px;">
+      <div class="card">
+        <div class="card-header" style="font-size:8.5pt;">見出し案（15文字以内×最大15個）</div>
+        <div class="card-body" style="font-size:8.5pt;">
+          ✦ kintone専用 ノート管理プラグイン<br>
+          ✦ 無料プランあり・カード不要<br>
+          ✦ Notion風エディタをkintoneに<br>
+          ✦ 社内Wiki・手順書を一元管理<br>
+          ✦ 買切版 ¥9,800 月額不要
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="font-size:8.5pt;">説明文案（90文字以内×最大4個）</div>
+        <div class="card-body" style="font-size:8.5pt;">
+          ✦ kintone内でNotionのようなリッチなノートが作れます。10ノートまで永続無料。まずお試しを。<br><br>
+          ✦ 社内Wiki・手順書・業務メモをkintoneに統合。月額0円の買切版で導入コスト最小化。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" style="font-size:8.5pt;">サイトリンク案</div>
+        <div class="card-body" style="font-size:8.5pt;">
+          ✦ 無料プランを試す<br>
+          ✦ 料金・プラン比較<br>
+          ✦ 機能一覧を見る<br>
+          ✦ 導入事例・活用例
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 6: KPI設計 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">05. KPI設計 — 成果の測り方と目標値</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">05 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <!-- KPIファネル -->
+    <div class="section-heading">KPIファネル全体像（広告〜購入まで）</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div style="display:flex;width:100%;gap:0;">
+        <div style="width:18%;text-align:center;background:var(--primary);color:white;padding:10px 8px;font-size:8.5pt;font-weight:700;border-radius:6px 0 0 6px;clip-path:polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);">
+          ① 広告表示<br><span style="font-size:11pt;font-weight:800;">1,000回</span><br>/月
+        </div>
+        <div style="width:19%;text-align:center;background:#1e5fa8;color:white;padding:10px 8px;font-size:8.5pt;font-weight:700;clip-path:polygon(5% 0, 90% 0, 100% 50%, 90% 100%, 5% 100%);">
+          ② クリック<br><span style="font-size:11pt;font-weight:800;">120回</span><br>/月（CTR12%）
+        </div>
+        <div style="width:20%;text-align:center;background:#1a6bb0;color:white;padding:10px 8px;font-size:8.5pt;font-weight:700;clip-path:polygon(5% 0, 90% 0, 100% 50%, 90% 100%, 5% 100%);">
+          ③ LP滞在<br><span style="font-size:11pt;font-weight:800;">96名</span><br>/月（直帰20%）
+        </div>
+        <div style="width:22%;text-align:center;background:var(--accent);color:white;padding:10px 8px;font-size:8.5pt;font-weight:700;clip-path:polygon(5% 0, 90% 0, 100% 50%, 90% 100%, 5% 100%);">
+          ④ 無料DL<br><span style="font-size:11pt;font-weight:800;">10件</span><br>/月（CVR25%）
+        </div>
+        <div style="width:21%;text-align:center;background:var(--orange);color:white;padding:10px 8px;font-size:8.5pt;font-weight:700;border-radius:0 6px 6px 0;clip-path:polygon(5% 0, 100% 0, 100% 100%, 5% 100%);">
+          ⑤ 購入<br><span style="font-size:11pt;font-weight:800;">2〜3件</span><br>/月（CVR25%）
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI表 -->
+    <div class="section-heading" style="margin-top:4px;">KPI詳細一覧（目標値付き）</div>
+    <table>
+      <tr>
+        <th style="width:14%;">KPIカテゴリ</th>
+        <th style="width:20%;">指標名</th>
+        <th style="width:30%;">説明</th>
+        <th style="width:16%;">目標値</th>
+        <th style="width:20%;">確認ツール</th>
+      </tr>
+      <!-- 広告KPI -->
+      <tr>
+        <td rowspan="4" style="background:var(--primary-pale);font-weight:700;color:var(--primary);text-align:center;">📢 広告KPI</td>
+        <td>インプレッション数</td>
+        <td>広告が表示された回数</td>
+        <td class="td-num">1,000回以上</td>
+        <td><span class="tool-badge tool-gads">Google広告</span></td>
+      </tr>
+      <tr>
+        <td>クリック数</td>
+        <td>広告がクリックされた数</td>
+        <td class="td-num">120回以上</td>
+        <td><span class="tool-badge tool-gads">Google広告</span></td>
+      </tr>
+      <tr>
+        <td>CTR（クリック率）</td>
+        <td>表示回数に対するクリック率</td>
+        <td class="td-num">12%以上</td>
+        <td><span class="tool-badge tool-gads">Google広告</span></td>
+      </tr>
+      <tr>
+        <td>CPC（平均クリック単価）</td>
+        <td>1クリックあたりの費用</td>
+        <td class="td-num">¥250以下</td>
+        <td><span class="tool-badge tool-gads">Google広告</span></td>
+      </tr>
+      <!-- LP KPI -->
+      <tr>
+        <td rowspan="3" style="background:var(--primary-pale);font-weight:700;color:var(--primary);text-align:center;">📄 LP KPI</td>
+        <td>セッション数</td>
+        <td>LPへの訪問数</td>
+        <td class="td-num">100以上</td>
+        <td><span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <tr>
+        <td>直帰率</td>
+        <td>LPだけ見てすぐ離脱した割合</td>
+        <td class="td-num">50%以下</td>
+        <td><span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <tr>
+        <td>平均滞在時間</td>
+        <td>LPに滞在した平均時間</td>
+        <td class="td-num">1分以上</td>
+        <td><span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <!-- DL KPI -->
+      <tr>
+        <td rowspan="2" style="background:var(--accent-pale);font-weight:700;color:var(--accent);text-align:center;">📥 DL KPI</td>
+        <td>DLボタン押下数</td>
+        <td>無料DLボタンを押した数</td>
+        <td class="td-num">5件以上</td>
+        <td><span class="tool-badge tool-gtm">GTM</span> <span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <tr>
+        <td>DL CVR</td>
+        <td>LP訪問者のDL転換率</td>
+        <td class="td-num">5%以上</td>
+        <td><span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <!-- 利用KPI -->
+      <tr>
+        <td style="background:var(--accent-pale);font-weight:700;color:var(--accent);text-align:center;">🚀 利用KPI</td>
+        <td>利用開始数（アカウント作成）</td>
+        <td>DL後に実際に使い始めた数</td>
+        <td class="td-num">3件以上</td>
+        <td>サービス内データ</td>
+      </tr>
+      <!-- 購入KPI -->
+      <tr>
+        <td rowspan="2" style="background:var(--orange-pale);font-weight:700;color:var(--orange);text-align:center;">💰 購入KPI</td>
+        <td>購入件数</td>
+        <td>買切版（¥9,800）の購入数</td>
+        <td class="td-num">1件以上</td>
+        <td><span class="tool-badge tool-gtm">GTM</span> <span class="tool-badge tool-ga4">GA4</span></td>
+      </tr>
+      <tr>
+        <td>CPA（獲得単価）</td>
+        <td>1件の購入にかかった広告費</td>
+        <td class="td-num">¥30,000以下</td>
+        <td><span class="tool-badge tool-gads">Google広告</span></td>
+      </tr>
+    </table>
+
+    <div class="point-box accent" style="font-size:8.5pt;">
+      💡 <strong>CPA（獲得単価）の目安：</strong>買切版¥9,800 × 利益率を考えると、<strong>CPA ¥5,000〜¥10,000以内</strong>を目指したい。3ヶ月かけてデータを積み上げながら最適化していく。
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 7: GTM/GA4 ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">06. GTM / GA4 の役割 — 計測ツールを理解する</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">06 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <!-- ツール説明 -->
+    <div class="section-heading">3つのツールの役割（全体像）</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;">
+      <div style="background:var(--primary-pale);border:2px solid var(--primary);border-radius:8px;padding:12px 16px;text-align:center;min-width:130px;">
+        <div style="font-size:9pt;color:var(--text-sub);">広告配信</div>
+        <div style="font-size:11pt;font-weight:800;color:var(--primary);">Google広告</div>
+        <div style="font-size:8.5pt;margin-top:4px;">クリックを<br>LPに送り込む</div>
+      </div>
+      <div style="font-size:18pt;color:var(--primary);">→</div>
+      <div style="background:var(--gray-pale);border:2px solid var(--gray);border-radius:8px;padding:12px 16px;text-align:center;min-width:130px;">
+        <div style="font-size:9pt;color:var(--text-sub);">タグ管理</div>
+        <div style="font-size:11pt;font-weight:800;color:var(--gray);">GTM</div>
+        <div style="font-size:8.5pt;margin-top:4px;">計測コードを<br>一括管理</div>
+      </div>
+      <div style="font-size:18pt;color:var(--primary);">→</div>
+      <div style="background:var(--orange-pale);border:2px solid var(--orange);border-radius:8px;padding:12px 16px;text-align:center;min-width:130px;">
+        <div style="font-size:9pt;color:var(--text-sub);">データ収集・分析</div>
+        <div style="font-size:11pt;font-weight:800;color:var(--orange);">GA4</div>
+        <div style="font-size:8.5pt;margin-top:4px;">ユーザー行動を<br>グラフで確認</div>
+      </div>
+      <div style="font-size:18pt;color:var(--primary);">→</div>
+      <div style="background:var(--accent-pale);border:2px solid var(--accent);border-radius:8px;padding:12px 16px;text-align:center;min-width:130px;">
+        <div style="font-size:9pt;color:var(--text-sub);">広告最適化</div>
+        <div style="font-size:11pt;font-weight:800;color:var(--accent);">コンバージョン</div>
+        <div style="font-size:8.5pt;margin-top:4px;">GA4の成果を<br>広告に反映</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading">GTM（Googleタグマネージャー）とは？</div>
+        <div class="card">
+          <div class="card-header gray">🏷️ GTMのイメージ</div>
+          <div class="card-body" style="font-size:9pt;">
+            Webサイトへの「計測コード（タグ）」の埋め込みを<strong>一箇所で管理するツール</strong>。<br>
+            例えるなら「コードを入れる専用の引き出し」。GTMを一度設置すれば、あとは管理画面から設定変更でき、エンジニアに頼む必要がない。
+          </div>
+        </div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-gray">役割①</span>
+            <span>GA4のトラッキングコードをサイトに設置</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-gray">役割②</span>
+            <span>Google広告のコンバージョンタグを設置</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-gray">役割③</span>
+            <span>ボタンクリックやフォーム送信を検知してGA4に送信</span>
+          </div>
+        </div>
+
+        <div class="section-heading" style="margin-top:4px;">GTMで設定すること（最低限）</div>
+        <table>
+          <tr>
+            <th>設定項目</th>
+            <th>内容</th>
+          </tr>
+          <tr>
+            <td>GA4 設定タグ</td>
+            <td>サイト全ページにGA4を導入</td>
+          </tr>
+          <tr>
+            <td>DLボタン クリックトリガー</td>
+            <td>「無料ダウンロード」ボタン押下を検知</td>
+          </tr>
+          <tr>
+            <td>購入完了ページ タグ</td>
+            <td>購入後の完了ページをGA4に送信</td>
+          </tr>
+          <tr>
+            <td>Google広告 コンバージョンタグ</td>
+            <td>広告経由の成果を計測</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading orange">GA4（Googleアナリティクス4）とは？</div>
+        <div class="card">
+          <div class="card-header orange">📊 GA4のイメージ</div>
+          <div class="card-body" style="font-size:9pt;">
+            Webサイトに訪れたユーザーの行動を<strong>グラフやデータで見えるようにするツール</strong>。<br>
+            「何人来た」「どこから来た」「何をした」がわかる。Google広告と連携すると「どの広告が成果につながったか」が把握できる。
+          </div>
+        </div>
+
+        <div class="section-heading accent" style="margin-top:4px;">最低限計測すべきイベント一覧</div>
+        <table>
+          <tr>
+            <th class="th-accent">イベント名</th>
+            <th class="th-accent">何を計測するか</th>
+            <th class="th-accent">重要度</th>
+          </tr>
+          <tr>
+            <td><strong>dl_button_click</strong></td>
+            <td>「無料ダウンロード」ボタンを押した</td>
+            <td class="td-highlight">★★★ 必須</td>
+          </tr>
+          <tr>
+            <td><strong>purchase_complete</strong></td>
+            <td>買切版を購入した（完了ページ到達）</td>
+            <td class="td-highlight">★★★ 必須</td>
+          </tr>
+          <tr>
+            <td><strong>contact_submit</strong></td>
+            <td>お問い合わせフォームを送信した</td>
+            <td style="color:var(--primary);font-weight:600;">★★☆ 重要</td>
+          </tr>
+          <tr>
+            <td><strong>plan_page_view</strong></td>
+            <td>料金・プランページを閲覧した</td>
+            <td style="color:var(--primary);font-weight:600;">★★☆ 重要</td>
+          </tr>
+          <tr>
+            <td><strong>scroll_depth</strong></td>
+            <td>LPを50%・75%・90%スクロールした</td>
+            <td style="color:var(--gray);">★☆☆ 参考</td>
+          </tr>
+        </table>
+
+        <div class="point-box orange" style="font-size:8.5pt;">
+          ⚠️ <strong>コンバージョン計測なしで広告を運用してはいけない。</strong><br>
+          どの広告・キーワードが成果を出しているか分からず、予算を無駄遣いするだけになる。
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 8: Search Console ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">07. Search Console活用 — 無料データを広告改善に使う</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">07 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <!-- GSCとは -->
+    <div class="section-heading">Google Search Console（GSC）とは？</div>
+    <div class="card">
+      <div class="card-header" style="background:var(--accent);">🔍 GSCのイメージ（初心者向け）</div>
+      <div class="card-body" style="font-size:9.5pt;">
+        <strong>「自分のサイトがGoogleで何と検索されて表示されているか」</strong>を教えてくれる無料ツール。<br>
+        Google広告の「検索語句レポート」と組み合わせることで、<strong>お金をかけずに</strong>成果の出るキーワードを発見できる。
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading">① 検索クエリ分析</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-accent">手順①</span>
+            <span>GSCの「検索パフォーマンス」を開く</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">手順②</span>
+            <span>「クエリ（検索ワード）」タブで<strong>どんな言葉で表示されているか</strong>を確認</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">手順③</span>
+            <span>クリック数・表示回数・CTR・平均掲載順位を確認</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">活用</span>
+            <span>表示されているが<strong>クリックが少ないKW</strong>は広告で補強する</span>
+          </div>
+        </div>
+        <table>
+          <tr>
+            <th>チェック項目</th>
+            <th>見るべき数値</th>
+            <th>アクション</th>
+          </tr>
+          <tr>
+            <td>クリック数 多い</td>
+            <td>SEOで流入あり</td>
+            <td>広告の優先度を下げてもOK</td>
+          </tr>
+          <tr>
+            <td>表示多・クリック少</td>
+            <td>CTR低い</td>
+            <td class="td-highlight">広告で上位表示を補強！</td>
+          </tr>
+          <tr>
+            <td>掲載順位 4〜10位</td>
+            <td>SEO圏外気味</td>
+            <td class="td-highlight">広告で1〜3位を確保！</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="section-heading accent">② 成果の出るKW発見</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-accent">発見①</span>
+            <span>GSCのクエリを見て、<strong>購買意欲の高そうな検索ワード</strong>（例：「kintone ノート プラグイン 購入」）を発見</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">発見②</span>
+            <span>そのKWをGoogle広告の<strong>「完全一致」で追加</strong>して直接広告を当てる</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-accent">発見③</span>
+            <span>SEOで流入しているKWは<strong>広告との二重押さえ</strong>で上位を独占できる</span>
+          </div>
+        </div>
+
+        <div class="section-heading orange" style="margin-top:4px;">③ 除外KW検討</div>
+        <div class="label-list">
+          <div class="label-item">
+            <span class="label label-orange">手順①</span>
+            <span>Google広告の「検索語句レポート」でクリックされているワードを確認</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">手順②</span>
+            <span><strong>購入に結びつかない</strong>ワード（「とは」「無料 完全無料」「やり方」など）を除外KWに追加</span>
+          </div>
+          <div class="label-item">
+            <span class="label label-orange">手順③</span>
+            <span>GSCで表示されているが無関係なKWも除外リストに追加する</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header orange">📋 週次チェックリスト（10分でできる）</div>
+          <div class="card-body" style="font-size:9pt;">
+            □ GSC：新しいクエリで「これは広告に使えそう」なものを確認<br>
+            □ 広告：検索語句レポートで「無関係なワード」を除外リストに追加<br>
+            □ 広告：クリック数・コスト・コンバージョン数を前週と比較<br>
+            □ GA4：DLボタン押下数と購入数を確認
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GSC×広告の連携図 -->
+    <div class="section-heading">GSC × Google広告 データ連携フロー</div>
+    <div class="flow-container" style="gap:6px;flex-wrap:wrap;">
+      <div class="flow-step" style="background:var(--accent);font-size:8.5pt;padding:8px 12px;">GSCで<br>KW発見</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step light" style="font-size:8.5pt;padding:8px 12px;">購買意欲の<br>高いKW抽出</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="font-size:8.5pt;padding:8px 12px;">Google広告に<br>完全一致で追加</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--orange);font-size:8.5pt;padding:8px 12px;">CV数<br>改善</div>
+      <div style="width:100%;height:0;"></div>
+      <div class="flow-step" style="background:var(--orange);font-size:8.5pt;padding:8px 12px;">無関係KW<br>を発見</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--gray);font-size:8.5pt;padding:8px 12px;">除外KWに<br>追加</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--gray);font-size:8.5pt;padding:8px 12px;">無駄な<br>クリック削減</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--accent);font-size:8.5pt;padding:8px 12px;">広告費<br>効率UP</div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 9: ロードマップ ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">08. 初期運用ロードマップ — 3ヶ月の行動計画</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">08 / 08</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <div class="roadmap-grid">
+      <!-- 1ヶ月目 -->
+      <div class="roadmap-card" style="border-color:var(--primary);">
+        <div class="roadmap-header" style="background:var(--primary);">
+          <div>
+            <div class="month-badge">1</div>
+          </div>
+          <div>
+            <div style="font-size:10pt;font-weight:700;">ヶ月目</div>
+            <div class="month-sub">🏗️ 環境構築フェーズ</div>
+          </div>
+        </div>
+        <div class="roadmap-body">
+          <div style="font-size:8.5pt;font-weight:700;color:var(--primary);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+            ゴール：計測環境を整えて広告を配信開始
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">①</div>
+            <div><strong>GTM・GA4を設置</strong>し、サイト計測を開始する</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">②</div>
+            <div><strong>コンバージョン計測</strong>を設定（DLボタン・購入完了）</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">③</div>
+            <div>Google広告アカウントを作成し<strong>キャンペーンを設定</strong></div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">④</div>
+            <div><strong>完全一致KW10〜15個</strong>でスタート（多すぎない）</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">⑤</div>
+            <div><strong>広告文を3パターン</strong>作成（RSA形式）</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--primary);">⑥</div>
+            <div>Search Consoleを設定してデータ収集開始</div>
+          </div>
+          <div style="background:var(--primary-pale);padding:6px 8px;border-radius:4px;font-size:8pt;margin-top:4px;color:var(--primary);">
+            ⚠️ まずは動かすことが最優先。完璧より「計測できる状態」にする
+          </div>
+        </div>
+      </div>
+
+      <!-- 2ヶ月目 -->
+      <div class="roadmap-card" style="border-color:var(--accent);">
+        <div class="roadmap-header" style="background:var(--accent);">
+          <div>
+            <div class="month-badge">2</div>
+          </div>
+          <div>
+            <div style="font-size:10pt;font-weight:700;">ヶ月目</div>
+            <div class="month-sub">📊 データ収集フェーズ</div>
+          </div>
+        </div>
+        <div class="roadmap-body">
+          <div style="font-size:8.5pt;font-weight:700;color:var(--accent);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+            ゴール：データを見て改善サイクルを回し始める
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">①</div>
+            <div><strong>週1回「検索語句レポート」</strong>を確認し除外KWを追加</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">②</div>
+            <div>GSCのクエリを確認し<strong>新しいKWを発見・追加</strong></div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">③</div>
+            <div>CTR・CVRを確認し<strong>成果の悪い広告文を修正</strong></div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">④</div>
+            <div>GA4でLPの<strong>直帰率・滞在時間</strong>を確認しLP改善を検討</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">⑤</div>
+            <div>サイトリンク・コールアウトなど<strong>広告表示オプション</strong>を追加</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--accent);">⑥</div>
+            <div>予算配分を見直し（成果の出ているKWに集中）</div>
+          </div>
+          <div style="background:var(--accent-pale);padding:6px 8px;border-radius:4px;font-size:8pt;margin-top:4px;color:var(--accent);">
+            💡 この時点でDL件数・購入件数が0なら LP or 広告文の見直しが必要
+          </div>
+        </div>
+      </div>
+
+      <!-- 3ヶ月目 -->
+      <div class="roadmap-card" style="border-color:var(--orange);">
+        <div class="roadmap-header" style="background:var(--orange);">
+          <div>
+            <div class="month-badge">3</div>
+          </div>
+          <div>
+            <div style="font-size:10pt;font-weight:700;">ヶ月目</div>
+            <div class="month-sub">⚡ 最適化フェーズ</div>
+          </div>
+        </div>
+        <div class="roadmap-body">
+          <div style="font-size:8.5pt;font-weight:700;color:var(--orange);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+            ゴール：CPA改善と次のステップ準備
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">①</div>
+            <div>コンバージョンデータが30件以上溜まったら<strong>「目標CPA入札」</strong>に切り替え</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">②</div>
+            <div><strong>成果の出ているKW</strong>に予算を集中投下（選択と集中）</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">③</div>
+            <div>LP改善（A/Bテスト）で<strong>DL CVRを上げる</strong>施策を試みる</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">④</div>
+            <div><strong>リマーケティング</strong>設定（LPを見た人に再度広告を表示）</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">⑤</div>
+            <div>フレーズ一致KWを追加し<strong>新しい顧客層の発掘</strong>を試みる</div>
+          </div>
+          <div class="task">
+            <div class="task-icon" style="background:var(--orange);">⑥</div>
+            <div>3ヶ月の振り返りと<strong>次クォーターの予算・目標設定</strong></div>
+          </div>
+          <div style="background:var(--orange-pale);padding:6px 8px;border-radius:4px;font-size:8pt;margin-top:4px;color:var(--orange);">
+            🎯 目標：CPA ¥10,000以下 ／ 月間購入件数3件以上
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- マイルストーン -->
+    <div class="section-heading" style="margin-top:4px;">3ヶ月マイルストーン</div>
+    <table>
+      <tr>
+        <th style="width:15%;">フェーズ</th>
+        <th style="width:25%;">主なタスク</th>
+        <th style="width:15%;">DL目標</th>
+        <th style="width:15%;">購入目標</th>
+        <th style="width:15%;">CPA目標</th>
+        <th style="width:15%;">重点KPI</th>
+      </tr>
+      <tr>
+        <td style="color:var(--primary);font-weight:700;">1ヶ月目<br>環境構築</td>
+        <td>GTM/GA4設置・広告配信開始・KW10〜15個</td>
+        <td class="td-num">3件以上</td>
+        <td class="td-num">1件以上</td>
+        <td class="td-num">計測開始</td>
+        <td>クリック数・CTR</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);font-weight:700;">2ヶ月目<br>データ収集</td>
+        <td>除外KW追加・広告文改善・LP改善</td>
+        <td class="td-num">8件以上</td>
+        <td class="td-num">1件以上</td>
+        <td class="td-num">¥30,000以下</td>
+        <td>DL CVR・直帰率</td>
+      </tr>
+      <tr>
+        <td style="color:var(--orange);font-weight:700;">3ヶ月目<br>最適化</td>
+        <td>目標CPA入札・リマーケティング・A/Bテスト</td>
+        <td class="td-num">20件以上</td>
+        <td class="td-num">3件以上</td>
+        <td class="td-num">¥10,000以下</td>
+        <td>CPA・購入CVR</td>
+      </tr>
+    </table>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+
+<!-- ===================== SLIDE 10: 推奨アクションプラン ===================== -->
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="slide-title">推奨アクションプラン — まず何から始めるか</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="header-right">共有ノート for kintone<br>Google広告運用提案書</div>
+      <div class="slide-num">NEXT STEP</div>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <div class="section-heading">今すぐ取り組むべき「5つのアクション」</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:stretch;gap:10px;">
+        <div style="background:var(--primary);color:white;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;text-align:center;font-weight:800;font-size:14pt;">
+          STEP<br><span style="font-size:22pt;">1</span>
+        </div>
+        <div style="flex:1;border:1.5px solid var(--primary-light);border-radius:8px;padding:10px 14px;background:var(--primary-pale);">
+          <div style="font-weight:700;color:var(--primary);font-size:11pt;margin-bottom:4px;">🏗️ 計測環境を整える（1週目）</div>
+          <div style="display:flex;gap:10px;font-size:9pt;line-height:1.6;">
+            <div style="flex:1;">□ Google Search Console にサイトを登録<br>□ Googleタグマネージャー（GTM）アカウント作成・サイトに設置</div>
+            <div style="flex:1;">□ GA4プロパティを作成し GTMで設置<br>□ DLボタン・購入完了ページのイベント計測を設定</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:stretch;gap:10px;">
+        <div style="background:var(--primary);color:white;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;text-align:center;font-weight:800;font-size:14pt;">
+          STEP<br><span style="font-size:22pt;">2</span>
+        </div>
+        <div style="flex:1;border:1.5px solid var(--primary-light);border-radius:8px;padding:10px 14px;background:var(--primary-pale);">
+          <div style="font-weight:700;color:var(--primary);font-size:11pt;margin-bottom:4px;">📢 Google広告アカウントを開設・設定（1〜2週目）</div>
+          <div style="display:flex;gap:10px;font-size:9pt;line-height:1.6;">
+            <div style="flex:1;">□ Google広告アカウント作成（google.com/ads）<br>□ 検索キャンペーンを1つ作成（シンプルに1つだけ）<br>□ 完全一致KWを10〜15個設定</div>
+            <div style="flex:1;">□ レスポンシブ検索広告（RSA）を作成<br>□ 除外KWリストを設定（12個以上）<br>□ GA4とGoogle広告を連携させる</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:stretch;gap:10px;">
+        <div style="background:var(--accent);color:white;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;text-align:center;font-weight:800;font-size:14pt;">
+          STEP<br><span style="font-size:22pt;">3</span>
+        </div>
+        <div style="flex:1;border:1.5px solid var(--accent-light);border-radius:8px;padding:10px 14px;background:var(--accent-pale);">
+          <div style="font-weight:700;color:var(--accent);font-size:11pt;margin-bottom:4px;">🖥️ LPを広告に合わせて最適化（2週目）</div>
+          <div style="display:flex;gap:10px;font-size:9pt;line-height:1.6;">
+            <div style="flex:1;">□ LPの冒頭に「kintone専用」「無料から試せる」などを明記<br>□ DLボタンを目立つ位置に配置（スクロールせずに見える位置）</div>
+            <div style="flex:1;">□ 料金ページへのリンクをLP内に設置<br>□ スマートフォン表示の確認（PC以外でも見やすく）</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:stretch;gap:10px;">
+        <div style="background:var(--accent);color:white;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;text-align:center;font-weight:800;font-size:14pt;">
+          STEP<br><span style="font-size:22pt;">4</span>
+        </div>
+        <div style="flex:1;border:1.5px solid var(--accent-light);border-radius:8px;padding:10px 14px;background:var(--accent-pale);">
+          <div style="font-weight:700;color:var(--accent);font-size:11pt;margin-bottom:4px;">📊 週次モニタリングを習慣化（毎週月曜 10分）</div>
+          <div style="display:flex;gap:10px;font-size:9pt;line-height:1.6;">
+            <div style="flex:1;">□ Google広告：クリック数・費用・コンバージョン数を確認<br>□ 検索語句レポートで除外KW候補を確認・追加</div>
+            <div style="flex:1;">□ GA4：DLボタン押下数・直帰率を確認<br>□ GSC：新しい検索クエリで使えそうなKWを探す</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:stretch;gap:10px;">
+        <div style="background:var(--orange);color:white;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;text-align:center;font-weight:800;font-size:14pt;">
+          STEP<br><span style="font-size:22pt;">5</span>
+        </div>
+        <div style="flex:1;border:1.5px solid var(--orange-light);border-radius:8px;padding:10px 14px;background:var(--orange-pale);">
+          <div style="font-weight:700;color:var(--orange);font-size:11pt;margin-bottom:4px;">🎯 3ヶ月後の目標確認と次フェーズ検討（3ヶ月目末）</div>
+          <div style="display:flex;gap:10px;font-size:9pt;line-height:1.6;">
+            <div style="flex:1;">□ CPA（購入1件あたりの費用）を計算して採算性を判断<br>□ 月間購入件数が目標（3〜5件）に達しているか確認</div>
+            <div style="flex:1;">□ リマーケティング・フレーズ一致の追加を検討<br>□ LP改善や価格戦略の見直しを判断</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:4px;">
+      <div class="point-box accent" style="font-size:9pt;">
+        ✅ <strong>成功の鍵：</strong>最初の1ヶ月は「完璧を目指さない」。<br>
+        計測できる環境を作って広告を配信し始めることが最優先。データが溜まってから改善する。
+      </div>
+      <div class="point-box orange" style="font-size:9pt;">
+        ⚠️ <strong>よくある失敗：</strong>コンバージョン計測なしで広告を開始 → 何が効いているか分からず予算を浪費。<br>
+        GTM/GA4の設定を必ず先に行うこと。
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <div>Google広告運用提案書 ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+</div>
+
+</body>
+</html>

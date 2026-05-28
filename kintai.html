@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>勤怠管理</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f0f4f8;--surface:#fff;--border:#e2e8f0;
+      --text:#2d3748;--muted:#718096;
+      --primary:#4a6fa5;--primary-h:#3a5f95;
+      --red:#c53030;--sat-bg:#ebf8ff;--sun-bg:#fff5f5;
+      --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.08);
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+    /* LOGIN */
+    #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+    .login-card{background:#fff;border-radius:16px;padding:40px 36px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.12);width:320px}
+    .login-icon{font-size:44px;margin-bottom:12px}
+    .login-title{font-size:20px;font-weight:700;margin-bottom:20px}
+    .lf{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;text-align:left}
+    .lf label{font-size:12px;font-weight:600;color:var(--muted)}
+    .lf input{padding:9px 11px;border:1px solid var(--border);border-radius:7px;font-size:14px;outline:none;font-family:inherit;color:var(--text);transition:border-color .15s}
+    .lf input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,111,165,.15)}
+    .btn-login{display:block;width:100%;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;margin-top:18px;transition:background .15s}
+    .btn-login:hover{background:var(--primary-h)}
+    .btn-login:disabled{opacity:.6;cursor:default}
+    #login-err{margin-top:12px;color:var(--red);font-size:12px;display:none;text-align:left;line-height:1.5}
+
+    /* HEADER */
+    .header{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;box-shadow:0 2px 6px rgba(0,0,0,.06);height:52px}
+    .header-title{font-size:16px;font-weight:700;white-space:nowrap}
+    #tab-nav{display:flex;align-items:center;gap:4px;flex:1}
+    .tab-btn{padding:5px 14px;border:none;border-radius:6px;background:transparent;cursor:pointer;font-size:13px;color:var(--muted);font-weight:500;transition:all .15s;white-space:nowrap}
+    .tab-btn:hover{background:var(--bg);color:var(--text)}
+    .tab-btn.active{background:var(--primary);color:#fff}
+    .header-user{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:12px;color:var(--muted)}
+    .btn-signout{background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:var(--muted)}
+    .btn-signout:hover{background:var(--bg)}
+
+    /* LAYOUT */
+    .wrap{padding:16px;max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+    .panel{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .panel-header{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:13px;border-bottom:1px solid var(--border);background:#f7fafc;flex-wrap:wrap;gap:8px}
+
+    /* CLOCK */
+    .clock-panel{padding:26px;text-align:center;background:linear-gradient(135deg,#4a6fa5,#2c5282);color:#fff;border-radius:var(--radius)}
+    .clock-time{font-size:54px;font-weight:200;letter-spacing:.04em;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
+    .clock-date{font-size:13px;opacity:.75;margin-bottom:22px}
+    .punch-area{display:flex;gap:12px;justify-content:center;margin-bottom:12px}
+    .btn-punch{padding:11px 38px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s}
+    .btn-punch:active{transform:scale(.97)}
+    .btn-in{background:#48bb78;color:#fff;box-shadow:0 4px 12px rgba(72,187,120,.45)}
+    .btn-in:hover{filter:brightness(1.1)}
+    .btn-out{background:#ed8936;color:#fff;box-shadow:0 4px 12px rgba(237,137,54,.45)}
+    .btn-out:hover{filter:brightness(1.1)}
+    .punch-done{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 26px;border-radius:8px;font-size:14px;font-weight:600}
+    .today-recs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .rec-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px}
+    .rec-chip.work{background:rgba(255,255,255,.25)}
+
+    /* TABLE */
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse}
+    th{padding:7px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);background:#f7fafc;border-bottom:1px solid var(--border);white-space:nowrap}
+    th.r{text-align:right}
+    td{padding:7px 12px;border-bottom:1px solid #f0f4f8;font-size:13px;white-space:nowrap}
+    td.r{text-align:right}
+    td.m{color:var(--muted)}
+    tr:hover td{background:#fafbfc}
+    .row-sat td{background:var(--sat-bg)} .row-sat:hover td{background:#d0ebff}
+    .row-sun td{background:var(--sun-bg)} .row-sun:hover td{background:#ffe0e0}
+    .row-today td{font-weight:700}
+    .dow-sat{color:#2b6cb0;font-weight:600}
+    .dow-sun{color:var(--red);font-weight:600}
+    .tfoot-row td{background:#f7fafc;font-weight:600;font-size:12px;border-top:2px solid var(--border)}
+    .empty-td{text-align:center;color:var(--muted);padding:36px}
+    .note-td{max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:12px}
+
+    /* MONTH NAV */
+    .mnav{display:flex;align-items:center;gap:6px}
+    .nav-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+    .nav-btn:hover{background:var(--bg)}
+    .mlabel{font-size:13px;font-weight:600;min-width:78px;text-align:center}
+
+    /* BTN */
+    .btn-sm{padding:3px 10px;border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;font-size:12px;color:var(--text)}
+    .btn-sm:hover{background:var(--bg)}
+    .btn-danger{border-color:#feb2b2!important;color:var(--red)!important}
+    .btn-danger:hover{background:#fff5f5!important}
+    .btn-add{padding:5px 13px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+    .btn-add:hover{background:var(--primary-h)}
+
+    /* MODAL */
+    #modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200}
+    .modal-card{background:#fff;border-radius:12px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+    .mh{padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+    .mh h3{font-size:15px;font-weight:700}
+    .mb{padding:18px 22px}
+    .mf{padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:13px}
+    .form-row:last-child{margin-bottom:0}
+    .form-row label{font-size:12px;font-weight:600;color:var(--muted)}
+    .form-row input,.form-row select{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;font-family:inherit;color:var(--text);transition:border-color .15s}
+    .form-row input:focus,.form-row select:focus{border-color:var(--primary)}
+    .btn-primary{padding:7px 18px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+    .btn-primary:hover{background:var(--primary-h)}
+    .btn-secondary{padding:7px 18px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px}
+    .btn-secondary:hover{background:var(--bg)}
+
+    /* EMPTY */
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center}
+    .empty-icon{font-size:44px;margin-bottom:12px}
+    .empty-title{font-size:17px;font-weight:700;margin-bottom:8px}
+    .empty-msg{color:var(--muted);font-size:13px;line-height:1.7}
+
+    /* ── MOBILE ── */
+    @media(max-width:640px){
+      /* header: 2段に */
+      .header{height:auto;flex-wrap:wrap;padding:8px 12px 0;gap:6px}
+      .header-title{font-size:14px}
+      #tab-nav{order:3;width:100%;overflow-x:auto;padding:4px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+      #tab-nav::-webkit-scrollbar{display:none}
+      .tab-btn{font-size:12px;padding:5px 12px;white-space:nowrap}
+      .header-user{margin-left:auto;font-size:11px}
+      .btn-signout{padding:3px 8px;font-size:11px}
+
+      /* layout */
+      .wrap{padding:10px;gap:10px}
+      .panel-header{padding:8px 12px;font-size:12px}
+
+      /* clock */
+      .clock-panel{padding:20px 14px}
+      .clock-time{font-size:42px}
+      .btn-punch{flex:1;padding:14px 0}
+      .punch-area{gap:8px}
+
+      /* table: 重要度低い列を隠す */
+      .hide-sp{display:none!important}
+      td,th{padding:5px 8px;font-size:12px}
+      .note-td{max-width:80px}
+
+      /* modal: 下から出るボトムシート */
+      #modal-overlay{align-items:flex-end}
+      .modal-card{width:100%;max-width:100%!important;border-radius:16px 16px 0 0;max-height:88vh}
+
+      /* login card */
+      .login-card{width:92vw;padding:28px 20px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── LOGIN ─── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🕐</div>
+    <div class="login-title">勤怠管理</div>
+    <div class="lf"><label>ID（メールアドレス）</label>
+      <input type="email" id="l-id" placeholder="example@example.com" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('l-pw').focus()"></div>
+    <div class="lf"><label>パスワード</label>
+      <input type="password" id="l-pw" placeholder="パスワード" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">ログイン</button>
+    <div id="login-err"></div>
+  </div>
+</div>
+
+<!-- ─── APP ─── -->
+<div id="app" style="display:none">
+  <header class="header">
+    <div class="header-title">🕐 勤怠管理</div>
+    <nav id="tab-nav"></nav>
+    <div class="header-user">
+      <span id="uname"></span>
+      <button class="btn-signout" onclick="doLogout()">ログアウト</button>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<!-- ─── MODAL ─── -->
+<div id="modal-overlay" style="display:none">
+  <div class="modal-card"><div id="mbody"></div></div>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+//  CONFIG  ← ここを編集してアカウントを設定
+// ════════════════════════════════════════════════
+const ADMIN = { id: '__admin__', name: '管理者', email: 'admin@example.com', password: 'admin1234', role: 'admin' };
+
+// ════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════
+const pad    = n => String(n).padStart(2, '0');
+const esc    = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const DOW    = ['日','月','火','水','木','金','土'];
+const dow    = (y,m,d) => DOW[new Date(y,m-1,d).getDay()];
+const isSat  = (y,m,d) => new Date(y,m-1,d).getDay() === 6;
+const isSun  = (y,m,d) => new Date(y,m-1,d).getDay() === 0;
+const dim    = (y,m)   => new Date(y,m,0).getDate();
+const prevM  = ({year,month}) => month===1 ? {year:year-1,month:12} : {year,month:month-1};
+const nextM  = ({year,month}) => month===12 ? {year:year+1,month:1} : {year,month:month+1};
+const nowM   = ()  => { const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()+1}; };
+const today  = ()  => { const d=new Date(); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; };
+const tstr   = d   => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const uid    = ()  => Math.random().toString(36).slice(2,10);
+
+function calcWork(inT,outT,brk){
+  if(!inT||!outT)return null;
+  const m=t=>{const[h,n]=t.split(':').map(Number);return h*60+n;};
+  return Math.max(0,m(outT)-m(inT)-(Number(brk)||0));
+}
+const fmtW = min => (min==null)?'—':`${Math.floor(min/60)}:${pad(min%60)}`;
+
+// ════════════════════════════════════════════════
+//  STORAGE
+// ════════════════════════════════════════════════
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem('kintai_v1')||'{}'); } catch { return {}; }
+}
+function saveDB(db) {
+  localStorage.setItem('kintai_v1', JSON.stringify(db));
+}
+function getEmployees() { return loadDB().employees || []; }
+function getAttendance() { return loadDB().attendance || {}; }
+
+function saveEmployee(emp) {
+  const db = loadDB();
+  db.employees = db.employees || [];
+  const idx = db.employees.findIndex(e=>e.id===emp.id);
+  if(idx>=0) db.employees[idx]=emp; else db.employees.push(emp);
+  saveDB(db);
+}
+function deleteEmployee(id) {
+  const db = loadDB();
+  db.employees = (db.employees||[]).filter(e=>e.id!==id);
+  saveDB(db);
+}
+function saveAttRecord(userId, dateKey, rec) {
+  const db = loadDB();
+  db.attendance = db.attendance || {};
+  db.attendance[userId] = db.attendance[userId] || {};
+  db.attendance[userId][dateKey] = rec;
+  saveDB(db);
+}
+function getMyAtt(userId) {
+  return getAttendance()[userId] || {};
+}
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+const S = {
+  tab: 'my',
+  myMonth: nowM(),
+  allMonth: nowM(),
+  user: null,   // { id, name, email, role }
+};
+
+// ════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════
+function doLogin() {
+  const email = document.getElementById('l-id').value.trim();
+  const pw    = document.getElementById('l-pw').value;
+  if(!email||!pw){ showLoginErr('IDとパスワードを入力してください。'); return; }
+
+  let user = null;
+  if(email===ADMIN.email && pw===ADMIN.password){
+    user = { id: ADMIN.id, name: ADMIN.name, email: ADMIN.email, role: 'admin' };
+  } else {
+    const emp = getEmployees().find(e=>e.email===email && e.password===pw);
+    if(emp) user = { id: emp.id, name: emp.name, email: emp.email, role: 'employee' };
+  }
+
+  if(!user){ showLoginErr('IDまたはパスワードが正しくありません。'); return; }
+
+  S.user = user;
+  sessionStorage.setItem('kintai_sess', JSON.stringify(user));
+  showApp();
+}
+
+function doLogout() {
+  S.user = null;
+  sessionStorage.removeItem('kintai_sess');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('l-pw').value = '';
+  showLoginErr('');
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('uname').textContent = S.user.name;
+  S.tab = 'my';
+  render();
+}
+
+// セッション復元
+(function(){
+  try {
+    const sess = JSON.parse(sessionStorage.getItem('kintai_sess')||'null');
+    if(!sess) return;
+    // セッションが有効かチェック
+    if(sess.id===ADMIN.id){
+      S.user = sess; showApp();
+    } else {
+      const emp = getEmployees().find(e=>e.id===sess.id);
+      if(emp){ S.user = sess; showApp(); }
+    }
+  } catch {}
+})();
+
+// ════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════
+function render() {
+  renderNav();
+  if     (S.tab==='my')  renderMy();
+  else if(S.tab==='emp') renderEmp();
+  else if(S.tab==='all') renderAll();
+}
+
+function renderNav() {
+  const tabs = [{id:'my',label:'マイ勤怠'}];
+  if(S.user?.role==='admin'){ tabs.push({id:'emp',label:'従業員マスタ'}); tabs.push({id:'all',label:'全員勤怠'}); }
+  document.getElementById('tab-nav').innerHTML = tabs.map(t=>
+    `<button class="tab-btn${S.tab===t.id?' active':''}" data-tab="${t.id}">${t.label}</button>`
+  ).join('');
+}
+
+// ─── マイ勤怠 ─────────────────────────────────
+function renderMy() {
+  const todayK = today();
+  const att    = getMyAtt(S.user.id);
+  const rec    = att[todayK] || {};
+  const now    = new Date();
+
+  const ps = !rec.in?'none':!rec.out?'in':'done';
+  const punchHTML =
+    ps==='none'?`<button class="btn-punch btn-in"  data-action="punch-in">出　勤</button>`:
+    ps==='in'  ?`<button class="btn-punch btn-out" data-action="punch-out">退　勤</button>`:
+                `<span class="punch-done">✓ 打刻済み</span>`;
+
+  const chips=[
+    rec.in  ?`<span class="rec-chip">出勤 ${rec.in}</span>`:'',
+    rec.out ?`<span class="rec-chip">退勤 ${rec.out}</span>`:'',
+    (rec.in&&rec.out)?`<span class="rec-chip work">実働 ${fmtW(calcWork(rec.in,rec.out,rec.break))}</span>`:'',
+  ].filter(Boolean).join('');
+
+  const {year,month}=S.myMonth;
+  let totalDays=0,totalMin=0,rows='';
+  for(let d=1;d<=dim(year,month);d++){
+    const k=`${year}${pad(month)}${pad(d)}`;
+    const r=att[k]||{};
+    const w=calcWork(r.in,r.out,r.break);
+    if(w!=null){totalDays++;totalMin+=w;}
+    const isT=k===todayK;
+    const cls=(isSun(year,month,d)?'row-sun':isSat(year,month,d)?'row-sat':'')+(isT?' row-today':'');
+    const dc=isSun(year,month,d)?'dow-sun':isSat(year,month,d)?'dow-sat':'';
+    rows+=`<tr class="${cls}" data-action="edit-att" data-date="${k}" data-uid="${S.user.id}" style="cursor:pointer">
+      <td>${month}/${d}</td><td class="${dc}">${dow(year,month,d)}</td>
+      <td>${r.in||''}</td><td>${r.out||''}</td>
+      <td class="hide-sp">${r.break!=null&&r.break!==''?r.break+'分':''}</td>
+      <td class="r">${fmtW(w)}</td>
+      <td class="note-td hide-sp">${esc(r.note||'')}</td>
+      <td class="hide-sp"><button class="btn-sm" data-action="edit-att" data-date="${k}" data-uid="${S.user.id}">編集</button></td>
+    </tr>`;
+  }
+
+  document.getElementById('main').innerHTML=`
+    <div class="wrap">
+      <div class="clock-panel">
+        <div class="clock-time" id="clock-el">${tstr(now)}</div>
+        <div class="clock-date">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${DOW[now.getDay()]}）</div>
+        <div class="punch-area">${punchHTML}</div>
+        <div class="today-recs">${chips}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span>${year}年${month}月 勤怠記録</span>
+          <div class="mnav">
+            <button class="nav-btn" data-action="my-prev">◀</button>
+            <span class="mlabel">${year}年${month}月</span>
+            <button class="nav-btn" data-action="my-next">▶</button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>日付</th><th>曜</th><th>出勤</th><th>退勤</th><th class="hide-sp">休憩</th><th class="r">実働</th><th class="hide-sp">備考</th><th class="hide-sp"></th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr class="tfoot-row">
+            <td colspan="5" class="r">合計</td>
+            <td class="r">${fmtW(totalMin)}</td>
+            <td colspan="2" class="hide-sp">${totalDays}日出勤</td>
+          </tr></tfoot>
+        </table></div>
+      </div>
+    </div>`;
+  startClock();
+}
+
+// ─── 従業員マスタ ────────────────────────────────
+function renderEmp() {
+  const emps = getEmployees();
+  const rows = emps.length
+    ? emps.map(e=>`<tr>
+        <td>${esc(e.name)}</td>
+        <td class="m hide-sp">${esc(e.email)}</td>
+        <td class="hide-sp">${esc(e.department||'')}</td>
+        <td class="hide-sp">${esc(e.position||'')}</td>
+        <td class="hide-sp">${e.hireDate||''}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-sm" data-action="edit-emp" data-id="${e.id}">編集</button>
+          <button class="btn-sm btn-danger" data-action="del-emp" data-id="${e.id}">削除</button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="6" class="empty-td">従業員が登録されていません</td></tr>`;
+
+  document.getElementById('main').innerHTML=`
+    <div class="wrap"><div class="panel">
+      <div class="panel-header">
+        <span>従業員マスタ（${emps.length}名）</span>
+        <button class="btn-add" data-action="add-emp">＋ 追加</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>氏名</th><th class="hide-sp">ID（メール）</th><th class="hide-sp">部署</th><th class="hide-sp">雇用形態</th><th class="hide-sp">入社日</th><th>操作</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div></div>`;
+}
+
+// ─── 全員勤怠 ────────────────────────────────────
+function renderAll() {
+  const {year,month}=S.allMonth;
+  const emps = getEmployees();
+  const att  = getAttendance();
+  const days = dim(year,month);
+
+  const rows = emps.map(emp=>{
+    const ea=att[emp.id]||{};
+    let td=0,tm=0;
+    for(let d=1;d<=days;d++){
+      const r=ea[`${year}${pad(month)}${pad(d)}`];
+      if(r?.in&&r?.out){const w=calcWork(r.in,r.out,r.break);if(w!=null){td++;tm+=w;}}
+    }
+    const avg=td>0?Math.round(tm/td):null;
+    return `<tr data-action="show-emp-att" data-id="${emp.id}" data-name="${esc(emp.name)}" style="cursor:pointer">
+      <td>${esc(emp.name)}</td><td class="hide-sp">${esc(emp.department||'')}</td>
+      <td class="r">${td}日</td><td class="r">${fmtW(tm)}</td><td class="r hide-sp">${fmtW(avg)}</td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="5" class="empty-td">従業員が登録されていません</td></tr>`;
+
+  document.getElementById('main').innerHTML=`
+    <div class="wrap"><div class="panel">
+      <div class="panel-header">
+        <span>全員勤怠一覧</span>
+        <div class="mnav">
+          <button class="nav-btn" data-action="all-prev">◀</button>
+          <span class="mlabel">${year}年${month}月</span>
+          <button class="nav-btn" data-action="all-next">▶</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>氏名</th><th class="hide-sp">部署</th><th class="r">出勤日数</th><th class="r">総労働時間</th><th class="r hide-sp">平均/日</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div></div>`;
+}
+
+// ════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════
+let _clk=null;
+function startClock(){
+  clearInterval(_clk);
+  _clk=setInterval(()=>{
+    const el=document.getElementById('clock-el');
+    if(el)el.textContent=tstr(new Date()); else clearInterval(_clk);
+  },1000);
+}
+
+// ════════════════════════════════════════════════
+//  EVENTS
+// ════════════════════════════════════════════════
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-action],[data-tab]');
+  if(!el)return;
+  if(el.dataset.tab){S.tab=el.dataset.tab;render();return;}
+  switch(el.dataset.action){
+    case 'punch-in':      punchIn();  break;
+    case 'punch-out':     punchOut(); break;
+    case 'my-prev':       S.myMonth=prevM(S.myMonth);renderMy();break;
+    case 'my-next':       S.myMonth=nextM(S.myMonth);renderMy();break;
+    case 'all-prev':      S.allMonth=prevM(S.allMonth);renderAll();break;
+    case 'all-next':      S.allMonth=nextM(S.allMonth);renderAll();break;
+    case 'edit-att':      showAttModal(el.dataset.date,el.dataset.uid);break;
+    case 'add-emp':       showEmpModal(null);break;
+    case 'edit-emp':      showEmpModal(el.dataset.id);break;
+    case 'del-emp':       delEmp(el.dataset.id);break;
+    case 'show-emp-att':  showEmpAttModal(el.dataset.id,el.dataset.name);break;
+  }
+});
+
+function punchIn(){
+  const now=new Date(),k=today();
+  const att=getMyAtt(S.user.id);
+  att[k]={...(att[k]||{}),in:tstr(now)};
+  saveAttRecord(S.user.id,k,att[k]);
+  renderMy();
+}
+function punchOut(){
+  const now=new Date(),k=today();
+  const att=getMyAtt(S.user.id);
+  att[k]={...(att[k]||{}),out:tstr(now)};
+  saveAttRecord(S.user.id,k,att[k]);
+  renderMy();
+}
+
+// ════════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════════
+function showModal(html){
+  document.getElementById('mbody').innerHTML=html;
+  document.getElementById('modal-overlay').style.display='flex';
+}
+window.closeModal=()=>{ document.getElementById('modal-overlay').style.display='none'; };
+document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeModal(); });
+
+// ─── 勤怠編集 ─────────────────────────────────
+function showAttModal(dk,userId){
+  const r=getMyAtt(userId)[dk]||{};
+  const[y,m,d]=[dk.slice(0,4),dk.slice(4,6),dk.slice(6,8)];
+  showModal(`
+    <div class="mh"><h3>${parseInt(m)}月${parseInt(d)}日（${dow(+y,+m,+d)}）の勤怠編集</h3></div>
+    <div class="mb">
+      <div class="form-row"><label>出勤時刻</label><input type="time" id="m-in" value="${r.in||''}"></div>
+      <div class="form-row"><label>退勤時刻</label><input type="time" id="m-out" value="${r.out||''}"></div>
+      <div class="form-row"><label>休憩時間（分）</label><input type="number" id="m-brk" value="${r.break??60}" min="0" max="480"></div>
+      <div class="form-row"><label>備考</label><input type="text" id="m-note" value="${esc(r.note||'')}" placeholder="例：在宅勤務"></div>
+    </div>
+    <div class="mf">
+      <button class="btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveAtt('${dk}','${userId}')">保存</button>
+    </div>`);
+}
+window.saveAtt=(dk,userId)=>{
+  const rec={
+    in:document.getElementById('m-in').value,
+    out:document.getElementById('m-out').value,
+    break:Number(document.getElementById('m-brk').value)||0,
+    note:document.getElementById('m-note').value,
+  };
+  saveAttRecord(userId,dk,rec);
+  closeModal();
+  if(S.tab==='my')renderMy(); else renderAll();
+};
+
+// ─── 従業員 CRUD ───────────────────────────────
+function showEmpModal(id){
+  const emps=getEmployees();
+  const e=id?emps.find(x=>x.id===id):null;
+  const d=e||{};
+  const opts=['正社員','パート','契約社員','アルバイト'].map(p=>`<option value="${p}"${d.position===p?' selected':''}>${p}</option>`).join('');
+  showModal(`
+    <div class="mh"><h3>${id?'従業員を編集':'従業員を追加'}</h3></div>
+    <div class="mb">
+      <div class="form-row"><label>氏名 *</label><input type="text" id="em-name" value="${esc(d.name||'')}"></div>
+      <div class="form-row"><label>ID（メールアドレス）*</label><input type="email" id="em-email" value="${esc(d.email||'')}"></div>
+      <div class="form-row"><label>パスワード${id?' (変更する場合のみ入力)':' *'}</label><input type="password" id="em-pw" placeholder="${id?'変更しない場合は空欄':'パスワードを設定'}"></div>
+      <div class="form-row"><label>部署</label><input type="text" id="em-dept" value="${esc(d.department||'')}"></div>
+      <div class="form-row"><label>雇用形態</label><select id="em-pos">${opts}</select></div>
+      <div class="form-row"><label>入社日</label><input type="date" id="em-hire" value="${d.hireDate||''}"></div>
+    </div>
+    <div class="mf">
+      <button class="btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveEmp('${id||''}')">保存</button>
+    </div>`);
+}
+window.saveEmp=id=>{
+  const name  = document.getElementById('em-name').value.trim();
+  const email = document.getElementById('em-email').value.trim();
+  const pw    = document.getElementById('em-pw').value;
+  if(!name||!email){alert('氏名とIDは必須です。');return;}
+  const emps  = getEmployees();
+  if(!id && !pw){alert('新規登録時はパスワードを設定してください。');return;}
+  const existing = id ? emps.find(e=>e.id===id) : null;
+  const emp = {
+    id:       id||uid(),
+    name, email,
+    password: pw||(existing?.password||''),
+    department: document.getElementById('em-dept').value.trim(),
+    position:   document.getElementById('em-pos').value,
+    hireDate:   document.getElementById('em-hire').value,
+  };
+  saveEmployee(emp);
+  closeModal();
+  renderEmp();
+};
+
+function delEmp(id){
+  const emp=getEmployees().find(e=>e.id===id);
+  if(!emp)return;
+  if(!confirm(`「${emp.name}」を削除しますか？\n（勤怠データは残ります）`))return;
+  deleteEmployee(id);
+  renderEmp();
+}
+
+// ─── 従業員別勤怠詳細 ─────────────────────────
+function showEmpAttModal(uid,name){
+  const{year,month}=S.allMonth;
+  const att=getAttendance()[uid]||{};
+  const days=dim(year,month);
+  let td=0,tm=0,rows='';
+  for(let d=1;d<=days;d++){
+    const k=`${year}${pad(month)}${pad(d)}`;
+    const r=att[k]||{};
+    const w=calcWork(r.in,r.out,r.break);
+    if(w!=null){td++;tm+=w;}
+    if(!r.in&&!r.out)continue;
+    const cls=isSun(year,month,d)?'row-sun':isSat(year,month,d)?'row-sat':'';
+    const dc=isSun(year,month,d)?'dow-sun':isSat(year,month,d)?'dow-sat':'';
+    rows+=`<tr class="${cls}">
+      <td>${month}/${d}</td><td class="${dc}">${dow(year,month,d)}</td>
+      <td>${r.in||''}</td><td>${r.out||''}</td>
+      <td class="r">${fmtW(w)}</td>
+      <td class="note-td hide-sp">${esc(r.note||'')}</td>
+      <td class="hide-sp"><button class="btn-sm" data-action="edit-att" data-date="${k}" data-uid="${uid}">編集</button></td>
+    </tr>`;
+  }
+  if(!rows)rows=`<tr><td colspan="7" class="empty-td">記録がありません</td></tr>`;
+  showModal(`
+    <div class="mh"><h3>${esc(name)} — ${year}年${month}月</h3></div>
+    <div class="mb" style="padding:0">
+      <div class="tbl-wrap" style="max-height:55vh;overflow-y:auto"><table>
+        <thead><tr><th>日付</th><th>曜</th><th>出勤</th><th>退勤</th><th class="r">実働</th><th class="hide-sp">備考</th><th class="hide-sp"></th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="tfoot-row">
+          <td colspan="4" class="r">合計</td><td class="r">${fmtW(tm)}</td>
+          <td colspan="2">${td}日出勤</td>
+        </tr></tfoot>
+      </table></div>
+    </div>
+    <div class="mf"><button class="btn-secondary" onclick="closeModal()">閉じる</button></div>`);
+}
+</script>
+</body>
+</html>

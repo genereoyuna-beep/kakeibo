@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ライセンス申込管理システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #142844;
+    --navy-light: #2a4f7f;
+    --accent: #3b82f6;
+    --accent-light: #eff6ff;
+    --red: #ef4444;
+    --red-bg: #fef2f2;
+    --yellow: #f59e0b;
+    --yellow-bg: #fffbeb;
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow: 0 4px 16px rgba(30,58,95,0.10);
+    --shadow-lg: 0 8px 32px rgba(30,58,95,0.15);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
+    color: white;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    height: 64px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-header .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.02em;
+    color: white;
+    margin-right: 2.5rem;
+    white-space: nowrap;
+  }
+  .app-header .logo span {
+    color: #7dd3fc;
+  }
+
+  /* ===== NAV TABS ===== */
+  .nav-tabs {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+  }
+  .nav-tab {
+    padding: 0.45rem 1.1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    transition: all 0.18s;
+    border: none;
+    background: none;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: white; background: rgba(255,255,255,0.1); }
+  .nav-tab.active {
+    color: var(--navy);
+    background: white;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ===== MAIN ===== */
+  .main { max-width: 1440px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .page { display: none; animation: fadeIn 0.22s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ===== PAGE TITLE ===== */
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .page-title .icon {
+    width: 36px; height: 36px;
+    background: var(--navy);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1rem;
+  }
+
+  /* ===== CARD ===== */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--gray-100);
+  }
+
+  /* ===== FORM ===== */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    letter-spacing: 0.03em;
+  }
+  .form-label .required {
+    color: var(--red);
+    margin-left: 2px;
+  }
+  .form-control {
+    padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.9rem;
+    color: var(--gray-800);
+    background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
+  select.form-control { cursor: pointer; }
+  .form-hint { font-size: 0.78rem; color: var(--gray-400); }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.3rem;
+    border-radius: var(--radius-sm);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.16s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--navy);
+    color: white;
+    box-shadow: 0 2px 8px rgba(30,58,95,0.25);
+  }
+  .btn-primary:hover { background: var(--navy-dark); box-shadow: 0 4px 12px rgba(30,58,95,0.35); transform: translateY(-1px); }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-700); }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #059669; transform: translateY(-1px); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-outline {
+    background: white;
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+  }
+  .btn-outline:hover { background: var(--navy); color: white; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+  .btn-lg { padding: 0.75rem 2rem; font-size: 1rem; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  /* ===== BADGE / STATUS ===== */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-yellow { background: var(--yellow-bg); color: #b45309; }
+  .badge-green { background: var(--green-bg); color: #065f46; }
+  .badge-navy { background: var(--accent-light); color: var(--navy); }
+
+  /* ===== TABLE ===== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead tr { background: var(--navy); color: white; }
+  thead th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--gray-100);
+    transition: background 0.12s;
+  }
+  tbody tr:hover { background: var(--gray-50); }
+  tbody td { padding: 0.75rem 1rem; vertical-align: middle; }
+  .td-actions { display: flex; gap: 0.4rem; align-items: center; }
+
+  /* ===== STATUS SELECT ===== */
+  .status-select {
+    padding: 0.3rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 1.6rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 8px;
+  }
+  .status-select.pending { background-color: var(--red-bg); color: var(--red); }
+  .status-select.inprogress { background-color: var(--yellow-bg); color: #b45309; }
+  .status-select.done { background-color: var(--green-bg); color: #065f46; }
+
+  /* ===== FILTERS ===== */
+  .filter-bar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    align-items: flex-end;
+  }
+  .filter-bar .form-group { flex: 1; min-width: 160px; }
+  .filter-bar .btn { align-self: flex-end; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn 0.18s ease; }
+  .modal {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+    width: 100%;
+    max-width: 520px;
+    margin: 1rem;
+    overflow: hidden;
+  }
+  .modal-header {
+    background: var(--navy);
+    color: white;
+    padding: 1.1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: white;
+    font-size: 1.4rem; cursor: pointer; line-height: 1;
+    opacity: 0.7; transition: opacity 0.15s;
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 1.5rem; }
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    background: var(--gray-50);
+    display: flex; gap: 0.75rem; justify-content: flex-end;
+    border-top: 1px solid var(--gray-200);
+  }
+
+  /* ===== ALERT / SUCCESS ===== */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: flex-start; gap: 0.7rem;
+    font-size: 0.9rem;
+    animation: fadeIn 0.22s ease;
+  }
+  .alert-success { background: var(--green-bg); color: #065f46; border: 1px solid #a7f3d0; }
+  .alert-error { background: var(--red-bg); color: #991b1b; border: 1px solid #fecaca; }
+  .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* ===== STATS CARDS ===== */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+    border-left: 4px solid transparent;
+  }
+  .stat-card.total { border-color: var(--navy); }
+  .stat-card.pending { border-color: var(--red); }
+  .stat-card.inprogress { border-color: var(--yellow); }
+  .stat-card.done { border-color: var(--green); }
+  .stat-label { font-size: 0.78rem; color: var(--gray-500); font-weight: 500; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--gray-800); line-height: 1; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--gray-400);
+  }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.5; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* ===== MASTER TABLE ACTIONS ===== */
+  .master-actions { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
+  .toggle-active {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.82rem; font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    border: none; background: none; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .toggle-on { background: var(--green-bg); color: #065f46; }
+  .toggle-off { background: var(--gray-100); color: var(--gray-500); }
+
+  /* ===== SUBMIT SUCCESS ===== */
+  .submit-success {
+    text-align: center;
+    padding: 3rem 2rem;
+    animation: fadeIn 0.3s ease;
+  }
+  .submit-success .success-icon {
+    width: 80px; height: 80px;
+    background: var(--green-bg);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto 1.25rem;
+    color: var(--green);
+  }
+  .submit-success h3 { font-size: 1.25rem; color: var(--navy); margin-bottom: 0.5rem; }
+  .submit-success p { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .app-header { padding: 0 1rem; }
+    .nav-tab { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+    .main { padding: 1.25rem 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .filter-bar { flex-direction: column; }
+    .filter-bar .form-group { min-width: 0; }
+  }
+  @media (max-width: 480px) {
+    .app-header .logo { font-size: 1.1rem; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ===== PRICE DISPLAY ===== */
+  .price { font-weight: 600; color: var(--navy); }
+
+  /* ===== CHAT ===== */
+  .chat-modal .modal { max-width: 600px; }
+  .chat-window {
+    height: 340px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    scroll-behavior: smooth;
+  }
+  .chat-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    max-width: 82%;
+  }
+  .chat-msg.staff { align-self: flex-end; align-items: flex-end; }
+  .chat-msg.system { align-self: center; align-items: center; }
+  .chat-bubble {
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .chat-msg.staff .chat-bubble {
+    background: var(--navy);
+    color: white;
+    border-bottom-right-radius: 3px;
+  }
+  .chat-msg.system .chat-bubble {
+    background: var(--gray-200);
+    color: var(--gray-500);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.8rem;
+  }
+  .chat-meta {
+    font-size: 0.72rem;
+    color: var(--gray-400);
+  }
+  .chat-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+  .chat-input-row textarea {
+    flex: 1;
+    resize: none;
+    min-height: 60px;
+  }
+  .chat-notify-badge {
+    display: inline-flex; align-items: center;
+    background: var(--accent-light);
+    color: var(--navy);
+    font-size: 0.72rem; font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.4rem;
+  }
+  .btn-chat { background: #e0f2fe; color: #0369a1; }
+  .btn-chat:hover { background: #bae6fd; }
+
+  /* ===== GAS SETTINGS BAR ===== */
+  .gas-bar {
+    background: var(--navy-dark);
+    padding: 0.55rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+  }
+  .gas-bar input {
+    flex: 1;
+    max-width: 480px;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 0.8rem;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .gas-bar input::placeholder { color: rgba(255,255,255,0.35); }
+  .gas-bar input:focus { outline: none; border-color: #7dd3fc; background: rgba(255,255,255,0.12); }
+  .gas-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+  }
+  .gas-status.ok  { background: var(--green-bg); color: #065f46; }
+  .gas-status.ng  { background: var(--red-bg);   color: var(--red); }
+  .gas-status.none { background: var(--yellow-bg); color: #92400e; }
+
+  /* ===== LOGIN OVERLAY ===== */
+  #login-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 50%, var(--navy-light) 100%);
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  #login-overlay.show { display: flex; }
+  #login-overlay::before {
+    content: '';
+    position: absolute; right: -80px; top: -80px;
+    width: 400px; height: 400px;
+    background: rgba(255,255,255,0.04); border-radius: 50%;
+  }
+  #login-overlay::after {
+    content: '';
+    position: absolute; left: -60px; bottom: -60px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,0.03); border-radius: 50%;
+  }
+  .login-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    width: 100%; max-width: 420px;
+    margin: 1rem;
+    overflow: hidden;
+    position: relative; z-index: 1;
+    animation: fadeIn 0.3s ease;
+  }
+  .login-header {
+    background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+    color: white;
+  }
+  .login-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.3rem;
+  }
+  .login-logo span { color: #7dd3fc; }
+  .login-subtitle { font-size: 0.82rem; opacity: 0.7; }
+  .login-body { padding: 2rem; }
+  .login-error {
+    background: var(--red-bg);
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .login-footer {
+    padding: 1rem 2rem 1.5rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--gray-400);
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-100);
+  }
+  .demo-accounts {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    font-size: 0.78rem;
+    color: var(--gray-600);
+    margin-top: 1rem;
+  }
+  .demo-accounts strong { color: var(--navy); display: block; margin-bottom: 0.4rem; }
+  .demo-account-row {
+    display: flex; gap: 0.5rem; align-items: center;
+    padding: 0.3rem 0; cursor: pointer;
+    border-radius: 4px; padding: 0.3rem 0.4rem;
+    transition: background 0.12s;
+  }
+  .demo-account-row:hover { background: var(--gray-200); }
+  .demo-account-row .da-role { font-weight: 700; width: 80px; }
+
+  /* ===== HEADER USER AREA ===== */
+  .header-user {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 0.83rem; color: rgba(255,255,255,0.85);
+  }
+  .header-user .user-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 0.3rem 0.85rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .role-tag {
+    font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 8px;
+  }
+  .role-tag.admin    { background: #fbbf24; color: #78350f; }
+  .role-tag.customer { background: #7dd3fc; color: var(--navy-dark); }
+  .btn-logout {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white; font-size: 0.8rem; font-weight: 500;
+    padding: 0.3rem 0.85rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.22); }
+
+  /* ===== 申込履歴 PAGE ===== */
+  .history-customer-card {
+    background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+    border-radius: var(--radius);
+    color: white;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .history-customer-card .hc-item { font-size: 0.85rem; opacity: 0.85; }
+  .history-customer-card .hc-val  { font-weight: 700; font-size: 1rem; opacity: 1; }
+
+  /* ===== USER MANAGEMENT ===== */
+  .user-role-badge {
+    display: inline-flex; align-items: center;
+    padding: 0.2rem 0.65rem; border-radius: 12px;
+    font-size: 0.76rem; font-weight: 700;
+  }
+  .user-role-badge.admin    { background: #fef3c7; color: #92400e; }
+  .user-role-badge.customer { background: var(--accent-light); color: var(--navy); }
+
+  /* ===== FORM SECTION DIVIDER ===== */
+  .form-section {
+    padding: 1.25rem;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+  }
+  .form-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  /* ===== APPLICATION HERO ===== */
+  .app-hero {
+    background: linear-gradient(135deg, var(--navy-dark), var(--navy-light));
+    border-radius: var(--radius);
+    color: white;
+    padding: 2rem 2.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .app-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+  }
+  .app-hero::before {
+    content: '';
+    position: absolute;
+    right: 60px; bottom: -40px;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .app-hero h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .app-hero p { font-size: 0.9rem; opacity: 0.8; max-width: 480px; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay" class="show">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">License<span>Hub</span></div>
+      <div class="login-subtitle">ライセンス申込管理システム</div>
+    </div>
+    <div class="login-body">
+      <div class="login-error" id="login-error">メールアドレスまたはパスワードが正しくありません</div>
+      <form onsubmit="doLogin(event)">
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label">メールアドレス <span class="required">*</span></label>
+          <input type="email" class="form-control" id="login-email" placeholder="user@example.com" required autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom:1.5rem;">
+          <label class="form-label">パスワード <span class="required">*</span></label>
+          <input type="password" class="form-control" id="login-password" placeholder="パスワードを入力" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">ログイン</button>
+      </form>
+      <div class="demo-accounts">
+        <strong>デモ用アカウント（クリックで自動入力）</strong>
+        <div class="demo-account-row" onclick="fillDemo('admin@licensehub.com','admin1234')">
+          <span class="da-role"><span class="user-role-badge admin">スタッフ</span></span>
+          <span>admin@licensehub.com　／　admin1234</span>
+        </div>
+        <div class="demo-account-row" onclick="fillDemo('suzuki@tokyo-shoji.co.jp','pass1234')">
+          <span class="da-role"><span class="user-role-badge customer">お客様</span></span>
+          <span>suzuki@tokyo-shoji.co.jp　／　pass1234　<small style="opacity:0.65;">（東京商事 担当①）</small></span>
+        </div>
+        <div class="demo-account-row" onclick="fillDemo('sato@tokyo-shoji.co.jp','pass1234')">
+          <span class="da-role"><span class="user-role-badge customer">お客様</span></span>
+          <span>sato@tokyo-shoji.co.jp　／　pass1234　<small style="opacity:0.65;">（東京商事 担当②）</small></span>
+        </div>
+        <div class="demo-account-row" onclick="fillDemo('tanaka@osaka-sys.co.jp','pass1234')">
+          <span class="da-role"><span class="user-role-badge customer">お客様</span></span>
+          <span>tanaka@osaka-sys.co.jp　／　pass1234</span>
+        </div>
+      </div>
+    </div>
+    <div class="login-footer">© LicenseHub — ライセンス申込管理システム</div>
+  </div>
+</div>
+
+<!-- GAS SETTINGS BAR -->
+<div class="gas-bar">
+  <span>📧 GAS メールURL：</span>
+  <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/XXXX/exec" oninput="saveGasUrl()">
+  <span id="gas-status" class="gas-status none">未設定</span>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:none;" onclick="testGasConnection()">疎通確認</button>
+</div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo">License<span>Hub</span></div>
+  <nav class="nav-tabs" id="main-nav"></nav>
+  <div class="header-user" id="header-user" style="display:none;">
+    <div class="user-badge">
+      <span id="header-user-name"></span>
+      <span id="header-role-tag" class="role-tag"></span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ===== PAGE 1: 申込フォーム ===== -->
+  <div class="page active" id="page-apply">
+    <div class="app-hero">
+      <h2>ライセンス申込フォーム</h2>
+      <p>ご希望のライセンスを選択し、必要事項をご記入のうえ申込ボタンを押してください。担当者よりご連絡いたします。</p>
+    </div>
+
+    <div id="apply-form-area">
+      <div class="card">
+        <div class="card-title">申込情報入力</div>
+        <div id="apply-alert"></div>
+        <form id="apply-form" onsubmit="submitApplication(event)">
+          <div class="form-section">
+            <div class="form-section-title">ライセンス選択</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">商材 / サービス <span class="required">*</span></label>
+                <select class="form-control" id="apply-product" required onchange="onProductChange()">
+                  <option value="">-- 商材を選択 --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">プラン / コース <span class="required">*</span></label>
+                <select class="form-control" id="apply-plan" required onchange="onPlanChange()" disabled>
+                  <option value="">-- 先に商材を選択 --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">契約種別 <span class="required">*</span></label>
+                <select class="form-control" id="apply-contract" required onchange="updateLicenseInfo()" disabled>
+                  <option value="">-- 先にプランを選択 --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">数量 <span class="required">*</span></label>
+                <input type="number" class="form-control" id="apply-qty" min="1" value="1" required>
+              </div>
+              <div class="form-group full" id="license-info-area" style="display:none;">
+                <div id="license-info-box"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">お客様情報</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">会社名 <span class="required">*</span></label>
+                <input type="text" class="form-control" id="apply-company" placeholder="株式会社〇〇" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">担当者名 <span class="required">*</span></label>
+                <input type="text" class="form-control" id="apply-name" placeholder="山田 太郎" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">メールアドレス <span class="required">*</span></label>
+                <input type="email" class="form-control" id="apply-email" placeholder="example@company.co.jp" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">電話番号</label>
+                <input type="tel" class="form-control" id="apply-tel" placeholder="03-0000-0000">
+              </div>
+              <div class="form-group">
+                <label class="form-label">納品希望日</label>
+                <input type="date" class="form-control" id="apply-delivery-date">
+                <span class="form-hint">ご希望がある場合はご指定ください</span>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">備考・ご要望</label>
+                <textarea class="form-control" id="apply-note" rows="3" placeholder="ご質問やご要望があればご記入ください"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+            <button type="submit" class="btn btn-primary btn-lg">申込を送信する →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="apply-success-area" style="display:none;">
+      <div class="card">
+        <div class="submit-success">
+          <div class="success-icon">✓</div>
+          <h3>申込を受け付けました</h3>
+          <p>担当者より3営業日以内にご連絡いたします。<br>ご不明な点はお気軽にお問い合わせください。</p>
+          <button class="btn btn-outline" onclick="resetApplyForm()">新しい申込をする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 2: 申込管理 ===== -->
+  <div class="page" id="page-manage">
+    <div class="page-title">
+      <div class="icon">📋</div>
+      申込管理
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Filters -->
+    <div class="card">
+      <div class="filter-bar">
+        <div class="form-group">
+          <label class="form-label">ステータス</label>
+          <select class="form-control" id="filter-status" onchange="renderManageTable()">
+            <option value="">すべて</option>
+            <option value="pending">未対応</option>
+            <option value="inprogress">対応中</option>
+            <option value="done">完了</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">開始日</label>
+          <input type="date" class="form-control" id="filter-from" onchange="renderManageTable()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">終了日</label>
+          <input type="date" class="form-control" id="filter-to" onchange="renderManageTable()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">キーワード</label>
+          <input type="text" class="form-control" id="filter-keyword" placeholder="会社名・担当者名" oninput="renderManageTable()">
+        </div>
+        <button class="btn btn-secondary" onclick="clearFilters()">リセット</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>申込日時</th>
+              <th>会社名</th>
+              <th>担当者名</th>
+              <th>商材 / プラン / 契約</th>
+              <th>数量</th>
+              <th>納品希望日</th>
+              <th>ステータス</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="manage-tbody"></tbody>
+        </table>
+        <div id="manage-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📭</div>
+          <p>申込データがありません</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 3: マスタ管理 ===== -->
+  <div class="page" id="page-master">
+    <div class="page-title">
+      <div class="icon">⚙️</div>
+      ライセンスマスタ管理
+    </div>
+
+    <div class="master-actions">
+      <button class="btn btn-primary" onclick="openMasterModal()">＋ 新規追加</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>商材 / サービス</th>
+              <th>プラン / コース</th>
+              <th>契約種別</th>
+              <th>説明</th>
+              <th>単価</th>
+              <th>納品目安</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="master-tbody"></tbody>
+        </table>
+        <div id="master-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📦</div>
+          <p>ライセンス商品が登録されていません</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 4: 申込履歴（お客様用） ===== -->
+  <div class="page" id="page-history">
+    <div class="page-title">
+      <div class="icon">📋</div>
+      申込履歴
+    </div>
+    <div id="history-customer-card" class="history-customer-card"></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>申込日時</th>
+              <th>申込担当者</th>
+              <th>ライセンス種類</th>
+              <th>数量</th>
+              <th>納品希望日</th>
+              <th>ステータス</th>
+              <th>担当者メッセージ</th>
+              <th>詳細</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+        <div id="history-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📭</div>
+          <p>申込履歴がありません</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 5: ユーザー管理（スタッフ用） ===== -->
+  <div class="page" id="page-users">
+    <div class="page-title">
+      <div class="icon">👤</div>
+      ユーザー管理
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:1.25rem;">
+      <button class="btn btn-primary" onclick="openUserModal()">＋ ユーザー追加</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>メールアドレス</th>
+              <th>氏名</th>
+              <th>会社名</th>
+              <th>権限</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ===== MODAL: メール通知 ===== -->
+<div class="modal-overlay" id="mail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📧 メール通知送信</h3>
+      <button class="modal-close" onclick="closeModal('mail-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="mail-info" style="margin-bottom:1rem; padding:0.85rem; background:var(--gray-50); border-radius:var(--radius-sm); font-size:0.88rem;"></div>
+      <div class="form-group">
+        <label class="form-label">送信先メールアドレス <span class="required">*</span></label>
+        <input type="email" class="form-control" id="mail-to" placeholder="staff@company.co.jp" value="staff@example.co.jp">
+        <span class="form-hint">複数の場合はカンマ区切りで入力してください</span>
+      </div>
+      <div class="form-group" style="margin-top:0.75rem;">
+        <label class="form-label">メッセージ（任意）</label>
+        <textarea class="form-control" id="mail-msg" rows="3" placeholder="追記事項があれば入力してください"></textarea>
+      </div>
+      <div id="mail-sent-msg" style="display:none; margin-top:0.75rem;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('mail-modal')">キャンセル</button>
+      <button class="btn btn-primary" id="mail-send-btn" onclick="sendMailNotification()">送信する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: マスタ編集 ===== -->
+<div class="modal-overlay" id="master-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="master-modal-title">ライセンス商品 追加</h3>
+      <button class="modal-close" onclick="closeModal('master-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="master-edit-id">
+      <datalist id="product-datalist"></datalist>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="form-group">
+          <label class="form-label">商材 / サービス名 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="master-product" placeholder="例：kintone" list="product-datalist" required>
+          <span class="form-hint">既存の商材名を選択、または新規入力</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">プラン / コース名 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="master-name" placeholder="例：スタンダードコース" required>
+        </div>
+      </div>
+      <div class="form-grid" style="grid-template-columns:1fr; margin-top:0.75rem;">
+        <div class="form-group">
+          <label class="form-label">説明</label>
+          <textarea class="form-control" id="master-desc" rows="2" placeholder="プランの説明を入力"></textarea>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">契約種別 <span class="required">*</span></label>
+            <select class="form-control" id="master-contract-type" onchange="updatePriceHint()">
+              <option value="monthly">月間契約</option>
+              <option value="annual">年間契約</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">単価（円）<span class="required">*</span></label>
+            <input type="number" class="form-control" id="master-price" min="0" placeholder="例：16200">
+            <span class="form-hint" id="master-price-hint">月額単価 / ライセンス</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">納品までの目安営業日数</label>
+          <input type="number" class="form-control" id="master-delivery-days" min="0" placeholder="例：5">
+          <span class="form-hint">申込から納品までの目安（申込フォームにて表示されます）</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">状態</label>
+          <select class="form-control" id="master-active">
+            <option value="true">有効</option>
+            <option value="false">無効</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('master-modal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveMaster()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: 申込詳細 ===== -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>申込詳細</h3>
+      <button class="modal-close" onclick="closeModal('detail-modal')">×</button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('detail-modal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: チャット ===== -->
+<div class="modal-overlay chat-modal" id="chat-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3>💬 チャット <span id="chat-modal-subtitle" style="font-size:0.82rem; font-weight:400; opacity:0.8;"></span></h3>
+      <button class="modal-close" onclick="closeModal('chat-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.8rem; color:var(--gray-500); margin-bottom:0.75rem; padding:0.6rem 0.85rem; background:var(--accent-light); border-radius:var(--radius-sm);">
+        📧 メッセージ送信時、お客様（<strong id="chat-customer-email"></strong>）へメール通知が届きます（デモ）
+      </div>
+      <div class="chat-window" id="chat-window"></div>
+      <div class="chat-input-row">
+        <textarea class="form-control" id="chat-input" rows="2" placeholder="メッセージを入力してEnter送信（Shift+Enterで改行）" onkeydown="chatKeyDown(event)"></textarea>
+        <button class="btn btn-primary" onclick="sendChatMessage()" style="height:60px; padding:0 1.2rem;">送信</button>
+      </div>
+      <div id="chat-notify-status" style="margin-top:0.5rem; font-size:0.8rem; color:var(--green); min-height:1.2em;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('chat-modal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ユーザー編集 ===== -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="user-modal-title">ユーザー追加</h3>
+      <button class="modal-close" onclick="closeModal('user-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="user-edit-id">
+      <div class="form-grid" style="grid-template-columns:1fr;">
+        <div class="form-group">
+          <label class="form-label">メールアドレス <span class="required">*</span></label>
+          <input type="email" class="form-control" id="user-email" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">パスワード <span class="required">*</span></label>
+          <input type="text" class="form-control" id="user-password" placeholder="パスワードを設定">
+          <span class="form-hint">編集時は空欄のままにすると変更しません</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">氏名</label>
+            <input type="text" class="form-control" id="user-name" placeholder="山田 太郎">
+          </div>
+          <div class="form-group">
+            <label class="form-label">会社名</label>
+            <input type="text" class="form-control" id="user-company" placeholder="株式会社〇〇">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">権限</label>
+          <select class="form-control" id="user-role">
+            <option value="customer">お客様（申込・履歴のみ）</option>
+            <option value="admin">スタッフ（管理画面）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('user-modal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveUser()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// DATA LAYER
+// ================================================================
+const STORAGE_KEYS = { apps: 'lh_applications', masters: 'lh_masters', users: 'lh_users', session: 'lh_session' };
+
+function loadData(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+}
+function saveData(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function getApps() { return loadData(STORAGE_KEYS.apps); }
+function savApps(d) { saveData(STORAGE_KEYS.apps, d); }
+function getMasters() { return loadData(STORAGE_KEYS.masters); }
+function savMasters(d) { saveData(STORAGE_KEYS.masters, d); }
+function getUsers() { return loadData(STORAGE_KEYS.users); }
+function savUsers(d) { saveData(STORAGE_KEYS.users, d); }
+function getSession() { try { return JSON.parse(sessionStorage.getItem(STORAGE_KEYS.session)); } catch { return null; } }
+function savSession(u) { sessionStorage.setItem(STORAGE_KEYS.session, JSON.stringify(u)); }
+function clearSession() { sessionStorage.removeItem(STORAGE_KEYS.session); }
+
+// ================================================================
+// INIT — Seed demo data if empty
+// ================================================================
+function initDemoData() {
+  if (getUsers().length === 0) {
+    savUsers([
+      { id: 'u1', email: 'admin@licensehub.com', password: 'admin1234', name: '管理者', company: '弊社', role: 'admin' },
+      { id: 'u2', email: 'suzuki@tokyo-shoji.co.jp', password: 'pass1234', name: '鈴木 一郎', company: '東京商事株式会社', role: 'customer' },
+      { id: 'u4', email: 'sato@tokyo-shoji.co.jp',  password: 'pass1234', name: '佐藤 次郎', company: '東京商事株式会社', role: 'customer' },
+      { id: 'u3', email: 'tanaka@osaka-sys.co.jp', password: 'pass1234', name: '田中 花子', company: '大阪システム株式会社', role: 'customer' },
+    ]);
+  } else {
+    // 既存データにu4（佐藤次郎）が無ければ追加
+    const users = getUsers();
+    if (!users.find(u => u.id === 'u4')) {
+      savUsers([...users, { id: 'u4', email: 'sato@tokyo-shoji.co.jp', password: 'pass1234', name: '佐藤 次郎', company: '東京商事株式会社', role: 'customer' }]);
+    }
+    // 既存データにa5（佐藤次郎の申込）が無ければ追加
+    const apps = getApps();
+    if (!apps.find(a => a.id === 'a5')) {
+      savApps([...apps, { id: 'a5', datetime: '2026-04-16T10:30:00', company: '東京商事株式会社', name: '佐藤 次郎', email: 'sato@tokyo-shoji.co.jp', tel: '03-1234-9999', licenseProduct: 'Chatwork', licensePlan: 'ビジネスプラン', contractType: 'monthly', license: 'Chatwork / ビジネスプラン（月間）', qty: 8, deliveryDate: '2026-04-30', note: '別担当者からの追加申込', status: 'pending', chats: [] }]);
+    }
+  }
+  if (getMasters().length === 0) {
+    savMasters([
+      { id: 'm1',  product: 'kintone',           name: 'スタンダードコース',   contractType: 'annual',  price: 16200, desc: 'kintoneの標準機能をすべて利用できる年間プランです。',        deliveryDays: 3, active: true },
+      { id: 'm2',  product: 'kintone',           name: 'ワイルドカードコース', contractType: 'annual',  price: 32400, desc: '複数サブドメインにまたがって利用できる年間プランです。',     deliveryDays: 3, active: true },
+      { id: 'm3',  product: 'Google Workspace',  name: 'Business Starter',   contractType: 'monthly', price: 680,   desc: '基本的なビジネスツールセット。月間契約。',                   deliveryDays: 2, active: true },
+      { id: 'm4',  product: 'Google Workspace',  name: 'Business Starter',   contractType: 'annual',  price: 7344,  desc: '基本的なビジネスツールセット。年間契約（約8%割引）。',       deliveryDays: 2, active: true },
+      { id: 'm5',  product: 'Google Workspace',  name: 'Business Standard',  contractType: 'monthly', price: 1360,  desc: '2TB・会議録画機能付き。月間契約。',                         deliveryDays: 2, active: true },
+      { id: 'm6',  product: 'Google Workspace',  name: 'Business Standard',  contractType: 'annual',  price: 14688, desc: '2TB・会議録画機能付き。年間契約（約8%割引）。',             deliveryDays: 2, active: true },
+      { id: 'm7',  product: 'Microsoft 365',     name: 'Business Basic',     contractType: 'monthly', price: 650,   desc: 'WebアプリOffice＋Teamsのセット。月間契約。',               deliveryDays: 3, active: true },
+      { id: 'm8',  product: 'Microsoft 365',     name: 'Business Basic',     contractType: 'annual',  price: 7020,  desc: 'WebアプリOffice＋Teamsのセット。年間契約。',               deliveryDays: 3, active: true },
+      { id: 'm9',  product: 'Microsoft 365',     name: 'Business Standard',  contractType: 'monthly', price: 1360,  desc: 'デスクトップ版Officeアプリ含む標準プラン。月間契約。',     deliveryDays: 3, active: true },
+      { id: 'm10', product: 'Microsoft 365',     name: 'Business Standard',  contractType: 'annual',  price: 14688, desc: 'デスクトップ版Officeアプリ含む標準プラン。年間契約。',     deliveryDays: 3, active: true },
+      { id: 'm11', product: 'Chatwork',          name: 'ビジネスプラン',      contractType: 'monthly', price: 700,   desc: '管理機能・外部チャット無制限の有償プラン。月間契約。',     deliveryDays: 2, active: true },
+    ]);
+  }
+  if (getApps().length === 0) {
+    savApps([
+      { id: 'a1', datetime: '2026-04-10T09:23:00', company: '東京商事株式会社',      name: '鈴木 一郎', email: 'suzuki@tokyo-shoji.co.jp', tel: '03-1234-5678',  licenseProduct: 'kintone',          licensePlan: 'スタンダードコース',  contractType: 'annual',  license: 'kintone / スタンダードコース（年間）',          qty: 5,  deliveryDate: '2026-04-20', note: '', status: 'pending',    chats: [] },
+      { id: 'a2', datetime: '2026-04-11T14:05:00', company: '大阪システム株式会社',    name: '田中 花子', email: 'tanaka@osaka-sys.co.jp',    tel: '06-9876-5432', licenseProduct: 'Google Workspace', licensePlan: 'Business Standard', contractType: 'monthly', license: 'Google Workspace / Business Standard（月間）',     qty: 2,  deliveryDate: '2026-04-25', note: '導入時に説明会を希望', status: 'inprogress', chats: [{ role: 'staff', text: 'ご申込ありがとうございます。説明会の日程について確認いたします。', datetime: '2026-04-11T15:00:00' }] },
+      { id: 'a3', datetime: '2026-04-12T11:17:00', company: '名古屋テック合同会社',    name: '伊藤 次郎', email: 'ito@nagoya-tech.jp',          tel: '',             licenseProduct: 'Microsoft 365',    licensePlan: 'Business Standard', contractType: 'annual',  license: 'Microsoft 365 / Business Standard（年間）',        qty: 1,  deliveryDate: '',           note: '', status: 'done',       chats: [] },
+      { id: 'a4', datetime: '2026-04-14T08:55:00', company: '福岡コンサルティング株式会社', name: '山田 三郎', email: 'yamada@fk-cons.co.jp', tel: '092-333-4444', licenseProduct: 'kintone',          licensePlan: 'ワイルドカードコース', contractType: 'annual', license: 'kintone / ワイルドカードコース（年間）',         qty: 10, deliveryDate: '2026-05-01', note: 'まとめて導入したい', status: 'pending', chats: [] },
+      { id: 'a5', datetime: '2026-04-16T10:30:00', company: '東京商事株式会社',      name: '佐藤 次郎', email: 'sato@tokyo-shoji.co.jp',    tel: '03-1234-9999',  licenseProduct: 'Chatwork',         licensePlan: 'ビジネスプラン',    contractType: 'monthly', license: 'Chatwork / ビジネスプラン（月間）', qty: 8, deliveryDate: '2026-04-30', note: '別担当者からの追加申込', status: 'pending', chats: [] },
+    ]);
+  }
+}
+
+// ================================================================
+// NAV
+// ================================================================
+function switchPage(id, fromNav) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + id);
+  if (pageEl) pageEl.classList.add('active');
+  if (fromNav) fromNav.classList.add('active');
+
+  if (id === 'manage')  { renderStats(); renderManageTable(); }
+  if (id === 'master')  { renderMasterTable(); }
+  if (id === 'apply')   { populateLicenseSelect(); prefillApplyForm(); }
+  if (id === 'history') { renderHistoryPage(); }
+  if (id === 'users')   { renderUsersTable(); }
+}
+
+// ================================================================
+// PAGE 1: APPLICATION FORM
+// ================================================================
+const CONTRACT_LABELS = { monthly: '月間契約', annual: '年間契約' };
+const CONTRACT_UNIT   = { monthly: '/月',      annual: '/年'      };
+const CONTRACT_COLORS = { monthly: '#0369a1',  annual: '#7c3aed'  };
+const CONTRACT_BGS    = { monthly: '#e0f2fe',  annual: '#ede9fe'  };
+
+function populateLicenseSelect() {
+  const masters = getMasters().filter(m => m.active);
+  const products = [...new Set(masters.map(m => m.product || m.name))];
+  const prodSel = document.getElementById('apply-product');
+  prodSel.innerHTML = '<option value="">-- 商材を選択 --</option>';
+  products.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    prodSel.appendChild(opt);
+  });
+  _resetPlanSelect();
+  _resetContractSelect();
+  document.getElementById('license-info-area').style.display = 'none';
+}
+
+function prefillApplyForm() {
+  const user = getSession();
+  if (!user) return;
+  const companyEl = document.getElementById('apply-company');
+  const nameEl    = document.getElementById('apply-name');
+  const emailEl   = document.getElementById('apply-email');
+  if (companyEl && !companyEl.value) companyEl.value = user.company || '';
+  if (nameEl    && !nameEl.value)    nameEl.value    = user.name    || '';
+  if (emailEl   && !emailEl.value)   emailEl.value   = user.email   || '';
+}
+
+function _resetPlanSelect() {
+  const s = document.getElementById('apply-plan');
+  s.innerHTML = '<option value="">-- 先に商材を選択 --</option>';
+  s.disabled = true;
+}
+function _resetContractSelect() {
+  const s = document.getElementById('apply-contract');
+  s.innerHTML = '<option value="">-- 先にプランを選択 --</option>';
+  s.disabled = true;
+}
+
+function onProductChange() {
+  const product = document.getElementById('apply-product').value;
+  _resetPlanSelect();
+  _resetContractSelect();
+  document.getElementById('license-info-area').style.display = 'none';
+  if (!product) return;
+
+  // プラン名を重複除去して列挙
+  const masters = getMasters().filter(m => m.active && (m.product || m.name) === product);
+  const planNames = [...new Set(masters.map(m => m.name))];
+  const planSel = document.getElementById('apply-plan');
+  planSel.innerHTML = '<option value="">-- プランを選択 --</option>';
+  planNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    planSel.appendChild(opt);
+  });
+  planSel.disabled = false;
+}
+
+function onPlanChange() {
+  const product = document.getElementById('apply-product').value;
+  const plan    = document.getElementById('apply-plan').value;
+  _resetContractSelect();
+  document.getElementById('license-info-area').style.display = 'none';
+  if (!product || !plan) return;
+
+  // 該当の契約種別を列挙（重複除去）
+  const masters = getMasters().filter(m => m.active && (m.product || m.name) === product && m.name === plan);
+  const contractSel = document.getElementById('apply-contract');
+  contractSel.innerHTML = '<option value="">-- 契約種別を選択 --</option>';
+  masters.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.contractType;
+    opt.textContent = CONTRACT_LABELS[m.contractType] || m.contractType;
+    contractSel.appendChild(opt);
+  });
+  contractSel.disabled = false;
+
+  // 選択肢が1つしかない場合は自動選択してinfo表示
+  if (masters.length === 1) {
+    contractSel.value = masters[0].contractType;
+    updateLicenseInfo();
+  }
+}
+
+function updateLicenseInfo() {
+  const product      = document.getElementById('apply-product').value;
+  const plan         = document.getElementById('apply-plan').value;
+  const contractType = document.getElementById('apply-contract').value;
+  const area = document.getElementById('license-info-area');
+  const box  = document.getElementById('license-info-box');
+  if (!product || !plan || !contractType) { area.style.display = 'none'; return; }
+  const m = getMasters().find(x => x.active && (x.product || x.name) === product && x.name === plan && x.contractType === contractType);
+  if (!m) { area.style.display = 'none'; return; }
+
+  const deliveryBadge = m.deliveryDays
+    ? `<span style="background:#fef3c7;color:#92400e;font-size:0.78rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:10px;">🚚 納品目安 ${m.deliveryDays} 営業日</span>`
+    : '';
+  const contractBadge = `<span style="background:${CONTRACT_BGS[m.contractType]};color:${CONTRACT_COLORS[m.contractType]};font-size:0.78rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:10px;">${CONTRACT_LABELS[m.contractType]}</span>`;
+
+  box.innerHTML = `
+    <div style="background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:0.85rem 1rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+        <span style="font-size:0.75rem;background:var(--navy);color:white;padding:0.15rem 0.6rem;border-radius:8px;font-weight:600;">${esc(product)}</span>
+        <span style="font-weight:700;color:var(--navy);">${esc(plan)}</span>
+        ${contractBadge} ${deliveryBadge}
+      </div>
+      <div style="font-size:0.85rem;color:var(--gray-600);margin-bottom:0.5rem;">${esc(m.desc || '—')}</div>
+      <div style="font-size:0.9rem;">
+        <strong class="price">¥${Number(m.price || 0).toLocaleString()}</strong>
+        <span style="color:var(--gray-500);font-size:0.82rem;">${CONTRACT_UNIT[m.contractType]} / ライセンス</span>
+      </div>
+    </div>`;
+  area.style.display = 'block';
+}
+
+function submitApplication(e) {
+  e.preventDefault();
+  const alertEl = document.getElementById('apply-alert');
+  alertEl.innerHTML = '';
+
+  const licenseProduct = document.getElementById('apply-product').value;
+  const licensePlan    = document.getElementById('apply-plan').value;
+  const contractType   = document.getElementById('apply-contract').value;
+  const ctLabel = CONTRACT_LABELS[contractType] || contractType;
+  const license = licenseProduct && licensePlan
+    ? `${licenseProduct} / ${licensePlan}（${ctLabel}）`
+    : (licenseProduct || licensePlan || '');
+  const qty = parseInt(document.getElementById('apply-qty').value);
+  const company = document.getElementById('apply-company').value.trim();
+  const name = document.getElementById('apply-name').value.trim();
+  const email = document.getElementById('apply-email').value.trim();
+  const tel = document.getElementById('apply-tel').value.trim();
+  const deliveryDate = document.getElementById('apply-delivery-date').value;
+  const note = document.getElementById('apply-note').value.trim();
+
+  if (!licenseProduct || !licensePlan || !contractType || !qty || !company || !name || !email) {
+    alertEl.innerHTML = '<div class="alert alert-error"><span class="alert-icon">⚠️</span>必須項目をすべて入力してください（商材・プラン・契約種別をご選択ください）。</div>';
+    return;
+  }
+
+  const apps = getApps();
+  apps.unshift({
+    id: 'a' + Date.now(),
+    datetime: new Date().toISOString(),
+    company, name, email, tel,
+    licenseProduct, licensePlan, contractType, license,
+    qty, deliveryDate, note,
+    status: 'pending',
+    chats: []
+  });
+  savApps(apps);
+
+  document.getElementById('apply-form-area').style.display = 'none';
+  document.getElementById('apply-success-area').style.display = 'block';
+}
+
+function resetApplyForm() {
+  document.getElementById('apply-form').reset();
+  document.getElementById('license-info-area').style.display = 'none';
+  document.getElementById('apply-alert').innerHTML = '';
+  document.getElementById('apply-form-area').style.display = 'block';
+  document.getElementById('apply-success-area').style.display = 'none';
+  _resetPlanSelect();
+  _resetContractSelect();
+}
+
+// ================================================================
+// PAGE 2: MANAGE
+// ================================================================
+const STATUS_LABELS = { pending: '未対応', inprogress: '対応中', done: '完了' };
+const STATUS_CLASSES = { pending: 'badge-red', inprogress: 'badge-yellow', done: 'badge-green' };
+const SELECT_CLASSES = { pending: 'pending', inprogress: 'inprogress', done: 'done' };
+
+let currentMailId = null;
+
+function renderStats() {
+  const apps = getApps();
+  const counts = { total: apps.length, pending: 0, inprogress: 0, done: 0 };
+  apps.forEach(a => counts[a.status]++);
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card total"><div class="stat-label">総申込数</div><div class="stat-value">${counts.total}</div></div>
+    <div class="stat-card pending"><div class="stat-label">未対応</div><div class="stat-value">${counts.pending}</div></div>
+    <div class="stat-card inprogress"><div class="stat-label">対応中</div><div class="stat-value">${counts.inprogress}</div></div>
+    <div class="stat-card done"><div class="stat-label">完了</div><div class="stat-value">${counts.done}</div></div>
+  `;
+}
+
+function renderManageTable() {
+  let apps = getApps();
+  const statusF = document.getElementById('filter-status').value;
+  const fromF = document.getElementById('filter-from').value;
+  const toF = document.getElementById('filter-to').value;
+  const kwF = document.getElementById('filter-keyword').value.trim().toLowerCase();
+
+  if (statusF) apps = apps.filter(a => a.status === statusF);
+  if (fromF) apps = apps.filter(a => a.datetime.slice(0,10) >= fromF);
+  if (toF) apps = apps.filter(a => a.datetime.slice(0,10) <= toF);
+  if (kwF) apps = apps.filter(a => a.company.toLowerCase().includes(kwF) || a.name.toLowerCase().includes(kwF));
+
+  const tbody = document.getElementById('manage-tbody');
+  const empty = document.getElementById('manage-empty');
+
+  if (apps.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = apps.map(a => {
+    const dt = new Date(a.datetime);
+    const dtStr = `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const chatCount = (a.chats || []).length;
+    const chatBadge = chatCount > 0 ? `<span class="chat-notify-badge">${chatCount}</span>` : '';
+    const ddStr = a.deliveryDate ? a.deliveryDate.replace(/-/g, '/') : '—';
+    return `
+      <tr>
+        <td style="white-space:nowrap; font-size:0.82rem; color:var(--gray-500);">${dtStr}</td>
+        <td style="white-space:nowrap;"><strong>${esc(a.company)}</strong></td>
+        <td style="white-space:nowrap;">${esc(a.name)}</td>
+        <td style="min-width:160px;">${a.licenseProduct
+          ? `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+               <span style="font-size:0.7rem;background:var(--navy);color:white;padding:0.1rem 0.45rem;border-radius:5px;font-weight:600;white-space:nowrap;">${esc(a.licenseProduct)}</span>
+               <span style="font-size:0.85rem;white-space:nowrap;">${esc(a.licensePlan||'')}</span>
+               ${a.contractType ? `<span style="font-size:0.7rem;background:${CONTRACT_BGS[a.contractType]||'#eee'};color:${CONTRACT_COLORS[a.contractType]||'#333'};padding:0.1rem 0.4rem;border-radius:5px;font-weight:600;white-space:nowrap;">${CONTRACT_LABELS[a.contractType]||''}</span>` : ''}
+             </div>`
+          : `<span style="font-size:0.85rem;">${esc(a.license)}</span>`}</td>
+        <td style="text-align:center; font-weight:600;">${a.qty}</td>
+        <td style="font-size:0.85rem; white-space:nowrap;">${ddStr}</td>
+        <td>
+          <select class="status-select ${SELECT_CLASSES[a.status]}" onchange="changeStatus('${a.id}', this)">
+            <option value="pending" ${a.status==='pending'?'selected':''}>未対応</option>
+            <option value="inprogress" ${a.status==='inprogress'?'selected':''}>対応中</option>
+            <option value="done" ${a.status==='done'?'selected':''}>完了</option>
+          </select>
+        </td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-sm btn-outline" onclick="openDetailModal('${a.id}')">詳細</button>
+            <button class="btn btn-sm btn-chat" onclick="openChatModal('${a.id}')">💬 チャット${chatBadge}</button>
+            <button class="btn btn-sm btn-primary" onclick="openMailModal('${a.id}')">📧 通知</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteApp('${a.id}')">削除</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderStats();
+}
+
+function changeStatus(id, sel) {
+  const apps = getApps();
+  const app = apps.find(a => a.id === id);
+  if (!app) return;
+  app.status = sel.value;
+  savApps(apps);
+  sel.className = 'status-select ' + SELECT_CLASSES[sel.value];
+  renderStats();
+}
+
+function deleteApp(id) {
+  if (!confirm('この申込データを削除しますか？')) return;
+  savApps(getApps().filter(a => a.id !== id));
+  renderManageTable();
+}
+
+function clearFilters() {
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  document.getElementById('filter-keyword').value = '';
+  renderManageTable();
+}
+
+function openDetailModal(id) {
+  const a = getApps().find(x => x.id === id);
+  if (!a) return;
+  const dt = new Date(a.datetime);
+  const dtStr = `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('detail-modal-body').innerHTML = `
+    <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
+      ${row('申込日時', dtStr)}
+      ${row('会社名', a.company)}
+      ${row('担当者名', a.name)}
+      ${row('メールアドレス', a.email)}
+      ${row('電話番号', a.tel || '—')}
+      ${row('商材 / サービス', a.licenseProduct || '—')}
+      ${row('プラン / コース', a.licensePlan || a.license || '—')}
+      ${row('契約種別', a.contractType ? (CONTRACT_LABELS[a.contractType] || a.contractType) : '—')}
+      ${row('数量', a.qty + ' ライセンス')}
+      ${row('納品希望日', a.deliveryDate ? a.deliveryDate.replace(/-/g, '/') : '—')}
+      ${row('ステータス', `<span class="badge ${STATUS_CLASSES[a.status]}">${STATUS_LABELS[a.status]}</span>`)}
+      ${row('備考', a.note || '—')}
+    </table>
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function row(label, val) {
+  return `<tr style="border-bottom:1px solid var(--gray-100);">
+    <td style="padding:0.6rem 0.75rem; font-weight:600; color:var(--gray-500); width:130px; white-space:nowrap;">${label}</td>
+    <td style="padding:0.6rem 0.75rem;">${val}</td>
+  </tr>`;
+}
+
+// ================================================================
+// GAS SETTINGS
+// ================================================================
+const GAS_URL_KEY = 'lh_gas_url';
+
+function loadGasUrl() {
+  const url = localStorage.getItem(GAS_URL_KEY) || '';
+  document.getElementById('gas-url-input').value = url;
+  updateGasStatus(url ? 'set' : 'none');
+}
+
+function saveGasUrl() {
+  const url = document.getElementById('gas-url-input').value.trim();
+  localStorage.setItem(GAS_URL_KEY, url);
+  updateGasStatus(url ? 'set' : 'none');
+}
+
+function updateGasStatus(state, label) {
+  const el = document.getElementById('gas-status');
+  if (state === 'ok')   { el.className = 'gas-status ok';   el.textContent = '✓ 接続OK'; }
+  else if (state === 'ng')   { el.className = 'gas-status ng';   el.textContent = '✗ 接続エラー'; }
+  else if (state === 'set')  { el.className = 'gas-status none'; el.textContent = 'URL設定済み'; }
+  else                       { el.className = 'gas-status none'; el.textContent = '未設定'; }
+}
+
+async function testGasConnection() {
+  const url = localStorage.getItem(GAS_URL_KEY) || '';
+  if (!url) { alert('先にGAS URLを入力してください。'); return; }
+  updateGasStatus('none', '確認中...');
+  document.getElementById('gas-status').textContent = '確認中...';
+  try {
+    const res = await fetch(url, { method: 'GET' });
+    const json = await res.json();
+    updateGasStatus(json.status === 'ok' ? 'ok' : 'ng');
+  } catch (e) {
+    updateGasStatus('ng');
+  }
+}
+
+// ================================================================
+// SHARED EMAIL SENDER
+// ================================================================
+async function sendEmail({ to, subject, body, htmlBody }) {
+  const url = localStorage.getItem(GAS_URL_KEY) || '';
+  if (!url) throw new Error('GAS URLが設定されていません。画面上部のURL欄に設定してください。');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // GASはContent-Type:JSONだとCORSエラーになるためtext/plainで送る
+    body: JSON.stringify({ to, subject, body, htmlBody }),
+    redirect: 'follow',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || '送信失敗');
+  return json;
+}
+
+// ================================================================
+// MAIL MODAL
+// ================================================================
+function openMailModal(id) {
+  currentMailId = id;
+  const a = getApps().find(x => x.id === id);
+  document.getElementById('mail-info').innerHTML = `
+    <div style="font-weight:600; margin-bottom:0.25rem;">申込内容：${esc(a.company)} / ${esc(a.name)}</div>
+    <div style="color:var(--gray-500);">ライセンス：${esc(a.license)} × ${a.qty}</div>
+  `;
+  document.getElementById('mail-sent-msg').style.display = 'none';
+  document.getElementById('mail-send-btn').disabled = false;
+  document.getElementById('mail-send-btn').textContent = '送信する';
+  document.getElementById('mail-modal').classList.add('open');
+}
+
+async function sendMailNotification() {
+  const to = document.getElementById('mail-to').value.trim();
+  if (!to) { alert('送信先メールアドレスを入力してください。'); return; }
+
+  const a = getApps().find(x => x.id === currentMailId);
+  const btn = document.getElementById('mail-send-btn');
+  const sentMsg = document.getElementById('mail-sent-msg');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+  sentMsg.style.display = 'none';
+
+  const subject = `【ライセンス申込通知】${a.company} / ${a.license} × ${a.qty}`;
+  const body = [
+    '新しいライセンス申込が届きました。',
+    '',
+    `会社名　　: ${a.company}`,
+    `担当者名　: ${a.name}`,
+    `メール　　: ${a.email}`,
+    `ライセンス: ${a.license} × ${a.qty}`,
+    `納品希望日: ${a.deliveryDate || '未指定'}`,
+    `ステータス: ${STATUS_LABELS[a.status]}`,
+    `備考　　　: ${a.note || 'なし'}`,
+    '',
+    `申込日時: ${a.datetime}`,
+  ].join('\n');
+
+  try {
+    await sendEmail({ to, subject, body });
+    sentMsg.innerHTML = '<div class="alert alert-success"><span class="alert-icon">✅</span>メール通知を送信しました</div>';
+    sentMsg.style.display = 'block';
+    btn.textContent = '送信済み';
+  } catch (e) {
+    sentMsg.innerHTML = `<div class="alert alert-error"><span class="alert-icon">⚠️</span>${esc(e.message)}</div>`;
+    sentMsg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '再送信';
+  }
+}
+
+// ================================================================
+// PAGE 3: MASTER
+// ================================================================
+function renderMasterTable() {
+  const masters = getMasters();
+  const tbody = document.getElementById('master-tbody');
+  const empty = document.getElementById('master-empty');
+
+  if (masters.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // 商材ごとにグループヘッダーを挿入して表示
+  const products = [...new Set(masters.map(function(m){ return m.product || m.name; }))];
+  let rows = '';
+  products.forEach(function(prod) {
+    const group = masters.filter(function(m){ return (m.product || m.name) === prod; });
+    rows += '<tr style="background:var(--gray-100);">'
+      + '<td colspan="8" style="padding:0.4rem 1rem;font-weight:700;color:var(--navy);font-size:0.82rem;border-bottom:2px solid var(--gray-200);">'
+      + '<span style="background:var(--navy);color:white;padding:0.15rem 0.75rem;border-radius:6px;margin-right:0.5rem;">' + esc(prod) + '</span>'
+      + '<span style="font-size:0.76rem;color:var(--gray-500);font-weight:400;">' + group.length + ' プラン</span>'
+      + '</td></tr>';
+    group.forEach(function(m) {
+      var ctLabel = CONTRACT_LABELS[m.contractType] || m.contractType || '—';
+      var ctColor = CONTRACT_COLORS[m.contractType] || 'var(--gray-600)';
+      var ctBg    = CONTRACT_BGS[m.contractType]    || 'var(--gray-100)';
+      var ctUnit  = CONTRACT_UNIT[m.contractType]   || '';
+      var deliveryCell = m.deliveryDays
+        ? '<span style="font-weight:600;color:var(--navy);">' + m.deliveryDays + '</span><span style="font-size:0.78rem;color:var(--gray-500);"> 営業日</span>'
+        : '—';
+      rows += '<tr>'
+        + '<td style="padding-left:1.5rem;white-space:nowrap;"><strong>' + esc(m.name) + '</strong></td>'
+        + '<td style="white-space:nowrap;"><span style="background:' + ctBg + ';color:' + ctColor + ';font-size:0.75rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:10px;">' + ctLabel + '</span></td>'
+        + '<td style="font-size:0.83rem;color:var(--gray-500);">' + esc(m.desc || '—') + '</td>'
+        + '<td class="price" style="white-space:nowrap;">¥' + Number(m.price || 0).toLocaleString() + '<span style="font-size:0.78rem;color:var(--gray-400);font-weight:400;">' + ctUnit + '</span></td>'
+        + '<td style="text-align:center;white-space:nowrap;">' + deliveryCell + '</td>'
+        + '<td style="white-space:nowrap;"><button class="toggle-active ' + (m.active ? 'toggle-on' : 'toggle-off') + '" onclick="toggleMasterActive(\'' + m.id + '\')">' + (m.active ? '● 有効' : '○ 無効') + '</button></td>'
+        + '<td><div class="td-actions" style="flex-wrap:nowrap;">'
+          + '<button class="btn btn-sm btn-outline" onclick="openMasterModal(\'' + m.id + '\')">編集</button>'
+          + '<button class="btn btn-sm btn-danger" onclick="deleteMaster(\'' + m.id + '\')">削除</button>'
+          + '</div></td>'
+        + '</tr>';
+    });
+  });
+  tbody.innerHTML = rows;
+}
+
+function openMasterModal(id) {
+  const titleEl = document.getElementById('master-modal-title');
+  if (id) {
+    const m = getMasters().find(x => x.id === id);
+    if (!m) return;
+    titleEl.textContent = 'ライセンス商品 編集';
+    document.getElementById('master-edit-id').value = m.id;
+    document.getElementById('master-product').value = m.product || '';
+    document.getElementById('master-name').value = m.name;
+    document.getElementById('master-desc').value = m.desc || '';
+    document.getElementById('master-contract-type').value = m.contractType || 'monthly';
+    document.getElementById('master-price').value = m.price || '';
+    document.getElementById('master-delivery-days').value = m.deliveryDays || '';
+    updatePriceHint();
+    document.getElementById('master-active').value = String(m.active);
+  } else {
+    titleEl.textContent = 'ライセンス商品 追加';
+    document.getElementById('master-edit-id').value = '';
+    document.getElementById('master-product').value = '';
+    document.getElementById('master-name').value = '';
+    document.getElementById('master-desc').value = '';
+    document.getElementById('master-contract-type').value = 'monthly';
+    document.getElementById('master-price').value = '';
+    document.getElementById('master-delivery-days').value = '';
+    updatePriceHint();
+    document.getElementById('master-active').value = 'true';
+  }
+  // datalistに既存商材名を反映
+  const dl = document.getElementById('product-datalist');
+  dl.innerHTML = '';
+  [...new Set(getMasters().map(function(m){ return m.product || m.name; }))].forEach(function(p) {
+    const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt);
+  });
+  document.getElementById('master-modal').classList.add('open');
+}
+
+function saveMaster() {
+  const name = document.getElementById('master-name').value.trim();
+  if (!name) { alert('商品名を入力してください。'); return; }
+
+  const id = document.getElementById('master-edit-id').value;
+  const masters = getMasters();
+
+  const product = document.getElementById('master-product').value.trim();
+  if (!product) { alert('商材 / サービス名を入力してください。'); return; }
+  const contractType = document.getElementById('master-contract-type').value;
+  const data = {
+    product,
+    name,
+    contractType,
+    price: parseInt(document.getElementById('master-price').value) || 0,
+    desc: document.getElementById('master-desc').value.trim(),
+    deliveryDays: parseInt(document.getElementById('master-delivery-days').value) || 0,
+    active: document.getElementById('master-active').value === 'true',
+  };
+
+  if (id) {
+    const idx = masters.findIndex(m => m.id === id);
+    if (idx !== -1) masters[idx] = { ...masters[idx], ...data };
+  } else {
+    masters.push({ id: 'm' + Date.now(), ...data });
+  }
+
+  savMasters(masters);
+  closeModal('master-modal');
+  renderMasterTable();
+}
+
+function updatePriceHint() {
+  const ct = document.getElementById('master-contract-type').value;
+  document.getElementById('master-price-hint').textContent =
+    ct === 'annual' ? '年額単価 / ライセンス' : '月額単価 / ライセンス';
+}
+
+function deleteMaster(id) {
+  if (!confirm('このライセンス商品を削除しますか？')) return;
+  savMasters(getMasters().filter(m => m.id !== id));
+  renderMasterTable();
+}
+
+function toggleMasterActive(id) {
+  const masters = getMasters();
+  const m = masters.find(x => x.id === id);
+  if (m) { m.active = !m.active; savMasters(masters); renderMasterTable(); }
+}
+
+// ================================================================
+// CHAT
+// ================================================================
+let currentChatId = null;
+
+function openChatModal(id) {
+  currentChatId = id;
+  const a = getApps().find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('chat-modal-subtitle').textContent = `— ${a.company} / ${a.name}`;
+  document.getElementById('chat-customer-email').textContent = a.email;
+  document.getElementById('chat-input').value = '';
+  document.getElementById('chat-notify-status').textContent = '';
+  renderChatWindow(a);
+  document.getElementById('chat-modal').classList.add('open');
+}
+
+function renderChatWindow(a) {
+  const win = document.getElementById('chat-window');
+  const chats = a.chats || [];
+  if (chats.length === 0) {
+    win.innerHTML = '<div style="text-align:center; color:var(--gray-400); font-size:0.85rem; margin:auto;">まだメッセージはありません</div>';
+    return;
+  }
+  win.innerHTML = chats.map(c => {
+    const dt = new Date(c.datetime);
+    const timeStr = `${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    if (c.role === 'system') {
+      return `<div class="chat-msg system"><div class="chat-bubble">${esc(c.text)}</div></div>`;
+    }
+    return `
+      <div class="chat-msg staff">
+        <div class="chat-bubble">${esc(c.text).replace(/\n/g,'<br>')}</div>
+        <div class="chat-meta">担当者 · ${timeStr}</div>
+      </div>`;
+  }).join('');
+  win.scrollTop = win.scrollHeight;
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const apps = getApps();
+  const a = apps.find(x => x.id === currentChatId);
+  if (!a) return;
+  if (!a.chats) a.chats = [];
+
+  a.chats.push({ role: 'staff', text, datetime: new Date().toISOString() });
+  savApps(apps);
+  input.value = '';
+  renderChatWindow(a);
+  renderManageTable();
+
+  // send email notification to customer
+  const notifyEl = document.getElementById('chat-notify-status');
+  notifyEl.style.color = 'var(--gray-400)';
+  notifyEl.textContent = `${a.email} へ送信中...`;
+
+  const subject = `【ご担当者様へ】${a.company} ライセンス申込についてご連絡があります`;
+  const bodyText = [
+    `${a.name} 様`,
+    '',
+    'いつもお世話になっております。',
+    'ライセンス申込の件について、ご連絡いたします。',
+    '',
+    '─────────────────────',
+    text,
+    '─────────────────────',
+    '',
+    `対象申込：${a.license} × ${a.qty}（申込日：${a.datetime.slice(0,10)}）`,
+    '',
+    'ご不明な点はお気軽にお問い合わせください。',
+  ].join('\n');
+
+  sendEmail({ to: a.email, subject, body: bodyText })
+    .then(() => {
+      notifyEl.style.color = 'var(--green)';
+      notifyEl.textContent = `✅ ${a.email} へメール通知を送信しました`;
+      setTimeout(() => { notifyEl.textContent = ''; }, 5000);
+    })
+    .catch(e => {
+      notifyEl.style.color = 'var(--red)';
+      notifyEl.textContent = `⚠️ メール送信失敗：${e.message}`;
+    });
+}
+
+function chatKeyDown(e) {
+  // isComposing: IME変換中はtrue → 変換確定のEnterでは送信しない
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+// ================================================================
+// UTILS
+// ================================================================
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ================================================================
+// AUTH
+// ================================================================
+function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+
+  const user = getUsers().find(u => u.email === email && u.password === pass);
+  if (!user) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  savSession(user);
+  afterLogin(user);
+}
+
+function afterLogin(user) {
+  document.getElementById('login-overlay').classList.remove('show');
+  renderNav(user);
+  renderHeaderUser(user);
+  // show first appropriate page
+  const firstPage = user.role === 'admin' ? 'manage' : 'apply';
+  const firstTab = document.querySelector('.nav-tab');
+  if (firstTab) firstTab.classList.add('active');
+  switchPage(firstPage);
+}
+
+function doLogout() {
+  clearSession();
+  document.getElementById('main-nav').innerHTML = '';
+  document.getElementById('header-user').style.display = 'none';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('login-overlay').classList.add('show');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function fillDemo(email, pass) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').value = pass;
+}
+
+// ================================================================
+// NAV RENDER
+// ================================================================
+function renderNav(user) {
+  const nav = document.getElementById('main-nav');
+  let tabs = [];
+  if (user.role === 'admin') {
+    tabs = [
+      { id: 'manage',  label: '📋 申込管理' },
+      { id: 'master',  label: '⚙️ マスタ管理' },
+      { id: 'users',   label: '👤 ユーザー管理' },
+    ];
+  } else {
+    tabs = [
+      { id: 'apply',   label: '📝 ライセンス申込' },
+      { id: 'history', label: '📋 申込履歴' },
+    ];
+  }
+  nav.innerHTML = tabs.map(t =>
+    `<button class="nav-tab" onclick="switchPage('${t.id}', this)">${t.label}</button>`
+  ).join('');
+}
+
+function renderHeaderUser(user) {
+  const roleLabel = user.role === 'admin' ? 'スタッフ' : 'お客様';
+  document.getElementById('header-user-name').textContent = user.name || user.email;
+  const rtEl = document.getElementById('header-role-tag');
+  rtEl.textContent = roleLabel;
+  rtEl.className = `role-tag ${user.role}`;
+  document.getElementById('header-user').style.display = 'flex';
+}
+
+// ================================================================
+// 申込履歴 PAGE（お客様用）
+// ================================================================
+function renderHistoryPage() {
+  const user = getSession();
+  if (!user) return;
+
+  // customer card
+  document.getElementById('history-customer-card').innerHTML = `
+    <div><div style="font-size:0.78rem;opacity:0.7;">会社名</div><div style="font-weight:700;font-size:1.05rem;">${esc(user.company || '—')}</div></div>
+    <div><div style="font-size:0.78rem;opacity:0.7;">ログイン中の担当者</div><div style="font-weight:700;">${esc(user.name || user.email)}</div></div>
+    <div><div style="font-size:0.78rem;opacity:0.7;">メールアドレス</div><div style="font-weight:700;">${esc(user.email)}</div></div>
+  `;
+
+  // 同一会社の全申込を表示（複数担当者対応）
+  const apps = getApps().filter(a => a.company === user.company);
+  const tbody = document.getElementById('history-tbody');
+  const empty = document.getElementById('history-empty');
+
+  if (apps.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = apps.map(a => {
+    const dt = new Date(a.datetime);
+    const dtStr = `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`;
+    const msgCount = (a.chats || []).length;
+    const msgBadge = msgCount > 0
+      ? `<span class="badge badge-navy" style="cursor:pointer;" onclick="openHistoryChat('${a.id}')">${msgCount}件 →</span>`
+      : '<span style="color:var(--gray-400);font-size:0.82rem;">なし</span>';
+    return `
+      <tr>
+        <td style="font-size:0.82rem; color:var(--gray-500); white-space:nowrap;">${dtStr}</td>
+        <td style="font-size:0.85rem;white-space:nowrap;">${esc(a.name || '—')}</td>
+        <td style="min-width:160px;">${a.licenseProduct
+          ? `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:3px;">
+               <span style="font-size:0.7rem;background:var(--navy);color:white;padding:0.1rem 0.45rem;border-radius:5px;font-weight:600;white-space:nowrap;">${esc(a.licenseProduct)}</span>
+               <span style="font-size:0.85rem;white-space:nowrap;">${esc(a.licensePlan||'')}</span>
+               ${a.contractType ? `<span style="font-size:0.7rem;background:${CONTRACT_BGS[a.contractType]||'#eee'};color:${CONTRACT_COLORS[a.contractType]||'#333'};padding:0.1rem 0.4rem;border-radius:5px;font-weight:600;white-space:nowrap;">${CONTRACT_LABELS[a.contractType]||''}</span>` : ''}
+             </div>`
+          : `<span style="font-size:0.85rem;">${esc(a.license)}</span>`}</td>
+        <td style="text-align:center; font-weight:600;">${a.qty}</td>
+        <td style="font-size:0.85rem;white-space:nowrap;">${a.deliveryDate ? a.deliveryDate.replace(/-/g,'/') : '—'}</td>
+        <td><span class="badge ${STATUS_CLASSES[a.status]}">${STATUS_LABELS[a.status]}</span></td>
+        <td>${msgBadge}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="openDetailModal('${a.id}')">詳細</button></td>
+      </tr>`;
+  }).join('');
+}
+
+function openHistoryChat(id) {
+  // read-only view of chat messages for customer
+  const a = getApps().find(x => x.id === id);
+  if (!a) return;
+  const chats = a.chats || [];
+  const chatHtml = chats.length === 0
+    ? '<p style="text-align:center;color:var(--gray-400);">メッセージはまだありません</p>'
+    : chats.map(c => {
+        const dt = new Date(c.datetime);
+        const ts = `${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+        return `<div style="background:var(--accent-light);border-radius:10px;padding:0.7rem 1rem;margin-bottom:0.6rem;">
+          <div style="font-size:0.75rem;color:var(--gray-400);margin-bottom:0.25rem;">担当者 · ${ts}</div>
+          <div style="font-size:0.9rem;">${esc(c.text).replace(/\n/g,'<br>')}</div>
+        </div>`;
+      }).join('');
+
+  document.getElementById('detail-modal-body').innerHTML = `
+    <div style="font-weight:600;color:var(--navy);margin-bottom:1rem;">担当者からのメッセージ（${esc(a.license)} × ${a.qty}）</div>
+    ${chatHtml}`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+// ================================================================
+// USER MANAGEMENT
+// ================================================================
+function renderUsersTable() {
+  const users = getUsers();
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>${esc(u.email)}</td>
+      <td>${esc(u.name || '—')}</td>
+      <td>${esc(u.company || '—')}</td>
+      <td><span class="user-role-badge ${u.role}">${u.role === 'admin' ? 'スタッフ' : 'お客様'}</span></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm btn-outline" onclick="openUserModal('${u.id}')">編集</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">削除</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openUserModal(id) {
+  document.getElementById('user-modal-title').textContent = id ? 'ユーザー編集' : 'ユーザー追加';
+  document.getElementById('user-edit-id').value = id || '';
+  if (id) {
+    const u = getUsers().find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('user-email').value    = u.email;
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-name').value     = u.name || '';
+    document.getElementById('user-company').value  = u.company || '';
+    document.getElementById('user-role').value     = u.role;
+  } else {
+    document.getElementById('user-email').value    = '';
+    document.getElementById('user-password').value = '';
+    document.getElementById('user-name').value     = '';
+    document.getElementById('user-company').value  = '';
+    document.getElementById('user-role').value     = 'customer';
+  }
+  document.getElementById('user-modal').classList.add('open');
+}
+
+function saveUser() {
+  const email = document.getElementById('user-email').value.trim();
+  const pass  = document.getElementById('user-password').value.trim();
+  if (!email) { alert('メールアドレスを入力してください。'); return; }
+
+  const id    = document.getElementById('user-edit-id').value;
+  const users = getUsers();
+
+  if (id) {
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) return;
+    users[idx].email   = email;
+    users[idx].name    = document.getElementById('user-name').value.trim();
+    users[idx].company = document.getElementById('user-company').value.trim();
+    users[idx].role    = document.getElementById('user-role').value;
+    if (pass) users[idx].password = pass;
+  } else {
+    if (!pass) { alert('パスワードを入力してください。'); return; }
+    if (users.find(u => u.email === email)) { alert('このメールアドレスは既に登録されています。'); return; }
+    users.push({
+      id: 'u' + Date.now(),
+      email, password: pass,
+      name:    document.getElementById('user-name').value.trim(),
+      company: document.getElementById('user-company').value.trim(),
+      role:    document.getElementById('user-role').value,
+    });
+  }
+  savUsers(users);
+  closeModal('user-modal');
+  renderUsersTable();
+}
+
+function deleteUser(id) {
+  const me = getSession();
+  if (me && me.id === id) { alert('自分自身は削除できません。'); return; }
+  if (!confirm('このユーザーを削除しますか？')) return;
+  savUsers(getUsers().filter(u => u.id !== id));
+  renderUsersTable();
+}
+
+// ================================================================
+// BOOT
+// ================================================================
+initDemoData();
+loadGasUrl();
+
+// セッション復元
+const _session = getSession();
+if (_session) {
+  afterLogin(_session);
+} else {
+  document.getElementById('login-overlay').classList.add('show');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複合機比較表 ─ 入力フォーム</title>
+<style>
+:root{
+  --navy:#1a5276; --navy-dk:#0f2f47;
+  --green:#1e8449; --green-dk:#196f3d;
+  --teal:#0a7fa5; --teal-dk:#086e8e;
+  --purple:#6c3483;
+  --amber:#7d6608;
+  --gray:#5d6d7e; --red:#c0392b;
+  --border:#d5d8dc; --text:#2c3e50; --sub:#7f8c8d;
+  --bg:#eaecee;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+     background:var(--bg);color:var(--text);font-size:13px;}
+
+.bar{
+  position:sticky;top:0;z-index:100;
+  background:var(--navy-dk);color:#fff;
+  height:54px;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.bar-left h1{font-size:15px;font-weight:bold;letter-spacing:.04em;}
+.bar-left p{font-size:10px;opacity:.5;margin-top:2px;}
+.bar-right{display:flex;gap:10px;align-items:center;}
+.save-badge{font-size:11px;opacity:.5;}
+.save-badge.ok{opacity:.85;color:#7defa1;}
+.btn{
+  border:none;border-radius:5px;padding:8px 18px;
+  font-size:13px;font-weight:bold;cursor:pointer;
+  font-family:inherit;letter-spacing:.04em;transition:background .15s;
+}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4);}
+.btn-outline:hover{background:rgba(255,255,255,.1);}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-dk);}
+
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 90px;}
+
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);
+      margin-bottom:18px;overflow:hidden;}
+.card-hd{
+  padding:11px 20px;color:#fff;font-size:13px;
+  font-weight:bold;letter-spacing:.04em;
+  display:flex;align-items:center;gap:8px;min-height:46px;
+}
+.card-hd.gray{background:var(--gray);}
+.card-hd.blue{background:var(--navy);}
+.card-hd.green{background:var(--green);}
+.card-hd.teal{background:var(--teal);}
+.card-hd.purple{background:var(--purple);}
+.card-hd.amber{background:var(--amber);}
+.card-hd span.num{
+  background:rgba(255,255,255,.25);border-radius:50%;
+  width:22px;height:22px;display:grid;place-items:center;
+  font-size:11px;flex-shrink:0;
+}
+.card-body{padding:18px 20px;}
+.card-body.skipped{background:#f7f8fa;padding:14px 20px;}
+
+.skip-toggle{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:normal;cursor:pointer;
+  background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;
+  transition:background .15s;white-space:nowrap;
+}
+.skip-toggle:hover{background:rgba(255,255,255,.28);}
+.skip-toggle input{cursor:pointer;width:14px;height:14px;accent-color:#7defa1;}
+.skip-msg{color:var(--sub);font-size:12px;padding:6px 0;text-align:center;}
+
+.btn-del-mc{
+  margin-left:auto;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.35);
+  color:#fff;border-radius:4px;padding:4px 12px;cursor:pointer;
+  font-size:11px;font-weight:bold;font-family:inherit;
+  transition:background .15s;
+}
+.btn-del-mc:hover{background:rgba(210,40,40,.45);}
+
+.btn-add-mc{
+  display:block;width:100%;background:#fff;
+  border:2px dashed var(--green);border-radius:10px;
+  padding:12px;cursor:pointer;color:var(--green);
+  font-size:13px;font-weight:bold;font-family:inherit;
+  transition:background .1s;margin-bottom:18px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.btn-add-mc:hover{background:#eafaf1;}
+
+.sub-sec{margin-bottom:16px;}
+.sub-sec:last-child{margin-bottom:0;}
+.sub-label{
+  font-size:11px;font-weight:bold;color:var(--sub);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:10px;padding-bottom:6px;
+  border-bottom:1.5px solid var(--border);
+}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 20px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px 20px;}
+@media(max-width:700px){.g2,.g3,.g4{grid-template-columns:1fr 1fr;}}
+@media(max-width:480px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;color:var(--sub);font-weight:bold;letter-spacing:.04em;}
+.field input,.field select,.field textarea{
+  border:1.5px solid var(--border);border-radius:5px;
+  padding:0 10px;height:36px;font-size:13px;
+  color:var(--text);background:#fafbfc;font-family:inherit;
+  transition:border-color .15s;
+}
+.field textarea{height:72px;padding:8px 10px;resize:vertical;}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--navy);background:#fff;}
+.field input[type="number"]{text-align:right;}
+
+hr.sep{border:none;border-top:1.5px solid #f0f2f5;margin:16px 0;}
+
+.profit-box{
+  margin-top:12px;padding:12px 16px;
+  background:#f0faf4;border:1.5px solid #a8d5b5;border-radius:8px;
+}
+.profit-box-title{
+  font-size:11px;font-weight:bold;color:var(--sub);
+  letter-spacing:.05em;margin-bottom:8px;
+}
+.profit-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:3px 0;font-size:12px;color:var(--sub);
+}
+.profit-row.neg{color:var(--red);}
+.profit-row.total{
+  border-top:1.5px solid #a8d5b5;margin-top:6px;padding-top:7px;
+  font-weight:bold;font-size:13px;color:var(--text);
+}
+.profit-row.total.neg{color:var(--red);}
+.profit-val{font-variant-numeric:tabular-nums;}
+
+.feat-body{display:none;margin-top:8px;}
+.feat-body.feat-open{display:block;}
+.feat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:700px){.feat-grid{grid-template-columns:repeat(3,1fr);}}
+.feat-item{display:flex;flex-direction:column;gap:4px;}
+.feat-item label{font-size:11px;color:var(--sub);font-weight:bold;}
+.feat-item select{
+  height:36px;padding:0 8px;border:1.5px solid var(--border);
+  border-radius:5px;font-size:13px;background:#fafbfc;
+  font-family:inherit;transition:border-color .15s;
+}
+.feat-item select:focus{outline:none;border-color:var(--navy);}
+
+.pt-wrap{overflow-x:auto;}
+table.pt{width:100%;border-collapse:collapse;min-width:500px;}
+table.pt thead th{
+  background:#f4f6f8;padding:7px 8px;text-align:left;
+  font-size:11px;color:var(--sub);font-weight:bold;
+  border-bottom:2px solid var(--border);white-space:nowrap;
+}
+table.pt tbody td{padding:5px 6px;border-bottom:1px solid #f0f2f5;vertical-align:middle;}
+table.pt input{
+  width:100%;height:32px;padding:0 8px;
+  border:1.5px solid var(--border);border-radius:4px;
+  font-size:12px;background:#fafbfc;font-family:inherit;
+}
+table.pt input[type="number"]{text-align:right;}
+table.pt input:focus{outline:none;border-color:var(--navy);}
+.btn-rm{
+  background:none;border:1px solid #e0e0e0;border-radius:4px;
+  padding:3px 8px;cursor:pointer;color:var(--red);
+  font-size:12px;font-weight:bold;width:100%;
+}
+.btn-rm:hover{background:#fee2e2;}
+.btn-add{
+  margin-top:10px;width:100%;background:none;
+  border:1.5px dashed var(--border);border-radius:6px;
+  padding:8px;cursor:pointer;color:var(--navy);
+  font-size:12px;font-weight:bold;transition:background .1s;
+}
+.btn-add:hover{background:#eaf2f8;}
+.btn-be{
+  margin-top:6px;width:100%;background:#eaf2f8;
+  border:1.5px solid var(--navy);border-radius:6px;
+  padding:8px;cursor:pointer;color:var(--navy);
+  font-size:12px;font-weight:bold;transition:background .1s;
+}
+.btn-be:hover{background:#d4e6f1;}
+
+.quick-fill{
+  background:linear-gradient(135deg,#f0f7ff 0%,#e8f2fc 100%);
+  border:1.5px solid #bdd6f0;border-radius:8px;
+  padding:12px 16px;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.quick-fill-title{font-size:11px;font-weight:bold;color:var(--navy);letter-spacing:.06em;white-space:nowrap;}
+.quick-fill select{
+  height:34px;padding:0 10px;border:1.5px solid #bdd6f0;
+  border-radius:5px;font-size:12px;background:#fff;
+  font-family:inherit;color:var(--text);flex:1;min-width:130px;cursor:pointer;
+  transition:border-color .15s;
+}
+.quick-fill select:focus{outline:none;border-color:var(--navy);}
+.quick-fill select:disabled{background:#f3f4f6;color:#aaa;cursor:default;}
+.btn-apply{
+  height:34px;padding:0 14px;background:var(--navy);color:#fff;
+  border:none;border-radius:5px;font-size:12px;font-weight:bold;
+  cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s;
+}
+.btn-apply:hover{background:#163056;}
+.quick-note{font-size:10px;color:var(--sub);width:100%;margin-top:-2px;}
+
+/* 機種画像アップロード */
+.img-upload-area{
+  display:flex;align-items:center;gap:14px;
+  background:#f8fafc;border:1.5px dashed var(--border);
+  border-radius:8px;padding:12px 16px;margin-bottom:16px;
+}
+.img-preview{
+  width:110px;height:80px;flex-shrink:0;
+  border-radius:6px;border:1.5px solid var(--border);
+  background:transparent;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.img-preview img{max-width:100%;max-height:100%;object-fit:contain;}
+.img-preview .img-placeholder{
+  font-size:10px;color:var(--sub);text-align:center;padding:6px;line-height:1.5;
+}
+.img-upload-right{display:flex;flex-direction:column;gap:6px;flex:1;}
+.img-upload-right label{font-size:11px;font-weight:bold;color:var(--sub);}
+.btn-img-select{
+  display:inline-block;padding:6px 14px;background:var(--navy);color:#fff;
+  border:none;border-radius:5px;font-size:12px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;width:fit-content;
+}
+.btn-img-select:hover{background:#163056;}
+.btn-img-clear{
+  display:inline-block;padding:5px 12px;background:none;color:var(--red);
+  border:1px solid #f5c6c6;border-radius:5px;font-size:11px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;width:fit-content;
+}
+.btn-img-clear:hover{background:#fee2e2;}
+.img-note{font-size:10px;color:var(--sub);}
+
+.footer-nav{
+  position:sticky;bottom:0;left:0;right:0;
+  background:#fff;border-top:2px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;justify-content:flex-end;
+  gap:12px;box-shadow:0 -2px 10px rgba(0,0,0,.07);z-index:10;
+}
+.footer-note{font-size:11px;color:var(--sub);flex:1;}
+
+/* ── スプリットレイアウト ── */
+.split-layout{
+  display:flex;
+  height:calc(100vh - 54px);
+  overflow:hidden;
+}
+.form-pane{
+  flex:0 0 54%;
+  overflow-y:auto;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+}
+.form-pane .wrap{flex:1;padding:20px 14px 16px;}
+.preview-pane{
+  flex:1;
+  background:#c8cdd3;
+  border-left:2px solid #b0b5bb;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+.preview-pane-header{
+  background:#3a4a5c;color:#fff;
+  font-size:11px;font-weight:bold;letter-spacing:.06em;
+  padding:7px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.preview-pane-header span{opacity:.6;font-weight:normal;}
+.preview-pane iframe{
+  flex:1;border:none;width:100%;height:100%;
+}
+
+/* ── 印刷設定バー（プレビュー下部）── */
+.print-opts-bar{
+  background:#2c3e50;color:#fff;
+  padding:8px 14px;
+  display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;
+  flex-shrink:0;border-top:1px solid #1a2634;
+}
+.print-opts-group{display:flex;flex-direction:column;gap:2px;}
+.print-opts-group-title{
+  font-size:9px;font-weight:bold;letter-spacing:.08em;
+  color:rgba(255,255,255,.45);text-transform:uppercase;
+  margin-bottom:2px;padding-bottom:2px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.print-opts-bar label{
+  display:flex;align-items:center;gap:4px;
+  font-size:10.5px;cursor:pointer;white-space:nowrap;
+  color:rgba(255,255,255,.85);
+}
+.print-opts-bar input[type=checkbox]{
+  width:12px;height:12px;accent-color:#7defa1;flex-shrink:0;cursor:pointer;
+}
+.btn-print-direct{
+  margin-left:auto;align-self:center;flex-shrink:0;
+  background:var(--green);color:#fff;
+  border:none;border-radius:6px;padding:8px 18px;
+  font-size:13px;font-weight:bold;cursor:pointer;
+  font-family:inherit;white-space:nowrap;transition:background .15s;
+}
+.btn-print-direct:hover{background:var(--green-dk);}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-left">
+    <h1>複合機比較表 ─ 入力フォーム</h1>
+    <p>入力内容は自動保存されます。完了後「印刷 / PDF保存」をクリックしてください。</p>
+  </div>
+  <div class="bar-right">
+    <span class="save-badge" id="saveBadge">未保存</span>
+    <button class="btn btn-outline" onclick="clearAll()">リセット</button>
+    <button class="btn btn-outline" onclick="location.href='複合機比較_マスタ.html'" style="background:rgba(255,255,255,.1);">機器マスタ管理</button>
+  </div>
+</div>
+
+<div class="split-layout">
+<div class="form-pane">
+<div class="wrap">
+
+  <!-- ① 顧客情報 -->
+  <div class="card">
+    <div class="card-hd gray"><span class="num">1</span> 顧客情報</div>
+    <div class="card-body">
+      <div class="g2">
+        <div class="field"><label>宛先</label>
+          <input type="text" id="clientName" placeholder="※※御中"
+                 oninput="state.clientName=this.value;autoSave()"></div>
+        <div class="field"><label>作成日</label>
+          <input type="date" id="docDate"
+                 oninput="state.docDate=this.value;autoSave()"></div>
+        <div class="field" style="grid-column:1/-1"><label>備考（印刷ページ下部に表示）</label>
+          <textarea id="docNotes" placeholder="例: ※ 上記金額に消費税は含まれておりません。&#10;※ リース残債については弊社にて全額処理させていただきます。"
+                    style="height:60px;padding:8px 10px;resize:vertical;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;background:#fafbfc;"
+                    oninput="state.docNotes=this.value;autoSave()"></textarea></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ② 機器カード（動的）※ 現状機器の後に「現状機器を追加」ボタンも renderMachines() で注入 -->
+  <div id="machinesContainer"></div>
+
+  <!-- 提案機器追加 -->
+  <button class="btn-add-mc" onclick="addProposalMachine()">＋ 提案機器を追加</button>
+
+  <!-- ③ 比較条件 -->
+  <div class="card">
+    <div class="card-hd teal"><span class="num">3</span> 比較条件</div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field"><label>リース期間</label>
+          <select id="leasePeriod" oninput="state.leasePeriod=this.value;autoSave();updateAllProfits();state.machines.forEach(m=>autoCalcContractTo(m.id))">
+            <option value="60">5年（60回）</option>
+            <option value="72">6年（72回）</option>
+          </select>
+        </div>
+        <div class="field"><label>モノクロ枚数（枚/月）</label>
+          <input type="number" id="monoCount" placeholder="2000" min="0"
+                 oninput="state.monoCount=this.value;autoSave();updateAllProfits()">
+        </div>
+        <div class="field"><label>カラー枚数（枚/月）</label>
+          <input type="number" id="colorCount" placeholder="200" min="0"
+                 oninput="state.colorCount=this.value;autoSave();updateAllProfits()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="footer-nav">
+  <span class="footer-note">入力内容はブラウザに自動保存されます。</span>
+  <button class="btn btn-outline" style="color:var(--text);border-color:var(--border);" onclick="clearAll()">リセット</button>
+</div>
+</div><!-- /form-pane -->
+
+<div class="preview-pane">
+  <div class="preview-pane-header">
+    プレビュー <span>※ 印刷項目を選択して「印刷 / PDF保存」</span>
+  </div>
+  <iframe id="previewFrame" src="複合機比較_印刷.html?preview=1"></iframe>
+  <div class="print-opts-bar">
+    <div class="print-opts-group">
+      <div class="print-opts-group-title">機器情報</div>
+      <label><input type="checkbox" id="po-showImage"       onchange="applyPrintOpt('showImage',this.checked)"> 機種画像</label>
+      <label><input type="checkbox" id="po-showInstallDate" onchange="applyPrintOpt('showInstallDate',this.checked)"> 導入年月</label>
+    </div>
+    <div class="print-opts-group">
+      <div class="print-opts-group-title">仕様</div>
+      <label><input type="checkbox" id="po-showSpeed"    onchange="applyPrintOpt('showSpeed',this.checked)"> 印刷速度</label>
+      <label><input type="checkbox" id="po-showPaper"    onchange="applyPrintOpt('showPaper',this.checked)"> 対応用紙</label>
+      <label><input type="checkbox" id="po-showSize"     onchange="applyPrintOpt('showSize',this.checked)"> 外形寸法</label>
+      <label><input type="checkbox" id="po-showWeight"   onchange="applyPrintOpt('showWeight',this.checked)"> 本体重量</label>
+      <label><input type="checkbox" id="po-showFeatures" onchange="applyPrintOpt('showFeatures',this.checked)"> 機能一覧</label>
+    </div>
+    <div class="print-opts-group">
+      <div class="print-opts-group-title">コスト</div>
+      <label><input type="checkbox" id="po-showCounter"    onchange="applyPrintOpt('showCounter',this.checked)"> カウンター単価</label>
+      <label><input type="checkbox" id="po-showToner"      onchange="applyPrintOpt('showToner',this.checked)"> トナー</label>
+      <label><input type="checkbox" id="po-showSimPages"   onchange="applyPrintOpt('showSimPages',this.checked)"> 想定枚数</label>
+      <label><input type="checkbox" id="po-showCounterFee" onchange="applyPrintOpt('showCounterFee',this.checked)"> カウンター料金</label>
+      <label><input type="checkbox" id="po-showLease"      onchange="applyPrintOpt('showLease',this.checked)"> リース料金</label>
+      <label><input type="checkbox" id="po-showTotal"      onchange="applyPrintOpt('showTotal',this.checked)"> 総合計</label>
+    </div>
+    <div class="print-opts-group">
+      <div class="print-opts-group-title">比較</div>
+      <label><input type="checkbox" id="po-showReduction" onchange="applyPrintOpt('showReduction',this.checked)"> コスト比較表</label>
+    </div>
+    <button class="btn-print-direct" onclick="doPrint()">印刷 / PDF保存</button>
+  </div>
+</div>
+</div><!-- /split-layout -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   機種データベース（2024-2025年 現行機種）
+═══════════════════════════════════════════════ */
+const MACHINE_DB = [
+  // ─── 京セラ（標準色） ───
+  {brand:'京セラ', model:'TASKalfa MZ2501ci',   speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:67},
+  {brand:'京セラ', model:'TASKalfa MZ3501ci',   speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:70},
+  {brand:'京セラ', model:'TASKalfa MZ4001ci',   speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:85},
+  {brand:'京セラ', model:'TASKalfa MZ5001ci',   speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:88},
+  // ─── 京セラ（Wホワイト） ───
+  {brand:'京セラ', model:'TASKalfa MZ2501ci W', speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:67},
+  {brand:'京セラ', model:'TASKalfa MZ3501ci W', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:70},
+  {brand:'京セラ', model:'TASKalfa MZ4001ci W', speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:85},
+  {brand:'京セラ', model:'TASKalfa MZ5001ci W', speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:88},
+  // ─── キヤノン ───
+  {brand:'キヤノン', model:'iR-ADV DX C3826F', speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×719×891',  kg:79},
+  {brand:'キヤノン', model:'iR-ADV DX C3830F', speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3835F', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3926F', speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3930F', speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3935F', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C5840F', speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×937',  kg:105},
+  {brand:'キヤノン', model:'iR-ADV DX C5850F', speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×937',  kg:105},
+  {brand:'キヤノン', model:'iR-ADV DX C5860F', speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×1019', kg:115},
+  // ─── コニカミノルタ ───
+  {brand:'コニカミノルタ', model:'bizhub C250iS', speedC:25, speedM:25, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C300iS', speedC:30, speedM:30, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C360iS', speedC:36, speedM:36, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C450iS', speedC:45, speedM:45, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×961',  kg:100},
+  {brand:'コニカミノルタ', model:'bizhub C650iS', speedC:65, speedM:65, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×720×1120', kg:130},
+  // ─── リコー ───
+  {brand:'リコー', model:'IM C2000',  speedC:20, speedM:20, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:77},
+  {brand:'リコー', model:'IM C2500',  speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:78},
+  {brand:'リコー', model:'IM C3000',  speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:80},
+  {brand:'リコー', model:'IM C3500',  speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:82},
+  {brand:'リコー', model:'IM C4500',  speedC:45, speedM:45, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'614×693×1130', kg:104},
+  {brand:'リコー', model:'IM C5500',  speedC:55, speedM:55, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'614×693×1130', kg:107},
+  {brand:'リコー', model:'IM C6000',  speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×720×1170', kg:125},
+  // ─── 富士フイルム ───
+  {brand:'富士フイルム', model:'Apeos C2061',  speedC:20, speedM:20, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'577×650×687',  kg:55},
+  {brand:'富士フイルム', model:'Apeos C2561',  speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'577×650×769',  kg:60},
+  {brand:'富士フイルム', model:'Apeos C3061',  speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'587×650×1120', kg:83},
+  {brand:'富士フイルム', model:'Apeos C3571',  speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'595×677×1040', kg:120},
+  {brand:'富士フイルム', model:'Apeos C4571',  speedC:45, speedM:45, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×720×1119', kg:126},
+  {brand:'富士フイルム', model:'Apeos C5571',  speedC:55, speedM:55, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×720×1119', kg:126},
+  {brand:'富士フイルム', model:'Apeos C6571',  speedC:65, speedM:65, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'640×750×1160', kg:140},
+  // ─── シャープ ───
+  {brand:'シャープ', model:'MX-2661',  speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×834',  kg:72},
+  {brand:'シャープ', model:'MX-3061',  speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×1006', kg:93},
+  {brand:'シャープ', model:'MX-3561',  speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×1006', kg:96},
+  {brand:'シャープ', model:'MX-4061',  speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×680×1090', kg:105},
+  {brand:'シャープ', model:'MX-5061',  speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×680×1090', kg:108},
+  {brand:'シャープ', model:'MX-6051',  speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'640×710×1147', kg:124},
+];
+
+/* マスタDBを優先読み込み、なければ組み込みDBにフォールバック */
+const MASTER_KEY = 'fukugoki_master';
+function getEffectiveDB() {
+  const raw = localStorage.getItem(MASTER_KEY);
+  if (raw) {
+    try {
+      const master = JSON.parse(raw);
+      if (Array.isArray(master) && master.length > 0) return master;
+    } catch(e) {}
+  }
+  return MACHINE_DB.map((m, i) => ({
+    id: 'b' + i,
+    brand: m.brand, model: m.model,
+    speedC: m.speedC, speedM: m.speedM, paper: m.paper,
+    color: m.color, duplex: m.duplex, fax: m.fax, scan: m.scan, wifi: m.wifi,
+    size: m.size, kg: m.kg, image: ''
+  }));
+}
+const BRAND_ORDER = ['京セラ','キヤノン','コニカミノルタ','リコー','富士フイルム','シャープ'];
+
+function sortedBrands(db) {
+  const inData = [...new Set(db.map(m => m.brand))];
+  return [
+    ...BRAND_ORDER.filter(b => inData.includes(b)),
+    ...inData.filter(b => !BRAND_ORDER.includes(b)).sort()
+  ];
+}
+
+let effectiveDB = getEffectiveDB();
+const DB_BRANDS = sortedBrands(effectiveDB);
+
+/* ═══════════════════════════════════════════════
+   定数・ユーティリティ
+═══════════════════════════════════════════════ */
+const KEY = 'fukugoki_v2';
+const MC_COLORS = ['blue','green','teal','purple','amber','gray'];
+const PROPOSAL_LABELS = ['①','②','③','④','⑤','⑥','⑦','⑧'];
+
+function makeMachineId() {
+  return 'mc' + Date.now().toString(36) + Math.random().toString(36).substr(2,4);
+}
+
+function defaultMachine(role, proposalIndex) {
+  return {
+    id: makeMachineId(),
+    role,
+    skip: false,
+    label: role === 'current' ? '現状' : ('提案機器' + (PROPOSAL_LABELS[proposalIndex] || (proposalIndex+1))),
+    dealer:'', installDate:'', toner:'含む',
+    maker:'', model:'', count:1, paper:'A3',
+    speed:'', speedC:'', speedM:'', size:'', weight:'',
+    featColor:'○', featDuplex:'○', featFax:'△', featScan:'○', featWifi:'△',
+    lease:'', contractFrom:'', contractTo:'',
+    basic:'', mono:'', color:'',
+    leaseRate:'',
+    costBody:'',
+    image: ''
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   ステート
+═══════════════════════════════════════════════ */
+let state = {
+  clientName: '',
+  docDate: '',
+  docNotes: '',
+  monoCount: '',
+  colorCount: '',
+  leasePeriod: '60',
+  machines: [defaultMachine('current',0), defaultMachine('proposal',0)],
+};
+
+/* ═══════════════════════════════════════════════
+   機器カード描画
+═══════════════════════════════════════════════ */
+function getMachineColor(m) {
+  if (m.role === 'current') return 'blue';
+  const props = state.machines.filter(x => x.role === 'proposal');
+  const idx = props.indexOf(m);
+  return ['green','teal','purple','amber','gray','blue'][idx % 6];
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selOpts(list, val) {
+  return list.map(v => `<option value="${esc(v)}" ${val===v?'selected':''}>${esc(v)}</option>`).join('');
+}
+
+function featSelHTML(mid, field, val) {
+  const opts = [['○','○ 標準'],['△','△ オプション'],['✕','✕ 非対応']];
+  return `<select data-mid="${mid}" data-field="${field}" oninput="setMF('${mid}','${field}',this.value)">`
+    + opts.map(([v,t]) => `<option value="${v}" ${val===v?'selected':''}>${t}</option>`).join('')
+    + '</select>';
+}
+
+function machineCardHTML(m) {
+  const color = getMachineColor(m);
+  const props = state.machines.filter(x => x.role === 'proposal');
+  const canDel = m.role === 'proposal' && props.length > 1;
+
+  const currents = state.machines.filter(x => x.role === 'current');
+  const headerExtras = m.role === 'current'
+    ? `<label class="skip-toggle">
+        <input type="checkbox" ${m.skip?'checked':''} onchange="toggleSkip('${m.id}',this.checked)">
+        スキップ
+       </label>
+       <button class="btn-del-mc" onclick="deleteMachine('${m.id}')">✕ 削除</button>`
+    : (canDel ? `<button class="btn-del-mc" onclick="deleteMachine('${m.id}')">✕ 削除</button>` : '');
+
+  const bodyContent = m.skip
+    ? `<p class="skip-msg">現状機器は「スキップ」に設定されています。印刷ページでは現状列が非表示になります。</p>`
+    : fullMachineFormHTML(m);
+
+  return `
+<div class="card" id="mc_${m.id}">
+  <div class="card-hd ${color}">
+    ${m.role==='current'
+      ? '<span class="num">2</span>'
+      : `<span style="background:rgba(255,255,255,.2);border-radius:4px;padding:2px 7px;font-size:11px;">${esc(m.label)}</span>`
+    }
+    <span>${m.role==='current'?'現状機器':esc(m.label)}</span>
+    ${headerExtras}
+  </div>
+  <div class="card-body${m.skip?' skipped':''}" id="mcb_${m.id}">
+    ${bodyContent}
+  </div>
+</div>`;
+}
+
+function imgUploadHTML(m) {
+  const mid = m.id;
+  const hasImg = !!m.image;
+  return `
+    <div class="img-upload-area">
+      <div class="img-preview" id="imgPreview_${mid}">
+        ${hasImg
+          ? `<img src="${m.image}" alt="機種画像">`
+          : `<div class="img-placeholder">機種画像<br>未設定</div>`}
+      </div>
+      <div class="img-upload-right">
+        <label>機種画像</label>
+        <input type="file" id="imgInput_${mid}" accept="image/*" style="display:none"
+               onchange="handleImageFile('${mid}',this)">
+        <button class="btn-img-select" onclick="document.getElementById('imgInput_${mid}').click()">
+          画像を選択
+        </button>
+        ${hasImg ? `<button class="btn-img-clear" onclick="clearImage('${mid}')">画像を削除</button>` : ''}
+        <span class="img-note">PNG / JPG / WebP 対応。選択後に自動保存されます。</span>
+      </div>
+    </div>`;
+}
+
+function fullMachineFormHTML(m) {
+  const mid = m.id;
+  return `
+    <div style="margin-bottom:14px;max-width:340px;">
+      <div class="field">
+        <label>列ヘッダー名（印刷時の表示）</label>
+        <input type="text" value="${esc(m.label)}"
+               placeholder="${m.role==='current'?'例: 現状':'例: 提案機器①'}"
+               data-preview="machine-label"
+               oninput="setMF('${mid}','label',this.value)">
+      </div>
+    </div>
+    ${imgUploadHTML(m)}
+    <div class="quick-fill">
+      <span class="quick-fill-title">機種クイック入力</span>
+      <select id="qfb_${mid}" onchange="syncQFModel('${mid}')">
+        <option value="">─ メーカーを選択 ─</option>
+        ${DB_BRANDS.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('')}
+      </select>
+      <select id="qfm_${mid}" disabled>
+        <option value="">─ 機種を選択 ─</option>
+      </select>
+      <button class="btn-apply" onclick="applyMachine('${mid}')">適用</button>
+      <span class="quick-note">※ リース料・カウンター料金は自動入力されません。スペックはカタログ参考値です。</span>
+    </div>
+
+    <div class="sub-sec" data-preview="machine">
+      <div class="sub-label">基本情報</div>
+      <div class="g3" style="margin-bottom:10px;">
+        <div class="field"><label>導入年月</label>
+          <input type="month" value="${esc(m.installDate||'')}"
+                 data-mid="${mid}" data-field="installDate"
+                 oninput="setMF('${mid}','installDate',this.value)"></div>
+        <div class="field"><label>トナー</label>
+          <select data-mid="${mid}" data-field="toner" oninput="setMF('${mid}','toner',this.value)">
+            ${selOpts(['含む','別途','なし'], m.toner||'含む')}
+          </select></div>
+      </div>
+      <div class="g4">
+        <div class="field"><label>メーカー</label>
+          <input type="text" value="${esc(m.maker)}" placeholder="例: リコー"
+                 data-mid="${mid}" data-field="maker"
+                 oninput="setMF('${mid}','maker',this.value)"></div>
+        <div class="field"><label>機種名</label>
+          <input type="text" value="${esc(m.model)}" placeholder="例: IM C3000"
+                 data-mid="${mid}" data-field="model"
+                 oninput="setMF('${mid}','model',this.value)"></div>
+        <div class="field"><label>台数</label>
+          <input type="number" value="${esc(m.count)}" min="1" placeholder="1"
+                 oninput="setMF('${mid}','count',+this.value)"></div>
+        <div class="field"><label>対応用紙（最大）</label>
+          <select data-mid="${mid}" data-field="paper" oninput="setMF('${mid}','paper',this.value)">
+            ${selOpts(['A3','A4','SRA3','B4','B5'], m.paper)}
+          </select></div>
+      </div>
+      <div class="g4" style="margin-top:12px;">
+        <div class="field"><label>印刷速度 (ppm)</label>
+          <input type="text" value="${esc(m.speed || m.speedC || m.speedM || '')}" placeholder="30"
+                 data-mid="${mid}" data-field="speed"
+                 oninput="setMF('${mid}','speed',this.value)"></div>
+        <div class="field"><label>外形寸法（幅×奥行×高さ mm）</label>
+          <input type="text" value="${esc(m.size)}" placeholder="587×652×1019"
+                 data-mid="${mid}" data-field="size"
+                 oninput="setMF('${mid}','size',this.value)"></div>
+        <div class="field"><label>本体重量（kg）</label>
+          <input type="number" value="${esc(m.weight)}" placeholder="80" min="0" step="0.1"
+                 data-mid="${mid}" data-field="weight"
+                 oninput="setMF('${mid}','weight',+this.value)"></div>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div class="sub-sec" data-preview="features">
+      <div class="sub-label" style="cursor:pointer;user-select:none;" onclick="this.parentElement.querySelector('.feat-body').classList.toggle('feat-open')">
+        搭載機能 <span style="font-size:11px;color:var(--sub);font-weight:normal;">▶ クリックで展開</span>
+      </div>
+      <div class="feat-body">
+        <div class="feat-grid">
+          <div class="feat-item"><label>カラー印刷</label>${featSelHTML(mid,'featColor',m.featColor)}</div>
+          <div class="feat-item"><label>両面印刷（自動）</label>${featSelHTML(mid,'featDuplex',m.featDuplex)}</div>
+          <div class="feat-item"><label>FAX機能</label>${featSelHTML(mid,'featFax',m.featFax)}</div>
+          <div class="feat-item"><label>スキャン機能</label>${featSelHTML(mid,'featScan',m.featScan)}</div>
+          <div class="feat-item"><label>Wi-Fi（無線LAN）</label>${featSelHTML(mid,'featWifi',m.featWifi)}</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div class="sub-sec" data-preview="lease">
+      <div class="sub-label">リース条件</div>
+      <div class="g3">
+        <div class="field"><label>月額リース料（円）</label>
+          <input type="number" value="${esc(m.lease)}" placeholder="10000" min="0"
+                 data-mid="${mid}" data-field="lease"
+                 oninput="setMF('${mid}','lease',this.value);updateProfit('${mid}')"></div>
+        <div class="field"><label>契約開始</label>
+          <input type="month" value="${esc(m.contractFrom)}"
+                 oninput="setMF('${mid}','contractFrom',this.value);autoCalcContractTo('${mid}')"></div>
+        <div class="field"><label>契約満了（自動）</label>
+          <input type="month" id="contractTo_${mid}" value="${esc(m.contractTo)}" readonly
+                 style="background:#f3f4f6;color:var(--sub)"></div>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div class="sub-sec" data-preview="counter">
+      <div class="sub-label">カウント料金</div>
+      <div class="g3" style="margin-bottom:10px;">
+        <div class="field"><label>基本料 / 最低保証額（円/月）</label>
+          <input type="number" value="${esc(m.basic)}" placeholder="1000" min="0"
+                 data-mid="${mid}" data-field="basic"
+                 oninput="setMF('${mid}','basic',this.value);updateProfit('${mid}')"></div>
+        <div class="field"><label>モノクロ単価（円/枚）</label>
+          <input type="number" value="${esc(m.mono)}" placeholder="0.80" step="0.01" min="0"
+                 data-mid="${mid}" data-field="mono"
+                 oninput="setMF('${mid}','mono',this.value);updateProfit('${mid}')"></div>
+        <div class="field"><label>カラー単価（円/枚）</label>
+          <input type="number" value="${esc(m.color)}" placeholder="8.00" step="0.01" min="0"
+                 data-mid="${mid}" data-field="color"
+                 oninput="setMF('${mid}','color',this.value);updateProfit('${mid}')"></div>
+      </div>
+    </div>
+
+    <hr class="sep">
+    <div class="sub-sec">
+      <div class="sub-label">粗利計算（社内管理用 ─ 印刷に反映されません）</div>
+      <div class="g3" style="margin-bottom:12px;">
+        <div class="field"><label>料率（% / 月）</label>
+          <input type="number" value="${esc(m.leaseRate)}" placeholder="1.80" step="0.01" min="0"
+                 oninput="setMF('${mid}','leaseRate',this.value);updateProfit('${mid}')"></div>
+        <div class="field"><label>本体仕入れ価格（円）</label>
+          <input type="number" value="${esc(m.costBody)}" placeholder="800000" min="0"
+                 oninput="setMF('${mid}','costBody',this.value);updateProfit('${mid}')"></div>
+      </div>
+      <div id="profit-${mid}">${profitBoxHTML(m)}</div>
+    </div>`;
+}
+
+function profitBoxHTML(m) {
+  const costBody = Math.floor(parseFloat(m.costBody) || 0);
+  const fmt      = n => (n < 0 ? '-¥' : '¥') + Math.abs(n).toLocaleString();
+  const row      = (label, val) =>
+    `<div class="profit-row"><span>${label}</span><span class="profit-val">${fmt(val)}</span></div>`;
+
+  const monthly   = Math.floor(parseFloat(m.lease) || 0);
+  const rate      = parseFloat(m.leaseRate) || 0;
+  const principal = rate > 0 ? Math.floor(monthly / (rate / 100) / 100) * 100 : 0;
+  const totalSales = principal;
+
+  const grossProfit = totalSales - costBody;
+  if (!m.lease && !m.costBody) return '';
+
+  return `<div class="profit-box">
+    <div class="profit-box-title">粗利概算</div>
+    <div style="font-size:11px;color:var(--sub);margin:4px 0 2px;font-weight:bold;">売り上げ</div>
+    ${rate > 0 ? `<div class="profit-row"><span>料率</span><span class="profit-val">${rate}%/月</span></div>` : ''}
+    ${row('月額リース', monthly)}
+    ${rate > 0 ? row('リース元本（売上）', principal) : ''}
+    <div class="profit-row" style="font-weight:600;color:var(--text);">
+      <span>売り上げ計</span><span class="profit-val">${fmt(totalSales)}</span>
+    </div>
+    <div style="font-size:11px;color:var(--sub);margin:8px 0 2px;font-weight:bold;">仕入れ</div>
+    ${row('本体仕入れ', costBody)}
+    <div class="${'profit-row total' + (grossProfit < 0 ? ' neg' : '')}">
+      <span>粗利</span><span class="profit-val">${fmt(grossProfit)}</span>
+    </div>
+  </div>`;
+}
+
+function autoCalcContractTo(mid) {
+  const m = state.machines.find(x => x.id === mid);
+  if (!m || !m.contractFrom) return;
+  const months = parseInt(state.leasePeriod) || 60;
+  const [y, mo] = m.contractFrom.split('-').map(Number);
+  const total = mo - 1 + months;
+  const newYear = y + Math.floor(total / 12);
+  const newMonth = (total % 12) + 1;
+  const to = `${newYear}-${String(newMonth).padStart(2,'0')}`;
+  m.contractTo = to;
+  const el = document.getElementById('contractTo_' + mid);
+  if (el) el.value = to;
+  autoSave();
+}
+
+function updateProfit(mid) {
+  const m  = state.machines.find(x => x.id === mid);
+  const el = document.getElementById('profit-' + mid);
+  if (m && el) el.innerHTML = profitBoxHTML(m);
+}
+
+function updateAllProfits() {
+  state.machines.forEach(m => updateProfit(m.id));
+}
+
+function renderMachines() {
+  const currents  = state.machines.filter(x => x.role === 'current');
+  const proposals = state.machines.filter(x => x.role === 'proposal');
+  const addCurBtn = `<button class="btn-add-mc" style="border-color:var(--navy);color:var(--navy);" onclick="addCurrentMachine()">＋ 現状機器を追加</button>`;
+  document.getElementById('machinesContainer').innerHTML =
+    currents.map(m => machineCardHTML(m)).join('') +
+    addCurBtn +
+    proposals.map(m => machineCardHTML(m)).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   機器操作
+═══════════════════════════════════════════════ */
+function setMF(id, field, value) {
+  const m = state.machines.find(x => x.id === id);
+  if (m) { m[field] = value; autoSave(); }
+}
+
+function toggleSkip(id, checked) {
+  const m = state.machines.find(x => x.id === id);
+  if (!m) return;
+  m.skip = checked;
+  renderMachines();
+  autoSave();
+}
+
+function addProposalMachine() {
+  const propCount = state.machines.filter(x => x.role === 'proposal').length;
+  state.machines.push(defaultMachine('proposal', propCount));
+  renderMachines();
+  autoSave();
+}
+
+function deleteMachine(id) {
+  const m = state.machines.find(x => x.id === id);
+  if (!m) return;
+  if (m.role === 'proposal' && state.machines.filter(x => x.role === 'proposal').length <= 1) {
+    alert('提案機器は最低1台必要です。'); return;
+  }
+  if (!confirm('この機器を削除しますか？')) return;
+  state.machines = state.machines.filter(x => x.id !== id);
+  state.machines.filter(x => x.role === 'proposal').forEach((mc, i) => {
+    mc.label = '提案機器' + (PROPOSAL_LABELS[i] || (i+1));
+  });
+  const currs = state.machines.filter(x => x.role === 'current');
+  currs.forEach((mc, i) => { mc.label = currs.length > 1 ? '現状' + (PROPOSAL_LABELS[i] || (i+1)) : '現状'; });
+  renderMachines();
+  autoSave();
+}
+
+function addCurrentMachine() {
+  const currs = state.machines.filter(x => x.role === 'current');
+  const newM = defaultMachine('current', 0);
+  newM.label = '現状' + (PROPOSAL_LABELS[currs.length] || (currs.length + 1));
+  if (currs.length === 1) currs[0].label = '現状①';
+  const firstPropIdx = state.machines.findIndex(x => x.role === 'proposal');
+  if (firstPropIdx >= 0) state.machines.splice(firstPropIdx, 0, newM);
+  else state.machines.push(newM);
+  renderMachines();
+  autoSave();
+}
+
+/* ═══════════════════════════════════════════════
+   画像アップロード
+═══════════════════════════════════════════════ */
+function handleImageFile(mid, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // 縮小してからbase64保存（容量節約）
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 400, maxH = 300;
+      const scale = Math.min(1, maxW / img.width, maxH / img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/png');
+      const m = state.machines.find(x => x.id === mid);
+      if (m) { m.image = dataUrl; }
+      // プレビューだけ更新（再描画不要）
+      const preview = document.getElementById('imgPreview_' + mid);
+      if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="機種画像">`;
+      // 削除ボタンを表示
+      const area = preview?.closest('.img-upload-area');
+      if (area && !area.querySelector('.btn-img-clear')) {
+        const right = area.querySelector('.img-upload-right');
+        const note = area.querySelector('.img-note');
+        const btn = document.createElement('button');
+        btn.className = 'btn-img-clear';
+        btn.textContent = '画像を削除';
+        btn.onclick = () => clearImage(mid);
+        right.insertBefore(btn, note);
+      }
+      autoSave();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // 同じファイルを再選択できるようにリセット
+}
+
+function clearImage(mid) {
+  const m = state.machines.find(x => x.id === mid);
+  if (m) { m.image = ''; }
+  const preview = document.getElementById('imgPreview_' + mid);
+  if (preview) preview.innerHTML = `<div class="img-placeholder">機種画像<br>未設定</div>`;
+  const btn = preview?.closest('.img-upload-area')?.querySelector('.btn-img-clear');
+  if (btn) btn.remove();
+  autoSave();
+}
+
+/* ═══════════════════════════════════════════════
+   クイック入力
+═══════════════════════════════════════════════ */
+function syncQFModel(mid) {
+  const brand = document.getElementById('qfb_' + mid).value;
+  const sel   = document.getElementById('qfm_' + mid);
+  sel.innerHTML = '<option value="">─ 機種を選択 ─</option>';
+  if (!brand) { sel.disabled = true; return; }
+  effectiveDB
+    .filter(m => m.brand === brand)
+    .forEach((m, i) => {
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = m.model + '（' + m.speedC + '枚/分）';
+      sel.appendChild(o);
+    });
+  sel.disabled = false;
+}
+
+function applyMachine(mid) {
+  const brand = document.getElementById('qfb_' + mid)?.value;
+  const sel   = document.getElementById('qfm_' + mid);
+  if (!brand || !sel || sel.value === '') {
+    alert('メーカーと機種名を選択してください。'); return;
+  }
+  const dbm = effectiveDB.filter(m => m.brand === brand)[parseInt(sel.value)];
+  if (!dbm) return;
+  const m = state.machines.find(x => x.id === mid);
+  if (!m) return;
+  Object.assign(m, {
+    maker: dbm.brand, model: dbm.model, paper: dbm.paper,
+    speedC: dbm.speedC, speedM: dbm.speedM,
+    featColor: dbm.color, featDuplex: dbm.duplex, featFax: dbm.fax,
+    featScan: dbm.scan, featWifi: dbm.wifi,
+    size: dbm.size, weight: dbm.kg,
+    image: dbm.image || ''
+  });
+  renderMachines();
+  autoSave();
+}
+
+/* ═══════════════════════════════════════════════
+   保存・読込・リセット
+═══════════════════════════════════════════════ */
+function save() {
+  const b = document.getElementById('saveBadge');
+  b.textContent = '保存済み ✓'; b.className = 'save-badge ok';
+}
+
+function getPreviewDims() {
+  const f = document.getElementById('previewFrame');
+  return f ? { containerW: f.clientWidth, containerH: f.clientHeight } : {};
+}
+function postPreview(msg) {
+  try {
+    const f = document.getElementById('previewFrame');
+    if (f && f.contentWindow) f.contentWindow.postMessage({ ...getPreviewDims(), ...msg }, '*');
+  } catch(e) {}
+}
+
+function highlightPreview(section) {
+  postPreview({ type: 'highlight', section });
+}
+
+function load() {
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    if (saved.machines && Array.isArray(saved.machines)) {
+      state = saved;
+      if (state.monoCount  === undefined) state.monoCount  = '';
+      if (state.colorCount === undefined) state.colorCount = '';
+      if (state.leasePeriod === undefined) state.leasePeriod = '60';
+      state.machines.forEach(m => {
+        if (m.leaseRate === undefined) m.leaseRate = '';
+        if (m.costBody  === undefined) m.costBody  = '';
+        if (m.speed     === undefined) m.speed     = m.speedC || m.speedM || '';
+      });
+    }
+  } catch(e) { /* ignore */ }
+}
+
+function clearAll() {
+  if (!confirm('入力内容をすべてリセットしますか？')) return;
+  localStorage.removeItem(KEY);
+  state = {
+    clientName: '',
+    docDate: '',
+    docNotes: '',
+    monoCount: '',
+    colorCount: '',
+    leasePeriod: '60',
+    machines: [defaultMachine('current',0), defaultMachine('proposal',0)],
+  };
+  document.getElementById('clientName').value = '';
+  document.getElementById('docDate').value = '';
+  document.getElementById('docNotes').value = '';
+  document.getElementById('leasePeriod').value = '60';
+  document.getElementById('monoCount').value = '';
+  document.getElementById('colorCount').value = '';
+  renderMachines();
+  document.getElementById('saveBadge').textContent = '未保存';
+  document.getElementById('saveBadge').className = 'save-badge';
+}
+
+const PRINT_OPTS_KEY = 'fukugoki_print_opts';
+const DEFAULT_PRINT_OPTS = {
+  showImage: true, showDealer: true, showInstallDate: true,
+  showSpeed: false, showPaper: false, showSize: false, showWeight: false, showFeatures: false,
+  showCounter: true, showToner: true, showSimPages: true,
+  showCounterFee: true, showLease: true, showTotal: true,
+  showReduction: true,
+  orientation: 'landscape',
+};
+
+function applyPrintOpt(key, value) {
+  const saved = JSON.parse(localStorage.getItem(PRINT_OPTS_KEY) || '{}');
+  const opts = { ...DEFAULT_PRINT_OPTS, ...saved, [key]: value };
+  localStorage.setItem(PRINT_OPTS_KEY, JSON.stringify(opts));
+  postPreview({ type: 'render', state: JSON.parse(JSON.stringify(state)) });
+}
+
+function doPrint() {
+  postPreview({ type: 'print' });
+}
+
+let saveTimer = null;
+function autoSave() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+  postPreview({ type: 'render', state: JSON.parse(JSON.stringify(state)) });
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 800);
+}
+
+/* ═══════════════════════════════════════════════
+   初期化
+═══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  effectiveDB = getEffectiveDB();
+  load();
+  document.getElementById('clientName').value = state.clientName || '';
+  if (!state.docDate) {
+    state.docDate = new Date().toISOString().slice(0, 10);
+    autoSave();
+  }
+  document.getElementById('docDate').value = state.docDate;
+  document.getElementById('docNotes').value = state.docNotes || '';
+  document.getElementById('leasePeriod').value = state.leasePeriod || '60';
+  document.getElementById('monoCount').value = state.monoCount || '';
+  document.getElementById('colorCount').value = state.colorCount || '';
+
+  document.getElementById('clientName').addEventListener('input', e => { state.clientName = e.target.value; autoSave(); });
+  document.getElementById('clientName').addEventListener('blur', e => {
+    let v = e.target.value.trim();
+    if (v && !v.endsWith('御中')) { v = v + '御中'; e.target.value = v; }
+    state.clientName = v; autoSave();
+  });
+  document.getElementById('docDate').addEventListener('input', e => { state.docDate = e.target.value; autoSave(); });
+  document.getElementById('docNotes').addEventListener('input', e => { state.docNotes = e.target.value; autoSave(); });
+  renderMachines();
+
+  /* 印刷設定バーのチェックボックスを保存値で初期化 */
+  const initOpts = { ...DEFAULT_PRINT_OPTS, ...JSON.parse(localStorage.getItem(PRINT_OPTS_KEY) || '{}') };
+  Object.keys(initOpts).forEach(key => {
+    const el = document.getElementById('po-' + key);
+    if (el) el.checked = !!initOpts[key];
+  });
+
+  /* フォーカスでプレビューハイライト（イベント委譲） */
+  const SECTION_MAP = {
+    clientName: 'header', docDate: 'header', docNotes: 'notes',
+    monoCount: 'counter', colorCount: 'counter', leasePeriod: 'lease',
+  };
+  document.querySelector('.form-pane').addEventListener('focusin', e => {
+    const el = e.target;
+    if (el.tagName !== 'INPUT' && el.tagName !== 'SELECT' && el.tagName !== 'TEXTAREA') return;
+    const mid = el.dataset.mid;
+    const field = el.dataset.field;
+    if (mid && field) {
+      postPreview({ type: 'highlight', mid, field });
+      return;
+    }
+    const id = el.id;
+    const sec = SECTION_MAP[id]
+      || el.closest('[data-preview]')?.dataset.preview
+      || null;
+    highlightPreview(sec);
+  });
+  document.querySelector('.form-pane').addEventListener('focusout', () => {
+    highlightPreview(null);
+  });
+
+  /* iframeロード後: stateとコンテナサイズを送付 */
+  document.getElementById('previewFrame').addEventListener('load', () => {
+    setTimeout(() => {
+      postPreview({ type: 'render', state: JSON.parse(JSON.stringify(state)) });
+    }, 80);
+  });
+
+  /* リサイズ時: スケール再計算を指示 */
+  window.addEventListener('resize', () => {
+    postPreview({ type: 'scale' });
+  });
+});
+
+// マスタ管理ページから戻ったときにDBを再読み込み
+window.addEventListener('pageshow', () => {
+  effectiveDB = getEffectiveDB();
+});
+</script>
+
+</body>
+</html>

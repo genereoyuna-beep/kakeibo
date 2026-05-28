@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複合機比較表 ─ 機器マスタ管理</title>
+<style>
+:root{
+  --navy:#1a5276; --navy-dk:#0f2f47;
+  --green:#1e8449; --green-dk:#196f3d;
+  --teal:#0a7fa5;
+  --red:#c0392b; --red-lt:#fee2e2;
+  --border:#d5d8dc; --text:#2c3e50; --sub:#7f8c8d;
+  --faint:#aab3bb; --bg:#eaecee;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+     background:var(--bg);color:var(--text);font-size:13px;}
+
+/* ── App bar ── */
+.bar{
+  position:sticky;top:0;z-index:200;
+  background:var(--navy-dk);color:#fff;
+  height:54px;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.bar-left h1{font-size:15px;font-weight:bold;letter-spacing:.04em;}
+.bar-left p{font-size:10px;opacity:.5;margin-top:2px;}
+.bar-right{display:flex;gap:10px;align-items:center;}
+.btn{
+  border:none;border-radius:5px;padding:8px 18px;
+  font-size:13px;font-weight:bold;cursor:pointer;
+  font-family:inherit;letter-spacing:.04em;transition:background .15s;
+}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4);}
+.btn-outline:hover{background:rgba(255,255,255,.1);}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-dk);}
+
+/* ── Wrap ── */
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px;}
+
+/* ── Filter bar ── */
+.filter-bar{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  padding:14px 20px;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.filter-bar label{font-size:11px;font-weight:bold;color:var(--sub);letter-spacing:.06em;white-space:nowrap;}
+.filter-chip{
+  padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;
+  cursor:pointer;border:1.5px solid var(--border);background:#f8f9fa;
+  color:var(--sub);transition:all .15s;font-family:inherit;
+}
+.filter-chip:hover{border-color:var(--navy);color:var(--navy);}
+.filter-chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.filter-count{font-size:11px;color:var(--sub);margin-left:auto;}
+
+/* ── Machine grid ── */
+.mc-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+}
+
+/* ── Machine card ── */
+.mc-card{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+  overflow:hidden;display:flex;flex-direction:column;
+  transition:box-shadow .15s;
+}
+.mc-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.13);}
+.mc-card-img{
+  height:140px;background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  border-bottom:1px solid var(--border);overflow:hidden;position:relative;
+}
+.mc-card-img img{max-width:100%;max-height:100%;object-fit:contain;padding:10px;}
+.mc-card-img .no-img{
+  font-size:11px;color:var(--faint);text-align:center;line-height:1.8;
+}
+.brand-badge{
+  position:absolute;top:8px;left:8px;
+  background:rgba(26,82,118,.85);color:#fff;
+  font-size:10px;font-weight:bold;padding:2px 8px;border-radius:20px;
+  letter-spacing:.04em;
+}
+.mc-card-body{padding:14px 16px;flex:1;}
+.mc-model{font-size:14px;font-weight:bold;color:var(--text);margin-bottom:6px;line-height:1.3;}
+.mc-specs{
+  display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;
+}
+.spec-chip{
+  font-size:10px;background:#f0f3f6;color:var(--sub);
+  padding:2px 8px;border-radius:4px;font-weight:600;
+}
+.mc-feats{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.feat-badge{
+  font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;
+}
+.feat-o {background:#d1fae5;color:#059669;}
+.feat-d {background:#fef3c7;color:#d97706;}
+.feat-x {background:#f3f4f6;color:#9ca3af;}
+.mc-card-foot{
+  padding:10px 16px;border-top:1px solid #f0f2f5;
+  display:flex;gap:8px;
+}
+.btn-edit{
+  flex:1;padding:7px;background:#eaf2f8;border:1.5px solid #bdd6f0;
+  border-radius:5px;color:var(--navy);font-size:12px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+}
+.btn-edit:hover{background:#d4e6f1;}
+.btn-del{
+  padding:7px 12px;background:none;border:1.5px solid #f5c6c6;
+  border-radius:5px;color:var(--red);font-size:12px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+}
+.btn-del:hover{background:var(--red-lt);}
+
+/* ── 空状態 ── */
+.empty-state{
+  text-align:center;padding:60px 32px;background:#fff;
+  border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);
+}
+.empty-state p{font-size:15px;color:var(--sub);margin-bottom:14px;}
+
+/* ── モーダル ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.45);
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:#fff;border-radius:12px;
+  box-shadow:0 8px 40px rgba(0,0,0,.25);
+  width:100%;max-width:660px;max-height:90vh;
+  display:flex;flex-direction:column;
+  animation:modalIn .2s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-hd{
+  padding:16px 22px;border-bottom:2px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.modal-hd h2{font-size:15px;font-weight:bold;color:var(--navy);}
+.btn-close{
+  background:none;border:none;font-size:20px;cursor:pointer;
+  color:var(--sub);line-height:1;padding:2px 6px;border-radius:4px;
+  transition:background .1s;
+}
+.btn-close:hover{background:#f0f2f5;}
+.modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+.modal-ft{
+  padding:14px 22px;border-top:2px solid var(--border);
+  display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;
+}
+.btn-save{
+  padding:9px 24px;background:var(--navy);color:#fff;
+  border:none;border-radius:5px;font-size:13px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+}
+.btn-save:hover{background:#163056;}
+.btn-cancel{
+  padding:9px 18px;background:#f4f5f7;color:var(--sub);
+  border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-weight:bold;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+}
+.btn-cancel:hover{background:#eaecee;}
+
+/* ── モーダル内フォーム ── */
+.m-sec{margin-bottom:18px;}
+.m-sec:last-child{margin-bottom:0;}
+.m-label{
+  font-size:11px;font-weight:bold;color:var(--sub);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:10px;padding-bottom:6px;
+  border-bottom:1.5px solid var(--border);
+}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px;}
+.g5f{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+@media(max-width:500px){.g2,.g3{grid-template-columns:1fr;}.g5f{grid-template-columns:repeat(3,1fr);}}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;color:var(--sub);font-weight:bold;}
+.field input,.field select{
+  border:1.5px solid var(--border);border-radius:5px;
+  padding:0 10px;height:36px;font-size:13px;
+  color:var(--text);background:#fafbfc;font-family:inherit;
+  transition:border-color .15s;
+}
+.field input:focus,.field select:focus{outline:none;border-color:var(--navy);background:#fff;}
+.field input[type="number"]{text-align:right;}
+.feat-row{display:flex;flex-direction:column;gap:4px;}
+.feat-row label{font-size:10px;color:var(--sub);font-weight:bold;text-align:center;}
+.feat-row select{
+  height:34px;padding:0 4px;border:1.5px solid var(--border);
+  border-radius:5px;font-size:12px;background:#fafbfc;
+  font-family:inherit;transition:border-color .15s;text-align:center;
+}
+.feat-row select:focus{outline:none;border-color:var(--navy);}
+
+/* ── 画像アップロード（モーダル内） ── */
+.img-up{
+  display:flex;align-items:center;gap:14px;
+  background:#f8fafc;border:1.5px dashed var(--border);
+  border-radius:8px;padding:14px;margin-bottom:18px;
+}
+.img-thumb{
+  width:120px;height:90px;flex-shrink:0;
+  background:transparent;border:1.5px solid var(--border);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.img-thumb img{max-width:100%;max-height:100%;object-fit:contain;}
+.img-thumb .no-img-sm{font-size:10px;color:var(--faint);text-align:center;line-height:1.7;}
+.img-up-right{display:flex;flex-direction:column;gap:6px;flex:1;}
+.img-up-right label{font-size:11px;font-weight:bold;color:var(--sub);}
+.btn-img{
+  display:inline-block;padding:6px 14px;
+  background:var(--navy);color:#fff;border:none;
+  border-radius:5px;font-size:12px;font-weight:bold;
+  cursor:pointer;font-family:inherit;width:fit-content;transition:background .15s;
+}
+.btn-img:hover{background:#163056;}
+.btn-img-rm{
+  display:inline-block;padding:5px 12px;
+  background:none;color:var(--red);border:1px solid #f5c6c6;
+  border-radius:5px;font-size:11px;font-weight:bold;
+  cursor:pointer;font-family:inherit;width:fit-content;transition:background .15s;
+}
+.btn-img-rm:hover{background:var(--red-lt);}
+.img-note{font-size:10px;color:var(--faint);}
+
+/* ── 初期インポート通知 ── */
+.import-notice{
+  background:#eaf7fb;border:1.5px solid #a8dcee;border-radius:8px;
+  padding:12px 18px;margin-bottom:18px;font-size:12px;color:var(--teal);
+  display:flex;align-items:center;gap:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-left">
+    <h1>複合機比較表 ─ 機器マスタ管理</h1>
+    <p>登録した機器情報・画像は入力フォームのクイック入力に反映されます。</p>
+  </div>
+  <div class="bar-right">
+    <button class="btn btn-outline" onclick="location.href='複合機比較_入力.html'">← 入力フォームに戻る</button>
+    <button class="btn btn-outline" onclick="resetToBuiltin()" style="background:rgba(255,255,255,.08);font-size:12px;">組み込みDBを再インポート</button>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 機器を登録</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="importNotice" style="display:none" class="import-notice">
+    ℹ️ 初回のため、組み込みデータベースの機器情報をインポートしました。画像を追加して登録内容をカスタマイズできます。
+  </div>
+
+  <!-- フィルターバー -->
+  <div class="filter-bar">
+    <label>メーカー絞り込み</label>
+    <div id="filterChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    <span class="filter-count" id="filterCount"></span>
+  </div>
+
+  <!-- 機器グリッド -->
+  <div class="mc-grid" id="mcGrid"></div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modalTitle">機器を登録</h2>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 画像 -->
+      <div class="img-up">
+        <div class="img-thumb" id="mThumb">
+          <div class="no-img-sm">画像<br>未設定</div>
+        </div>
+        <div class="img-up-right">
+          <label>機種画像</label>
+          <input type="file" id="mImgInput" accept="image/*" style="display:none" onchange="handleModalImage(this)">
+          <button class="btn-img" onclick="document.getElementById('mImgInput').click()">画像を選択</button>
+          <button class="btn-img-rm" id="mImgRmBtn" style="display:none" onclick="clearModalImage()">画像を削除</button>
+          <span class="img-note">PNG / JPG / WebP。自動縮小（最大400×300px）。</span>
+        </div>
+      </div>
+
+      <!-- 基本情報 -->
+      <div class="m-sec">
+        <div class="m-label">基本情報</div>
+        <div class="g2" style="margin-bottom:10px;">
+          <div class="field">
+            <label>メーカー</label>
+            <input type="text" id="mBrand" placeholder="例: リコー" list="brandList">
+            <datalist id="brandList"></datalist>
+          </div>
+          <div class="field">
+            <label>機種名</label>
+            <input type="text" id="mModel" placeholder="例: IM C3000">
+          </div>
+        </div>
+        <div class="g3">
+          <div class="field"><label>印刷速度 カラー (ppm)</label>
+            <input type="number" id="mSpeedC" min="1" placeholder="30"></div>
+          <div class="field"><label>印刷速度 モノクロ (ppm)</label>
+            <input type="number" id="mSpeedM" min="1" placeholder="30"></div>
+          <div class="field"><label>対応用紙（最大）</label>
+            <select id="mPaper">
+              <option>A3</option><option>A4</option>
+              <option>SRA3</option><option>B4</option><option>B5</option>
+            </select></div>
+        </div>
+        <div class="g2" style="margin-top:10px;">
+          <div class="field"><label>外形寸法（幅×奥行×高さ mm）</label>
+            <input type="text" id="mSize" placeholder="587×652×1019"></div>
+          <div class="field"><label>本体重量（kg）</label>
+            <input type="number" id="mWeight" min="0" step="0.1" placeholder="80"></div>
+        </div>
+      </div>
+
+      <!-- 搭載機能 -->
+      <div class="m-sec">
+        <div class="m-label">搭載機能</div>
+        <div class="g5f">
+          <div class="feat-row"><label>カラー印刷</label>
+            <select id="mFeatColor"><option value="○">○ 標準</option><option value="△">△ オプション</option><option value="✕">✕ 非対応</option></select></div>
+          <div class="feat-row"><label>両面印刷</label>
+            <select id="mFeatDuplex"><option value="○">○ 標準</option><option value="△">△ オプション</option><option value="✕">✕ 非対応</option></select></div>
+          <div class="feat-row"><label>FAX</label>
+            <select id="mFeatFax"><option value="△">△ オプション</option><option value="○">○ 標準</option><option value="✕">✕ 非対応</option></select></div>
+          <div class="feat-row"><label>スキャン</label>
+            <select id="mFeatScan"><option value="○">○ 標準</option><option value="△">△ オプション</option><option value="✕">✕ 非対応</option></select></div>
+          <div class="feat-row"><label>Wi-Fi</label>
+            <select id="mFeatWifi"><option value="△">△ オプション</option><option value="○">○ 標準</option><option value="✕">✕ 非対応</option></select></div>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+    <div class="modal-ft">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveModal()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   組み込み初期データ
+══════════════════════════════════════ */
+const BUILTIN_DB = [
+  // ─── 京セラ（標準色） ───
+  {brand:'京セラ', model:'TASKalfa MZ2501ci',   speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:67},
+  {brand:'京セラ', model:'TASKalfa MZ3501ci',   speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:70},
+  {brand:'京セラ', model:'TASKalfa MZ4001ci',   speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:85},
+  {brand:'京セラ', model:'TASKalfa MZ5001ci',   speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:88},
+  // ─── 京セラ（Wホワイト） ───
+  {brand:'京セラ', model:'TASKalfa MZ2501ci W', speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:67},
+  {brand:'京セラ', model:'TASKalfa MZ3501ci W', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'567×607×757', kg:70},
+  {brand:'京セラ', model:'TASKalfa MZ4001ci W', speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:85},
+  {brand:'京セラ', model:'TASKalfa MZ5001ci W', speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'△', scan:'○', wifi:'○', size:'600×630×830', kg:88},
+  // ─── キヤノン ───
+  {brand:'キヤノン', model:'iR-ADV DX C3826F', speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×719×891',  kg:79},
+  {brand:'キヤノン', model:'iR-ADV DX C3830F', speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3835F', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3926F', speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3930F', speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C3935F', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'565×722×897',  kg:85},
+  {brand:'キヤノン', model:'iR-ADV DX C5840F', speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×937',  kg:105},
+  {brand:'キヤノン', model:'iR-ADV DX C5850F', speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×937',  kg:105},
+  {brand:'キヤノン', model:'iR-ADV DX C5860F', speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×722×1019', kg:115},
+  // ─── コニカミノルタ ───
+  {brand:'コニカミノルタ', model:'bizhub C250iS', speedC:25, speedM:25, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C300iS', speedC:30, speedM:30, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C360iS', speedC:36, speedM:36, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×779',  kg:84},
+  {brand:'コニカミノルタ', model:'bizhub C450iS', speedC:45, speedM:45, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'615×688×961',  kg:100},
+  {brand:'コニカミノルタ', model:'bizhub C650iS', speedC:65, speedM:65, paper:'SRA3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×720×1120', kg:130},
+  // ─── リコー ───
+  {brand:'リコー', model:'IM C2000',  speedC:20, speedM:20, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:77},
+  {brand:'リコー', model:'IM C2500',  speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:78},
+  {brand:'リコー', model:'IM C3000',  speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:80},
+  {brand:'リコー', model:'IM C3500',  speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'587×652×1019', kg:82},
+  {brand:'リコー', model:'IM C4500',  speedC:45, speedM:45, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'614×693×1130', kg:104},
+  {brand:'リコー', model:'IM C5500',  speedC:55, speedM:55, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'614×693×1130', kg:107},
+  {brand:'リコー', model:'IM C6000',  speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'○', size:'620×720×1170', kg:125},
+  // ─── 富士フイルム ───
+  {brand:'富士フイルム', model:'Apeos C2061',  speedC:20, speedM:20, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'577×650×687',  kg:55},
+  {brand:'富士フイルム', model:'Apeos C2561',  speedC:25, speedM:25, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'577×650×769',  kg:60},
+  {brand:'富士フイルム', model:'Apeos C3061',  speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'587×650×1120', kg:83},
+  {brand:'富士フイルム', model:'Apeos C3571',  speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'595×677×1040', kg:120},
+  {brand:'富士フイルム', model:'Apeos C4571',  speedC:45, speedM:45, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×720×1119', kg:126},
+  {brand:'富士フイルム', model:'Apeos C5571',  speedC:55, speedM:55, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×720×1119', kg:126},
+  {brand:'富士フイルム', model:'Apeos C6571',  speedC:65, speedM:65, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'640×750×1160', kg:140},
+  // ─── シャープ ───
+  {brand:'シャープ', model:'MX-2661', speedC:26, speedM:26, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×834',  kg:72},
+  {brand:'シャープ', model:'MX-3061', speedC:30, speedM:30, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×1006', kg:93},
+  {brand:'シャープ', model:'MX-3561', speedC:35, speedM:35, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'600×640×1006', kg:96},
+  {brand:'シャープ', model:'MX-4061', speedC:40, speedM:40, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×680×1090', kg:105},
+  {brand:'シャープ', model:'MX-5061', speedC:50, speedM:50, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'620×680×1090', kg:108},
+  {brand:'シャープ', model:'MX-6051', speedC:60, speedM:60, paper:'A3', color:'○', duplex:'○', fax:'○', scan:'○', wifi:'△', size:'640×710×1147', kg:124},
+];
+
+/* ══════════════════════════════════════
+   ストレージ
+══════════════════════════════════════ */
+const MASTER_KEY = 'fukugoki_master';
+
+function loadMaster() {
+  const raw = localStorage.getItem(MASTER_KEY);
+  if (raw) return JSON.parse(raw);
+  // 初回: 組み込みDBをインポート
+  const init = BUILTIN_DB.map((m, i) => ({
+    id: 'b' + i,
+    brand: m.brand, model: m.model,
+    speedC: m.speedC, speedM: m.speedM, paper: m.paper,
+    color: m.color, duplex: m.duplex, fax: m.fax, scan: m.scan, wifi: m.wifi,
+    size: m.size, kg: m.kg, image: ''
+  }));
+  localStorage.setItem(MASTER_KEY, JSON.stringify(init));
+  document.getElementById('importNotice').style.display = 'flex';
+  return init;
+}
+
+function saveMaster() {
+  localStorage.setItem(MASTER_KEY, JSON.stringify(master));
+}
+
+function makeId() {
+  return 'm' + Date.now().toString(36) + Math.random().toString(36).substr(2,4);
+}
+
+let master = loadMaster();
+let currentFilter = 'all';
+
+/* ══════════════════════════════════════
+   描画
+══════════════════════════════════════ */
+const BRAND_ORDER = ['京セラ','キヤノン','コニカミノルタ','リコー','富士フイルム','シャープ'];
+
+function getBrands() {
+  const inData = [...new Set(master.map(m => m.brand))];
+  return [
+    ...BRAND_ORDER.filter(b => inData.includes(b)),
+    ...inData.filter(b => !BRAND_ORDER.includes(b)).sort()
+  ];
+}
+
+function renderFilterChips() {
+  const brands = getBrands();
+  const dl = document.getElementById('brandList');
+  dl.innerHTML = brands.map(b => `<option value="${b}">`).join('');
+
+  const container = document.getElementById('filterChips');
+  const all = [['all','すべて'], ...brands.map(b => [b, b])];
+  container.innerHTML = all.map(([val, label]) =>
+    `<button class="filter-chip${currentFilter===val?' active':''}"
+             onclick="setFilter('${val}')">${label}</button>`
+  ).join('');
+}
+
+function setFilter(brand) {
+  currentFilter = brand;
+  renderFilterChips();
+  renderGrid();
+}
+
+function featClass(v) {
+  if (v==='○') return 'feat-o';
+  if (v==='△') return 'feat-d';
+  return 'feat-x';
+}
+function featLabel(key, v) {
+  const names = {color:'カラー',duplex:'両面',fax:'FAX',scan:'スキャン',wifi:'WiFi'};
+  return `<span class="feat-badge ${featClass(v)}">${names[key]} ${v}</span>`;
+}
+
+function renderGrid() {
+  const filtered = currentFilter === 'all'
+    ? master
+    : master.filter(m => m.brand === currentFilter);
+
+  document.getElementById('filterCount').textContent = `${filtered.length} 件`;
+
+  const grid = document.getElementById('mcGrid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <p>登録された機器がありません。</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m => `
+    <div class="mc-card">
+      <div class="mc-card-img">
+        <span class="brand-badge">${m.brand}</span>
+        ${m.image
+          ? `<img src="${m.image}" alt="${m.model}">`
+          : `<div class="no-img">画像未登録<br><span style="font-size:10px">編集から追加できます</span></div>`}
+      </div>
+      <div class="mc-card-body">
+        <div class="mc-model">${m.model}</div>
+        <div class="mc-specs">
+          <span class="spec-chip">カラー ${m.speedC}ppm</span>
+          <span class="spec-chip">モノクロ ${m.speedM}ppm</span>
+          <span class="spec-chip">${m.paper}</span>
+          ${m.kg ? `<span class="spec-chip">${m.kg}kg</span>` : ''}
+        </div>
+        <div class="mc-feats">
+          ${featLabel('color',  m.color)}
+          ${featLabel('duplex', m.duplex)}
+          ${featLabel('fax',    m.fax)}
+          ${featLabel('scan',   m.scan)}
+          ${featLabel('wifi',   m.wifi)}
+        </div>
+        ${m.size ? `<div style="font-size:10px;color:var(--faint)">${m.size} mm</div>` : ''}
+      </div>
+      <div class="mc-card-foot">
+        <button class="btn-edit" onclick="openEditModal('${m.id}')">編集</button>
+        <button class="btn-del"  onclick="deleteMachine('${m.id}')">削除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ══════════════════════════════════════
+   モーダル
+══════════════════════════════════════ */
+let editingId = null;
+let modalImage = '';
+
+function openAddModal() {
+  editingId = null;
+  modalImage = '';
+  document.getElementById('modalTitle').textContent = '機器を登録';
+  clearModalForm();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const m = master.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  modalImage = m.image || '';
+  document.getElementById('modalTitle').textContent = '機器を編集';
+  fillModalForm(m);
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('mImgInput').value = '';
+}
+
+function onOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function clearModalForm() {
+  ['mBrand','mModel','mSpeedC','mSpeedM','mSize','mWeight'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('mPaper').value = 'A3';
+  document.getElementById('mFeatColor').value  = '○';
+  document.getElementById('mFeatDuplex').value = '○';
+  document.getElementById('mFeatFax').value    = '△';
+  document.getElementById('mFeatScan').value   = '○';
+  document.getElementById('mFeatWifi').value   = '△';
+  updateThumb('');
+}
+
+function fillModalForm(m) {
+  document.getElementById('mBrand').value  = m.brand  || '';
+  document.getElementById('mModel').value  = m.model  || '';
+  document.getElementById('mSpeedC').value = m.speedC || '';
+  document.getElementById('mSpeedM').value = m.speedM || '';
+  document.getElementById('mPaper').value  = m.paper  || 'A3';
+  document.getElementById('mSize').value   = m.size   || '';
+  document.getElementById('mWeight').value = m.kg     || '';
+  document.getElementById('mFeatColor').value  = m.color  || '○';
+  document.getElementById('mFeatDuplex').value = m.duplex || '○';
+  document.getElementById('mFeatFax').value    = m.fax    || '△';
+  document.getElementById('mFeatScan').value   = m.scan   || '○';
+  document.getElementById('mFeatWifi').value   = m.wifi   || '△';
+  updateThumb(m.image || '');
+}
+
+function updateThumb(src) {
+  const thumb = document.getElementById('mThumb');
+  const rmBtn = document.getElementById('mImgRmBtn');
+  if (src) {
+    thumb.innerHTML = `<img src="${src}" alt="プレビュー">`;
+    rmBtn.style.display = 'inline-block';
+  } else {
+    thumb.innerHTML = `<div class="no-img-sm">画像<br>未設定</div>`;
+    rmBtn.style.display = 'none';
+  }
+}
+
+function handleModalImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 400, maxH = 300;
+      const scale = Math.min(1, maxW / img.width, maxH / img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      modalImage = canvas.toDataURL('image/png');
+      updateThumb(modalImage);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function clearModalImage() {
+  modalImage = '';
+  updateThumb('');
+}
+
+function saveModal() {
+  const brand  = document.getElementById('mBrand').value.trim();
+  const model  = document.getElementById('mModel').value.trim();
+  if (!brand || !model) {
+    alert('メーカーと機種名は必須です。'); return;
+  }
+  const entry = {
+    id:     editingId || makeId(),
+    brand, model,
+    speedC: parseFloat(document.getElementById('mSpeedC').value) || 0,
+    speedM: parseFloat(document.getElementById('mSpeedM').value) || 0,
+    paper:  document.getElementById('mPaper').value,
+    color:  document.getElementById('mFeatColor').value,
+    duplex: document.getElementById('mFeatDuplex').value,
+    fax:    document.getElementById('mFeatFax').value,
+    scan:   document.getElementById('mFeatScan').value,
+    wifi:   document.getElementById('mFeatWifi').value,
+    size:   document.getElementById('mSize').value.trim(),
+    kg:     parseFloat(document.getElementById('mWeight').value) || 0,
+    image:  modalImage,
+  };
+  if (editingId) {
+    const idx = master.findIndex(x => x.id === editingId);
+    if (idx >= 0) master[idx] = entry;
+  } else {
+    master.push(entry);
+  }
+  saveMaster();
+  closeModal();
+  renderFilterChips();
+  renderGrid();
+}
+
+/* ══════════════════════════════════════
+   組み込みDBを再インポート（画像は保持）
+══════════════════════════════════════ */
+function resetToBuiltin() {
+  if (!confirm('組み込みDBの機器情報を再インポートします。\n既存の登録機器は上書きされますが、登録済みの画像は保持されます。\n手動で追加した独自機器は削除されます。\n\nよろしいですか？')) return;
+  // 既存の画像をブランド+モデル名をキーに保存
+  const imgMap = {};
+  master.forEach(m => { if (m.image) imgMap[m.brand + '___' + m.model] = m.image; });
+  master = BUILTIN_DB.map((m, i) => ({
+    id: 'b' + i,
+    brand: m.brand, model: m.model,
+    speedC: m.speedC, speedM: m.speedM, paper: m.paper,
+    color: m.color, duplex: m.duplex, fax: m.fax, scan: m.scan, wifi: m.wifi,
+    size: m.size, kg: m.kg,
+    image: imgMap[m.brand + '___' + m.model] || ''
+  }));
+  saveMaster();
+  renderFilterChips();
+  renderGrid();
+  alert('再インポートが完了しました。登録済みの画像は引き継がれています。');
+}
+
+/* ══════════════════════════════════════
+   削除
+══════════════════════════════════════ */
+function deleteMachine(id) {
+  const m = master.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`「${m.brand} ${m.model}」を削除しますか？\nこの操作は元に戻せません。`)) return;
+  master = master.filter(x => x.id !== id);
+  saveMaster();
+  renderFilterChips();
+  renderGrid();
+}
+
+/* ══════════════════════════════════════
+   初期化
+══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderFilterChips();
+  renderGrid();
+});
+</script>
+</body>
+</html>

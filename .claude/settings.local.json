@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -o 'base64,[A-Za-z0-9+/=]\\\\{20\\\\}' \"/Users/y.sato/Documents/AI フォルダ/テスト株式会社/複合機比較表_提出用.html\")",
+      "Bash(python3 -c ':*)",
+      "Bash(pip3 install:*)",
+      "Read(//Users/y.sato/Downloads/**)",
+      "Read(//Users/y.sato/Desktop/**)",
+      "Bash(ls /Users/y.sato/Downloads/*.xlsm)",
+      "Read(//Users/y.sato/**)",
+      "Read(//private/tmp/**)",
+      "Bash(cp '/Users/y.sato/Downloads/送り状作成\\(マクロ有効\\).xlsm' invoice_macro.zip)",
+      "Bash(unzip -o invoice_macro.zip -d invoice_macro_extracted/)",
+      "Bash(python3 -c \"import sys; data=sys.stdin.read\\(\\); print\\(data[:3000]\\)\")",
+      "Bash(python3 -m olevba '/Users/y.sato/Downloads/送り状作成\\(マクロ有効\\).xlsm')",
+      "Bash(python3 -m oletools.olevba '/Users/y.sato/Downloads/送り状作成\\(マクロ有効\\).xlsm')"
+    ]
+  }
+}

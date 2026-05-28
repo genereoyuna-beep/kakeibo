@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPIレポート | 共有ノート for kintone</title>
+<style>
+:root {
+  --primary:       #1a4a8a;
+  --primary-light: #d0e2f5;
+  --primary-pale:  #eef4fb;
+  --accent:        #0d7d5f;
+  --accent-light:  #c9ead9;
+  --accent-pale:   #eaf7f2;
+  --orange:        #c0570d;
+  --orange-light:  #fde8d0;
+  --orange-pale:   #fff5ec;
+  --red:           #c0392b;
+  --red-light:     #fadbd8;
+  --red-pale:      #fef5f4;
+  --purple:        #6b3fa0;
+  --purple-light:  #e4d5f5;
+  --purple-pale:   #f5f0fb;
+  --gray:          #4a5568;
+  --gray-light:    #e2e8f0;
+  --gray-pale:     #f7f9fc;
+  --border:        #cbd5e0;
+  --text:          #1a202c;
+  --text-sub:      #718096;
+  --white:         #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  font-size: 10.5pt;
+  color: var(--text);
+  background: #dde3ee;
+}
+
+/* ===================== ページ ===================== */
+.page {
+  width: 297mm;
+  background: var(--white);
+  margin: 20px auto;
+  box-shadow: 0 6px 30px rgba(0,0,0,.12);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===================== ヘッダー ===================== */
+.page-header {
+  background: var(--primary);
+  color: var(--white);
+  padding: 13px 28px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.header-title { font-size: 14pt; font-weight: 800; letter-spacing: 0.02em; }
+.header-sub   { font-size: 8.5pt; opacity: 0.8; margin-top: 2px; }
+
+/* 日付レンジ */
+.date-range-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.35);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.date-range-box label { font-size: 8pt; opacity: 0.8; white-space: nowrap; }
+.date-range-box input[type="date"] {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 10.5pt;
+  font-weight: 700;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  width: 120px;
+}
+.date-range-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
+.date-sep { font-size: 13pt; font-weight: 700; opacity: 0.8; padding: 0 2px; }
+.period-badge {
+  background: rgba(255,255,255,.22);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 8pt;
+  white-space: nowrap;
+}
+
+/* ===================== ボディ ===================== */
+.page-body {
+  flex: 1;
+  padding: 16px 26px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+/* ===================== フッター ===================== */
+.page-footer {
+  background: var(--gray-pale);
+  border-top: 3px solid var(--primary);
+  padding: 5px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8pt;
+  color: var(--text-sub);
+}
+.footer-brand { font-weight: 700; color: var(--primary); font-size: 8.5pt; }
+
+/* ===================== セクション見出し ===================== */
+.sec-head {
+  border-left: 4px solid var(--primary);
+  background: var(--primary-pale);
+  padding: 5px 11px;
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: var(--primary);
+  border-radius: 0 4px 4px 0;
+}
+.sec-head.green  { border-left-color: var(--accent);  background: var(--accent-pale);  color: var(--accent);  }
+.sec-head.orange { border-left-color: var(--orange);  background: var(--orange-pale);  color: var(--orange);  }
+.sec-head.purple { border-left-color: var(--purple);  background: var(--purple-pale);  color: var(--purple);  }
+
+/* ===================== サマリーカード ===================== */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.sc {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  text-align: center;
+}
+.sc-head {
+  padding: 5px 6px;
+  font-size: 8pt;
+  font-weight: 700;
+  color: white;
+}
+.sc-body { padding: 7px 5px 9px; background: white; }
+.sc-target { font-size: 7.5pt; color: var(--text-sub); margin-bottom: 2px; }
+.sc-val  { font-size: 19pt; font-weight: 800; line-height: 1.1; }
+.sc-unit { font-size: 8.5pt; font-weight: 400; color: var(--text-sub); }
+.sc-rate { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 10px; font-size: 8.5pt; font-weight: 700; }
+
+/* ===================== テーブル ===================== */
+table { width: 100%; border-collapse: collapse; border: 2px solid var(--border); border-radius: 6px; overflow: hidden; font-size: 8.5pt; }
+th {
+  background: var(--primary);
+  color: var(--white);
+  padding: 6px 9px;
+  text-align: left;
+  font-weight: 600;
+  border-right: 1px solid rgba(255,255,255,.25);
+  white-space: nowrap;
+}
+th:last-child { border-right: none; }
+th.th-g { background: var(--accent); }
+th.th-o { background: var(--orange); }
+th.th-p { background: var(--purple); }
+td { padding: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); vertical-align: middle; }
+td:last-child { border-right: none; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: var(--gray-pale); }
+
+.ti  { padding: 5px 9px; line-height: 1.4; }
+.tc  { text-align: center; }
+.tgt { padding: 5px 9px; text-align: center; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.tgt-range { font-size: 8pt; color: var(--accent); font-weight: 700; }
+.tgt-note  { font-size: 7.5pt; color: var(--text-sub); font-weight: 400; }
+
+/* 実績入力 */
+.ti-in { padding: 3px 5px; text-align: center; }
+input.ai {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-align: center;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+input.ai:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,74,138,.10); }
+input.ai::placeholder { color: #ccc; font-size: 8.5pt; font-weight: 400; }
+
+/* 達成率バッジ */
+.td-rt { padding: 3px 6px; text-align: center; }
+.rb { display: inline-block; padding: 3px 9px; border-radius: 11px; font-size: 8.5pt; font-weight: 700; min-width: 50px; }
+.rb-none  { background: var(--gray-light);   color: var(--text-sub); }
+.rb-over  { background: var(--accent-light); color: var(--accent);   }
+.rb-ok    { background: var(--primary-light);color: var(--primary);  }
+.rb-warn  { background: var(--orange-light); color: var(--orange);   }
+.rb-ng    { background: var(--red-light);    color: var(--red);      }
+.rb-allow { background: var(--gray-light);   color: var(--gray);     }  /* 0でも許容 */
+
+/* メモ入力 */
+.memo-c { padding: 3px 5px; }
+input.mi {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 8pt;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  transition: border-color .15s;
+}
+input.mi:focus { border-color: var(--primary); }
+input.mi::placeholder { color: #ccc; font-size: 7.5pt; }
+
+/* カテゴリ行ラベル */
+.cat-cell {
+  padding: 5px 8px;
+  font-weight: 700;
+  font-size: 8pt;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle !important;
+}
+
+/* ===================== 品質スコアセクション ===================== */
+.quality-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border: 2px solid var(--purple);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.quality-item {
+  padding: 9px 13px;
+  border-right: 1px solid var(--purple-light);
+}
+.quality-item:last-child { border-right: none; }
+.quality-item label {
+  display: block;
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--purple);
+  margin-bottom: 5px;
+}
+.quality-item .q-target { font-size: 7.5pt; color: var(--text-sub); margin-bottom: 4px; }
+.quality-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.quality-row input.ai { font-size: 13pt; }
+.quality-row .q-unit { font-size: 8.5pt; color: var(--text-sub); white-space: nowrap; }
+
+/* ===================== 2カラム ===================== */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+/* ===================== 総評エリア ===================== */
+.overall-wrap { border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.overall-hd {
+  background: var(--gray);
+  color: white;
+  padding: 5px 14px;
+  font-size: 9pt;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.overall-body { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.ov-item { padding: 7px 12px; border-right: 1px solid var(--border); font-size: 8pt; }
+.ov-item:last-child { border-right: none; }
+.ov-item label { display: block; font-size: 7.5pt; color: var(--text-sub); font-weight: 700; margin-bottom: 3px; }
+textarea.ov-ta {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 8pt;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  resize: none;
+  height: 48px;
+  line-height: 1.5;
+  transition: border-color .15s;
+}
+textarea.ov-ta:focus { border-color: var(--primary); }
+textarea.ov-ta::placeholder { color: #ccc; font-size: 7.5pt; }
+
+/* 凡例 */
+.legend { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 7.5pt; }
+.li { display: flex; align-items: center; gap: 3px; }
+.ld { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ===================== ツールバー ===================== */
+.toolbar {
+  width: 297mm;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+.btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-family: inherit;
+  font-size: 8.5pt;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn:hover { opacity: .83; }
+.btn-p { background: var(--primary); color: white; }
+.btn-g { background: var(--gray);    color: white; }
+.btn-o { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+.tb-note { font-size: 8pt; color: var(--text-sub); }
+
+/* ===================== 印刷 ===================== */
+@media print {
+  body { background: white; }
+  .page { margin: 0; box-shadow: none; border-radius: 0; }
+  @page { size: A4 landscape; margin: 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  input, textarea { border: 1px solid #ccc !important; box-shadow: none !important; }
+  .no-print { display: none !important; }
+}
+@media screen { body { padding: 20px 0 40px; } }
+
+/* 重要表示 */
+.badge-important {
+  display: inline-block;
+  background: var(--red);
+  color: white;
+  font-size: 7pt;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+</style>
+</head>
+<body>
+
+<!-- ツールバー -->
+<div class="toolbar no-print">
+  <button class="btn btn-p" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+  <button class="btn btn-g" onclick="clearAll()">🗑️ リセット</button>
+  <button class="btn btn-o" onclick="saveData()">💾 保存（ローカル）</button>
+  <button class="btn btn-o" onclick="loadData()">📂 読み込む</button>
+  <span class="tb-note">※ 実績を入力すると達成率が自動計算されます</span>
+</div>
+
+<div class="page">
+
+  <!-- ヘッダー -->
+  <div class="page-header">
+    <div>
+      <div class="header-title">📊 KPIレポート</div>
+      <div class="header-sub">共有ノート for kintone ／ Google広告運用</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="date-range-box">
+        <label>期間</label>
+        <input type="date" id="dateFrom" oninput="updatePeriod()">
+        <span class="date-sep">〜</span>
+        <input type="date" id="dateTo" oninput="updatePeriod()">
+        <span class="period-badge" id="periodLabel">—</span>
+      </div>
+      <div style="text-align:right;font-size:8pt;opacity:.8;line-height:1.6;">
+        sharenote.yamacoh.net<br>月予算：¥30,000
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ============ サマリーカード ============ -->
+    <div class="summary-row">
+      <div class="sc">
+        <div class="sc-head" style="background:var(--primary);">📢 クリック数</div>
+        <div class="sc-body">
+          <div class="sc-target">目標：120 回</div>
+          <div class="sc-val" id="dv-clicks" style="color:var(--primary);">—</div>
+          <div class="sc-unit">回</div>
+          <div><span class="sc-rate rb rb-none" id="rs-clicks">未入力</span></div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sc-head" style="background:var(--primary);">📈 CTR</div>
+        <div class="sc-body">
+          <div class="sc-target">目標：12%</div>
+          <div class="sc-val" id="dv-ctr" style="color:var(--primary);">—</div>
+          <div class="sc-unit">%</div>
+          <div><span class="sc-rate rb rb-none" id="rs-ctr">未入力</span></div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sc-head" style="background:var(--primary);">💴 CPC</div>
+        <div class="sc-body">
+          <div class="sc-target">目標：¥80〜¥250</div>
+          <div class="sc-val" id="dv-cpc" style="color:var(--primary);">—</div>
+          <div class="sc-unit">円</div>
+          <div><span class="sc-rate rb rb-none" id="rs-cpc">未入力</span></div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sc-head" style="background:var(--accent);">📥 DL数</div>
+        <div class="sc-body">
+          <div class="sc-target">目標：5 件</div>
+          <div class="sc-val" id="dv-dl" style="color:var(--accent);">—</div>
+          <div class="sc-unit">件</div>
+          <div><span class="sc-rate rb rb-none" id="rs-dl">未入力</span></div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sc-head" style="background:var(--orange);">💰 CV（購入）</div>
+        <div class="sc-body">
+          <div class="sc-target">目標：1 件</div>
+          <div class="sc-val" id="dv-cv" style="color:var(--orange);">—</div>
+          <div class="sc-unit">件</div>
+          <div><span class="sc-rate rb rb-none" id="rs-cv">未入力</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 広告KPI + LP/CV KPI ============ -->
+    <div class="two-col">
+
+      <!-- 左：広告KPI -->
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="sec-head">📢 広告 KPI　<span style="font-size:8pt;font-weight:400;color:var(--text-sub);">（1〜2週間単位で確認）</span></div>
+        <table>
+          <colgroup>
+            <col style="width:24%"><col style="width:18%"><col style="width:15%">
+            <col style="width:17%"><col style="width:26%">
+          </colgroup>
+          <tr>
+            <th>指標</th>
+            <th class="tc">目標値</th>
+            <th class="tc">実績</th>
+            <th class="tc">判定</th>
+            <th>メモ</th>
+          </tr>
+
+          <tr>
+            <td><div class="ti">インプレッション数</div></td>
+            <td><div class="tgt">1,000 回</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="imp" min="0" placeholder="—" oninput="calcHigh('imp',1000,'回')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-imp">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-imp" placeholder="例：先週比＋15%"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">
+              クリック数
+            </div></td>
+            <td><div class="tgt">120 回</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="clicks" min="0" placeholder="—"
+              oninput="calcHigh('clicks',120,'回');updateCard('clicks','dv-clicks','rs-clicks',120)"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-clicks">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-clicks" placeholder=""></td>
+          </tr>
+          <tr>
+            <td><div class="ti">
+              CTR
+            </div></td>
+            <td><div class="tgt">12 %</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="ctr" min="0" step="0.1" placeholder="—"
+              oninput="calcHigh('ctr',12,'%');updateCardDirect('ctr','dv-ctr','rs-ctr','ctr')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-ctr">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-ctr" placeholder="範囲内かチェック"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">
+              CPC（クリック単価）
+            </div></td>
+            <td>
+              <div class="tgt">
+                <span class="tgt-range">¥80〜¥250</span><br>
+                <span class="tgt-note">範囲内が目標</span>
+              </div>
+            </td>
+            <td class="ti-in"><input class="ai" type="number" id="cpc" min="0" placeholder="—"
+              oninput="calcCpcRange('cpc',80,250);updateCardDirect('cpc','dv-cpc','rs-cpc','cpc')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-cpc">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-cpc" placeholder="範囲内かチェック"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">広告費用合計</div></td>
+            <td><div class="tgt">¥30,000 以内</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="spend" min="0" placeholder="—"
+              oninput="calcLow('spend',30000,'円')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-spend">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-spend" placeholder=""></td>
+          </tr>
+          <tr>
+            <td><div class="ti">除外KW追加数</div></td>
+            <td><div class="tgt">3 個以上</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="exkw" min="0" placeholder="—" oninput="calcHigh('exkw',3,'個')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-exkw">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-exkw" placeholder="除外したキーワード数"></td>
+          </tr>
+        </table>
+
+        <!-- 検索語句品質スコア -->
+        <div class="sec-head purple">🔍 検索語句品質スコア</div>
+        <div class="quality-grid">
+          <div class="quality-item">
+            <label>品質スコア（キーワード）</label>
+            <div class="q-target">目標：7 / 10 以上</div>
+            <div class="quality-row">
+              <input class="ai" type="number" id="qs" min="1" max="10" step="0.1" placeholder="—"
+                oninput="calcQs('qs',7)">
+              <span class="q-unit">/ 10</span>
+              <span class="rb rb-none" id="rate-qs" style="font-size:7.5pt;">—</span>
+            </div>
+          </div>
+          <div class="quality-item">
+            <label>関連クエリ割合</label>
+            <div class="q-target">目標：80% 以上</div>
+            <div class="quality-row">
+              <input class="ai" type="number" id="relq" min="0" max="100" step="1" placeholder="—"
+                oninput="calcHigh('relq',80,'%');syncRateEl('relq','rate-relq')">
+              <span class="q-unit">%</span>
+              <span class="rb rb-none" id="rate-relq" style="font-size:7.5pt;">—</span>
+            </div>
+          </div>
+          <div class="quality-item">
+            <label>無関係クエリ数（今期）</label>
+            <div class="q-target">目標：0 に近いほど良い</div>
+            <div class="quality-row">
+              <input class="ai" type="number" id="badq" min="0" placeholder="—"
+                oninput="showNum('badq','rate-badq','件')">
+              <span class="q-unit">件</span>
+              <span class="rb rb-none" id="rate-badq" style="font-size:7.5pt;">—</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:7.5pt;color:var(--text-sub);padding:0 2px;line-height:1.6;">
+          ※ 品質スコア = Google広告のキーワード単位スコア（1〜10）。関連クエリ割合 = 検索語句レポートの全クエリ数に対する、製品に関連する語句の割合（手動算出）。
+        </div>
+      </div>
+
+      <!-- 右：LP / DL / CV KPI -->
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div class="sec-head green">📄 LP KPI　／　📥 DL KPI　／　💰 CV KPI</div>
+        <table>
+          <colgroup>
+            <col style="width:9%"><col style="width:22%"><col style="width:16%">
+            <col style="width:13%"><col style="width:16%"><col style="width:24%">
+          </colgroup>
+          <tr>
+            <th class="th-g">区分</th>
+            <th class="th-g">指標</th>
+            <th class="th-g tc">目標値</th>
+            <th class="th-g tc">実績</th>
+            <th class="th-g tc">判定</th>
+            <th class="th-g">メモ</th>
+          </tr>
+
+          <!-- LP -->
+          <tr>
+            <td class="cat-cell" rowspan="3" style="background:var(--primary-pale);color:var(--primary);">LP</td>
+            <td><div class="ti">セッション数</div></td>
+            <td><div class="tgt">30 件</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="sessions" min="0" placeholder="—" oninput="calcHigh('sessions',30,'件')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-sessions">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-sessions" placeholder=""></td>
+          </tr>
+          <tr>
+            <td><div class="ti">直帰率</div></td>
+            <td><div class="tgt">50% 以下</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="bounce" min="0" step="0.1" placeholder="—" oninput="calcLow('bounce',50,'%')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-bounce">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-bounce" placeholder="高い場合はLP改善を"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">平均滞在時間</div></td>
+            <td><div class="tgt">1分以上</div></td>
+            <td class="ti-in"><input class="ai" type="text" id="duration" placeholder="1:30" oninput="calcDuration('duration')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-duration">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-duration" placeholder="分:秒で入力"></td>
+          </tr>
+
+          <!-- DL -->
+          <tr>
+            <td class="cat-cell" rowspan="2" style="background:var(--accent-pale);color:var(--accent);">DL</td>
+            <td><div class="ti">DLボタン押下数</div></td>
+            <td><div class="tgt">5 件</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="dl" min="0" placeholder="—"
+              oninput="calcHigh('dl',5,'件');updateCard('dl','dv-dl','rs-dl',5)"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-dl">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-dl" placeholder=""></td>
+          </tr>
+          <tr>
+            <td><div class="ti">DL CVR</div></td>
+            <td><div class="tgt">5% 以上</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="dlcvr" min="0" step="0.1" placeholder="—" oninput="calcHigh('dlcvr',5,'%');syncRateEl('dlcvr','rate-dlcvr')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-dlcvr">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-dlcvr" placeholder="DL÷セッション×100"></td>
+          </tr>
+
+          <!-- CV -->
+          <tr>
+            <td class="cat-cell" rowspan="4" style="background:var(--orange-pale);color:var(--orange);">CV</td>
+            <td><div class="ti">CV数（購入件数）</div></td>
+            <td><div class="tgt">1 件</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="cv" min="0" placeholder="—"
+              oninput="calcCv('cv',1);updateCard('cv','dv-cv','rs-cv',1)"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-cv">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-cv" placeholder=""></td>
+          </tr>
+          <tr>
+            <td><div class="ti">購入金額合計</div></td>
+            <td><div class="tgt">¥9,800</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="revenue" min="0" placeholder="—" oninput="showRevenue()"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-revenue" style="font-size:7.5pt;">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-revenue" placeholder="件数×¥9,800"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">CPA（獲得単価）</div></td>
+            <td><div class="tgt">¥10,000 以下</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="cpa" min="0" placeholder="—" oninput="calcLow('cpa',10000,'円')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-cpa">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-cpa" placeholder="広告費÷CV数"></td>
+          </tr>
+          <tr>
+            <td><div class="ti">ROAS</div></td>
+            <td><div class="tgt">100% 以上</div></td>
+            <td class="ti-in"><input class="ai" type="number" id="roas" min="0" placeholder="—" oninput="calcHigh('roas',100,'%');syncRateEl('roas','rate-roas')"></td>
+            <td class="td-rt"><span class="rb rb-none" id="rate-roas">—</span></td>
+            <td class="memo-c"><input class="mi" type="text" id="memo-roas" placeholder="売上÷広告費×100"></td>
+          </tr>
+        </table>
+
+        <!-- 凡例 -->
+        <div class="legend">
+          <strong style="font-size:7.5pt;">判定の見方：</strong>
+          <div class="li"><div class="ld" style="background:var(--accent);"></div><span>超過 / 良好</span></div>
+          <div class="li"><div class="ld" style="background:var(--primary);"></div><span>目標内（範囲一致）</span></div>
+          <div class="li"><div class="ld" style="background:var(--orange);"></div><span>要注意</span></div>
+          <div class="li"><div class="ld" style="background:var(--red);"></div><span>未達</span></div>
+          <div class="li"><div class="ld" style="background:var(--gray);"></div><span>0 でも許容 / 参考値</span></div>
+        </div>
+
+        <!-- 総評 -->
+        <div class="overall-wrap">
+          <div class="overall-hd">
+            <span>📝 総評・コメント</span>
+            <span id="period-label-foot" style="font-size:8pt;opacity:.8;font-weight:400;">—</span>
+          </div>
+          <div class="overall-body">
+            <div class="ov-item">
+              <label>✅ 良かった点・成果</label>
+              <textarea class="ov-ta" id="comment-good" placeholder="例：CTRが7.2%で目標範囲内&#10;DLボタン押下が先週比+3件"></textarea>
+            </div>
+            <div class="ov-item">
+              <label>⚠️ 課題・改善が必要な点</label>
+              <textarea class="ov-ta" id="comment-issue" placeholder="例：CPC ¥280 と範囲超過&#10;直帰率が58%と高め"></textarea>
+            </div>
+            <div class="ov-item">
+              <label>🎯 次のアクション</label>
+              <textarea class="ov-ta" id="comment-next" placeholder="例：除外KW 3個追加&#10;広告文Bパターンをテスト&#10;LPのCTAボタン位置を変更"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-body -->
+
+  <div class="page-footer">
+    <div id="footer-period">Google広告運用 KPIレポート ／ 共有ノート for kintone</div>
+    <div class="footer-brand">sharenote.yamacoh.net</div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ===================== 日付レンジ初期化 =====================
+const dfFrom = document.getElementById('dateFrom');
+const dfTo   = document.getElementById('dateTo');
+
+(function initDate() {
+  const now   = new Date();
+  const mon   = new Date(now);
+  mon.setDate(now.getDate() - now.getDay() + 1); // 今週月曜
+  const sun   = new Date(mon);
+  sun.setDate(mon.getDate() + 6);               // 今週日曜
+  dfFrom.value = fmt(mon);
+  dfTo.value   = fmt(sun);
+  updatePeriod();
+})();
+
+function fmt(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+function jfmt(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  return `${y}/${m}/${d}`;
+}
+
+function updatePeriod() {
+  const f = dfFrom.value, t = dfTo.value;
+  if (!f || !t) { document.getElementById('periodLabel').textContent = '—'; return; }
+  const diff = Math.round((new Date(t) - new Date(f)) / 86400000) + 1;
+  const label = `${jfmt(f)} 〜 ${jfmt(t)}（${diff}日間）`;
+  document.getElementById('periodLabel').textContent = `${diff}日間`;
+  document.getElementById('period-label-foot').textContent = label;
+  document.getElementById('footer-period').textContent = `${label}　KPIレポート ／ 共有ノート for kintone`;
+}
+
+// ===================== 判定ロジック =====================
+
+// 高い方が良い（目標値超えで◎）
+function calcHigh(id, target, unit) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  const r = (v / target) * 100;
+  setB(b, r);
+}
+function syncRateEl(inputId, badgeId) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  const b = document.getElementById(badgeId);
+  if (isNaN(v)) { reset(b); return; }
+}
+
+// CTRレンジ判定（5〜12%が目標）
+function calcCtrRange(id, low, high) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  if (v >= low && v <= high)  { b.className = 'rb rb-ok';   b.textContent = '目標内 ✓'; }
+  else if (v > high)          { b.className = 'rb rb-over'; b.textContent = v.toFixed(1) + '% ↑↑'; }
+  else                        { b.className = 'rb rb-warn'; b.textContent = v.toFixed(1) + '% 低い'; }
+}
+
+// CPCレンジ判定（¥80〜¥250が目標）
+function calcCpcRange(id, low, high) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  if (v >= low && v <= high)  { b.className = 'rb rb-ok';   b.textContent = '目標内 ✓'; }
+  else if (v > high)          { b.className = 'rb rb-warn'; b.textContent = '¥' + v + ' 高'; }
+  else                        { b.className = 'rb rb-warn'; b.textContent = '¥' + v + ' 低'; }
+}
+
+// 低い方が良い（CPA・直帰率・広告費など）
+function calcLow(id, target, unit) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  const r = (target / v) * 100;
+  setB(b, r);
+}
+
+// 上昇傾向（数値表示のみ）
+function calcUp(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  b.className = 'rb rb-ok'; b.textContent = v.toLocaleString();
+}
+
+// 単純に数値を表示
+function showNum(id, badgeId, unit) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById(badgeId);
+  if (isNaN(v)) { reset(b); return; }
+  b.className = 'rb rb-ok'; b.textContent = v + unit;
+}
+
+// CV専用（目標1件、0は許容）
+function calcCv(id, target) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  if (v === 0)        { b.className = 'rb rb-allow'; b.textContent = '0 許容'; }
+  else { const r = (v / target) * 100; setB(b, r); }
+}
+
+// 品質スコア（1〜10）
+function calcQs(id, target) {
+  const v = parseFloat(document.getElementById(id).value);
+  const b = document.getElementById('rate-' + id);
+  if (isNaN(v)) { reset(b); return; }
+  if (v >= 9)      { b.className = 'rb rb-over'; b.textContent = v + ' 優秀'; }
+  else if (v >= 7) { b.className = 'rb rb-ok';   b.textContent = v + ' 良好'; }
+  else if (v >= 5) { b.className = 'rb rb-warn';  b.textContent = v + ' 普通'; }
+  else             { b.className = 'rb rb-ng';    b.textContent = v + ' 低い'; }
+}
+
+// 滞在時間（分:秒）
+function calcDuration(id) {
+  const raw = document.getElementById(id).value.trim();
+  const b   = document.getElementById('rate-' + id);
+  let secs = 0;
+  if (raw.includes(':')) {
+    const [m,s] = raw.split(':');
+    secs = parseInt(m)*60 + parseInt(s||0);
+  } else { secs = parseInt(raw); }
+  if (!raw || isNaN(secs)) { reset(b); return; }
+  const r = (secs / 60) * 100;
+  setB(b, r);
+}
+
+// 売上表示
+function showRevenue() {
+  const v = parseFloat(document.getElementById('revenue').value);
+  const b = document.getElementById('rate-revenue');
+  if (isNaN(v)) { reset(b); return; }
+  b.className = 'rb rb-ok'; b.textContent = '¥' + v.toLocaleString();
+}
+
+// バッジセット
+function setB(el, rate) {
+  if (rate >= 120) { el.className = 'rb rb-over'; el.textContent = Math.round(rate) + '%'; }
+  else if (rate >= 80) { el.className = 'rb rb-ok';  el.textContent = Math.round(rate) + '%'; }
+  else if (rate >= 50) { el.className = 'rb rb-warn'; el.textContent = Math.round(rate) + '%'; }
+  else                 { el.className = 'rb rb-ng';   el.textContent = Math.round(rate) + '%'; }
+}
+function reset(el) { el.className = 'rb rb-none'; el.textContent = '—'; }
+
+// ===================== サマリーカード更新 =====================
+// target: 数値（目標値）を渡す。CVのみ0=許容ロジック
+function updateCard(inputId, dvId, rsId, target) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  const dv = document.getElementById(dvId);
+  const rs = document.getElementById(rsId);
+  if (isNaN(v)) { dv.textContent = '—'; rs.className = 'sc-rate rb rb-none'; rs.textContent = '未入力'; return; }
+  dv.textContent = v;
+  if (target === 1 && v === 0) {
+    // CV=0 は許容
+    rs.className = 'sc-rate rb rb-allow'; rs.textContent = '0 許容';
+  } else {
+    const r = (v / target) * 100;
+    rs.className = 'sc-rate rb ' + getRateClass(r);
+    rs.textContent = Math.round(r) + '%';
+  }
+}
+function getRateClass(r) {
+  if (r >= 120) return 'rb-over';
+  if (r >= 80)  return 'rb-ok';
+  if (r >= 50)  return 'rb-warn';
+  return 'rb-ng';
+}
+function updateCardDirect(inputId, dvId, rsId, mode) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  const dv = document.getElementById(dvId);
+  const rs = document.getElementById(rsId);
+  if (isNaN(v)) { dv.textContent = '—'; reset(rs); rs.className = 'sc-rate rb rb-none'; return; }
+  if (mode === 'ctr') {
+    dv.textContent = v.toFixed(1);
+    if (v >= 5 && v <= 12) { rs.className = 'sc-rate rb rb-ok';   rs.textContent = '目標内 ✓'; }
+    else if (v > 12)       { rs.className = 'sc-rate rb rb-over'; rs.textContent = v.toFixed(1) + '% ↑↑'; }
+    else                   { rs.className = 'sc-rate rb rb-warn'; rs.textContent = v.toFixed(1) + '% 低'; }
+  } else if (mode === 'cpc') {
+    dv.textContent = v;
+    if (v >= 80 && v <= 250) { rs.className = 'sc-rate rb rb-ok';   rs.textContent = '目標内 ✓'; }
+    else if (v > 250)        { rs.className = 'sc-rate rb rb-warn'; rs.textContent = '¥'+v+' 高'; }
+    else                     { rs.className = 'sc-rate rb rb-warn'; rs.textContent = '¥'+v+' 低'; }
+  }
+}
+
+// ===================== リセット =====================
+function clearAll() {
+  if (!confirm('すべての入力をリセットしますか？')) return;
+  document.querySelectorAll('input.ai, input.mi, textarea.ov-ta').forEach(e => e.value = '');
+  document.querySelectorAll('.rb').forEach(e => { e.className = 'rb rb-none'; e.textContent = '—'; });
+  document.querySelectorAll('.sc-rate').forEach(e => { e.className = 'sc-rate rb rb-none'; e.textContent = '未入力'; });
+  ['dv-clicks','dv-ctr','dv-cpc','dv-dl','dv-cv'].forEach(id => { document.getElementById(id).textContent = '—'; });
+}
+
+// ===================== ローカル保存 =====================
+function getKey() { return 'kpi_' + dfFrom.value + '_' + dfTo.value; }
+
+function saveData() {
+  const data = {};
+  document.querySelectorAll('[id]').forEach(el => {
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') data[el.id] = el.value;
+  });
+  localStorage.setItem(getKey(), JSON.stringify(data));
+  alert(`✅ ${jfmt(dfFrom.value)} 〜 ${jfmt(dfTo.value)} のデータを保存しました。`);
+}
+
+function loadData() {
+  const raw = localStorage.getItem(getKey());
+  if (!raw) { alert('この期間の保存データが見つかりません。'); return; }
+  applyData(JSON.parse(raw));
+  alert(`✅ データを読み込みました。`);
+}
+
+function loadDataSilent() {
+  const raw = localStorage.getItem(getKey());
+  if (!raw) return;
+  applyData(JSON.parse(raw));
+}
+
+function applyData(data) {
+  Object.entries(data).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+      el.value = val;
+      el.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+dfFrom.addEventListener('change', () => { updatePeriod(); loadDataSilent(); });
+dfTo.addEventListener('change',   () => { updatePeriod(); loadDataSilent(); });
+loadDataSilent();
+</script>
+</body>
+</html>
