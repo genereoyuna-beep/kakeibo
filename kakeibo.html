@@ -271,7 +271,7 @@ const ALLOWED_EMAIL = "genereoyuna@gmail.com";
 //  GEMINI API キー（スクショ読込機能で使用）
 //  https://aistudio.google.com/apikey で取得
 // ═══════════════════════════════════════════════
-const GEMINI_API_KEY = '';
+const GEMINI_API_KEY = 'AQ.Ab8RN6LNltF1uy871HqjnBTxK6fI9YkrSWYVP68igiUhqkiimw';
 
 // ═══════════════════════════════════════════════
 //  CONSTANTS
@@ -1869,10 +1869,10 @@ function openScreenshotModal() {
   ssItems = [];
   showModal(`
     <div class="modal-box" data-action="noop">
-      <div class="modal-title">📷 スクショから明細追加</div>
+      <div class="modal-title">📷 スクショ／PDF から明細追加</div>
       <div class="field">
-        <label>明細画像を選択（カードアプリ・レシートなど）</label>
-        <input type="file" id="ss-file" accept="image/*"
+        <label>明細ファイルを選択（画像・PDF どちらも可）</label>
+        <input type="file" id="ss-file" accept="image/*,.pdf,application/pdf"
           style="width:100%;padding:8px 10px;border:1px dashed var(--border);border-radius:6px;background:#f7fafc;cursor:pointer;font-size:12px">
       </div>
       <div id="ss-preview" style="display:none;margin-top:8px;text-align:center">
@@ -1894,8 +1894,9 @@ function openScreenshotModal() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const dataUrl = ev.target.result;
-      const ssImg = document.getElementById('ss-img');
-      if (ssImg) { ssImg.src = dataUrl; document.getElementById('ss-preview').style.display = 'block'; }
+      const isPdf  = file.type === 'application/pdf';
+      const ssImg  = document.getElementById('ss-img');
+      if (!isPdf && ssImg) { ssImg.src = dataUrl; document.getElementById('ss-preview').style.display = 'block'; }
 
       const status = document.getElementById('ss-status');
       status.textContent = '🔍 AI解析中...';
