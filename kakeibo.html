@@ -2299,7 +2299,7 @@ function handleClick(e) {
       state.data[state.currentMonth].expenses = prev.map(e => {
         if (e.section === 'installment' && e.totalInstallments) {
           const newPaid = (e.paidInstallments || 0) + 1;
-          if (newPaid >= e.totalInstallments) return null; // 完済 → コピーしない
+          if (newPaid > e.totalInstallments) return null; // 完済済み → コピーしない
           return { ...e, id: uid(), paidInstallments: newPaid };
         }
         return { ...e, id: uid() };
@@ -2637,8 +2637,8 @@ function handleClick(e) {
     let newExp;
     if (exp.section === 'installment' && exp.totalInstallments) {
       const newPaid = (exp.paidInstallments || 0) + 1;
-      if (newPaid >= exp.totalInstallments) {
-        showToast('完済のため翌月にはコピーしません');
+      if (newPaid > exp.totalInstallments) {
+        showToast('完済済みのため翌月にはコピーしません');
         return;
       }
       newExp = { ...exp, id: uid(), paidInstallments: newPaid };
