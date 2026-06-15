@@ -268,6 +268,12 @@ const FIREBASE_CONFIG = {
 const ALLOWED_EMAIL = "genereoyuna@gmail.com";
 
 // ═══════════════════════════════════════════════
+//  GEMINI API キー（スクショ読込機能で使用）
+//  https://aistudio.google.com/apikey で取得
+// ═══════════════════════════════════════════════
+const GEMINI_API_KEY = '';
+
+// ═══════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════
 const CATEGORIES = ['書籍・試験費','推し活費','通信費','食費','日用品費','医療費','美容費','交際費','交通費','趣味費','その他'];
@@ -608,6 +614,7 @@ function render() {
     <div class="header">
       <div class="header-title">📊 家計簿</div>
       <button class="btn sm" data-action="openImport">📥 CSV読込</button>
+      <button class="btn sm" data-action="openScreenshot">📷 スクショ</button>
       <button class="btn sm" data-action="toggleCalView">${calView ? '📋 明細' : '📅 カレンダー'}</button>
       <div class="header-nav">
         <button class="nav-btn" data-action="prevMonth">‹</button>
@@ -1854,6 +1861,176 @@ function onSectionChange(sel) {
 }
 
 // ═══════════════════════════════════════════════
+//  SCREENSHOT IMPORT (Gemini Vision)
+// ═══════════════════════════════════════════════
+let ssItems = [];
+
+function openScreenshotModal() {
+  ssItems = [];
+  showModal(`
+    <div class="modal-box" data-action="noop">
+      <div class="modal-title">📷 スクショから明細追加</div>
+      <div class="field">
+        <label>明細画像を選択（カードアプリ・レシートなど）</label>
+        <input type="file" id="ss-file" accept="image/*"
+          style="width:100%;padding:8px 10px;border:1px dashed var(--border);border-radius:6px;background:#f7fafc;cursor:pointer;font-size:12px">
+      </div>
+      <div id="ss-preview" style="display:none;margin-top:8px;text-align:center">
+        <img id="ss-img" style="max-width:100%;max-height:180px;border-radius:6px;border:1px solid var(--border)">
+      </div>
+      <div id="ss-status" style="display:none;padding:12px;text-align:center;color:var(--muted);font-size:13px"></div>
+      <div id="ss-result" style="display:none;margin-top:10px"></div>
+      <div class="modal-footer">
+        <button class="btn" data-action="closeModal">キャンセル</button>
+        <button class="btn primary" id="ss-confirm-btn" data-action="ssConfirm" style="display:none">追加する</button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('ss-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      const ssImg = document.getElementById('ss-img');
+      if (ssImg) { ssImg.src = dataUrl; document.getElementById('ss-preview').style.display = 'block'; }
+
+      const status = document.getElementById('ss-status');
+      status.textContent = '🔍 AI解析中...';
+      status.style.display = 'block';
+      document.getElementById('ss-result').style.display = 'none';
+      const btn = document.getElementById('ss-confirm-btn');
+      if (btn) btn.style.display = 'none';
+
+      try {
+        const base64   = dataUrl.split(',')[1];
+        const mimeType = file.type || 'image/jpeg';
+        const items    = await callGeminiVision(base64, mimeType);
+
+        if (!items.length) {
+          status.textContent = '⚠️ 明細を読み取れませんでした。別の画像を試してください。';
+          return;
+        }
+        status.style.display = 'none';
+        renderSsResult(items);
+      } catch (err) {
+        status.textContent = '❌ ' + err.message;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function callGeminiVision(base64, mimeType) {
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY が設定されていません（ファイル上部を確認）');
+
+  const today = new Date().toISOString().slice(0, 10);
+  const year  = new Date().getFullYear();
+  const prompt = `この画像はクレジットカードアプリの明細画面またはレシートです。
+支出情報を抽出し、JSONのみで回答してください（説明文不要）。
+
+{"items":[{"date":"YYYY-MM-DD","item":"品名・店名","amount":金額整数,"payment":"支払方法"}]}
+
+- 日付不明→今日(${today})、年のみ不明→${year}年
+- amountは円の整数（記号・カンマなし）
+- paymentは不明なら空文字
+- 合計行・キャンセル行は除く
+- 複数明細はすべて含める`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: base64 } }
+        ]}],
+        generationConfig: { temperature: 0 }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
+  const data  = await res.json();
+  const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AIの応答を解析できませんでした');
+  const parsed = JSON.parse(match[0]);
+  return (parsed.items || []).filter(i => (i.amount || 0) > 0);
+}
+
+function renderSsResult(items) {
+  ssItems = items.map((it, i) => ({
+    ...it,
+    category: suggestCat(it.item),
+    payment:  PAYMENTS.includes(it.payment) ? it.payment : '',
+    account:  PAY_ACCOUNT[it.payment] || null,
+    _idx:     i,
+  }));
+
+  const resultDiv = document.getElementById('ss-result');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">${ssItems.length}件を検出</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="padding:4px 6px;background:#f7fafc;border-bottom:1px solid var(--border);width:22px"></th>
+        <th style="padding:4px 6px;background:#f7fafc;border-bottom:1px solid var(--border);white-space:nowrap">日付</th>
+        <th style="padding:4px 6px;background:#f7fafc;border-bottom:1px solid var(--border)">品名</th>
+        <th style="padding:4px 6px;background:#f7fafc;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">金額</th>
+        <th style="padding:4px 6px;background:#f7fafc;border-bottom:1px solid var(--border)">カテゴリ</th>
+      </tr></thead>
+      <tbody>
+        ${ssItems.map((it, i) => `
+          <tr style="border-bottom:1px solid #f0f4f8">
+            <td style="padding:5px 6px;text-align:center">
+              <input type="checkbox" checked data-ss-idx="${i}"
+                style="cursor:pointer;accent-color:var(--primary);width:14px;height:14px">
+            </td>
+            <td style="padding:5px 6px;white-space:nowrap;color:var(--muted);font-size:11px">
+              ${esc(it.date || '')}
+            </td>
+            <td style="padding:5px 6px">
+              <input type="text" value="${esc(it.item)}" data-ss-item="${i}"
+                style="width:100%;min-width:100px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px">
+            </td>
+            <td style="padding:5px 6px;text-align:right">
+              <input type="number" value="${it.amount}" data-ss-amt="${i}"
+                style="width:80px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right">
+            </td>
+            <td style="padding:5px 6px">
+              <select data-ss-cat="${i}"
+                style="border:1px solid var(--border);border-radius:4px;padding:3px 4px;font-size:11px;max-width:110px">
+                ${CATEGORIES.map(c => `<option value="${c}" ${it.category===c?'selected':''}>${c}</option>`).join('')}
+              </select>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">支払方法</label>
+      <select id="ss-payment"
+        style="border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:12px;flex:1">
+        <option value="">—</option>
+        ${PAYMENTS.map(p => `<option value="${p}">${p}</option>`).join('')}
+      </select>
+    </div>
+  `;
+
+  const btn = document.getElementById('ss-confirm-btn');
+  if (btn) btn.style.display = '';
+}
+
+// ═══════════════════════════════════════════════
 //  CSV IMPORT
 // ═══════════════════════════════════════════════
 const CAT_KEYWORDS = [
@@ -2279,6 +2456,35 @@ function handleClick(e) {
   }
   else if (action === 'editAnaMiles') {
     /* handled in handleInput */
+  }
+  else if (action === 'openScreenshot') { openScreenshotModal(); }
+  else if (action === 'ssConfirm') {
+    const payment = document.getElementById('ss-payment')?.value || '';
+    const account = PAY_ACCOUNT[payment] || null;
+    const md      = getMonth();
+    let added     = 0;
+
+    document.querySelectorAll('[data-ss-idx]').forEach(cb => {
+      if (!cb.checked) return;
+      const i   = +cb.dataset.ssIdx;
+      const it  = ssItems[i];
+      if (!it) return;
+      const item   = document.querySelector(`[data-ss-item="${i}"]`)?.value.trim() || it.item;
+      const amount = +(document.querySelector(`[data-ss-amt="${i}"]`)?.value) || it.amount;
+      const cat    = document.querySelector(`[data-ss-cat="${i}"]`)?.value || it.category;
+      md.expenses.push({
+        id: uid(), section: 'variable',
+        date:     it.date || null,
+        item, category: cat, amount,
+        payment:  payment || it.payment || '',
+        account:  account || it.account || null,
+      });
+      added++;
+    });
+
+    if (!added) { alert('追加する項目を選択してください'); return; }
+    saveState(); closeModal(); render();
+    ssItems = [];
   }
   else if (action === 'openImport') { openImportModal(); }
   else if (action === 'impStep1') {
