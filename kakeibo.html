@@ -909,33 +909,41 @@ function renderCardSummary(expenses, md) {
   const confirmed = md.confirmedCards || {};
   const prepaid   = md.cardPrepaid   || {};
   const rows = state.cardSettings.flatMap(c => {
-    const amt       = ct[c.name] || 0;
-    const pre       = prepaid[c.name] || 0;
-    const remaining = amt - pre;
-    const over = c.budget > 0 && amt > c.budget;
-    const pct  = c.budget > 0 ? Math.min(100, Math.round(amt/c.budget*100)) : 0;
-    const done = !!confirmed[c.name];
+    const amt        = ct[c.name] || 0;
+    const pre        = prepaid[c.name] || 0;
+    const remaining  = amt - pre;
+    const over       = c.budget > 0 && amt > c.budget;
+    const pct        = c.budget > 0 ? Math.min(100, Math.round(amt/c.budget*100)) : 0;
+    const confVal    = confirmed[c.name]; // 数値（確認時の金額）or true(旧) or falsy
+    const done       = !!confVal;
+    const confAmt    = typeof confVal === 'number' ? confVal : (done ? amt : 0);
+    const changed    = done && amt > 0 && confAmt !== amt;
+    const diff       = amt - confAmt;
+    const rowBg      = changed ? 'background:#fffbeb;' : done ? 'opacity:0.45;' : '';
+    const prepaidBg  = changed ? 'background:#fef9c3;' : done ? 'opacity:0.45;' : '';
     return [
-      `<tr class="data" style="${done ? 'opacity:0.45' : ''}">
+      `<tr class="data" style="${rowBg}">
         <td style="width:28px;text-align:center;vertical-align:middle">
           <input type="checkbox" ${done ? 'checked' : ''}
             style="width:15px;height:15px;cursor:pointer;accent-color:#38a169"
-            data-action="toggleCardConfirm" data-card="${esc(c.name)}">
+            data-action="toggleCardConfirm" data-card="${esc(c.name)}" data-amt="${amt}">
         </td>
-        <td style="${done ? 'text-decoration:line-through' : ''}">
+        <td style="${done && !changed ? 'text-decoration:line-through' : ''}">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="chip" data-pay="${esc(c.name)}">${esc(c.name)}</span>
+            ${changed ? `<span style="background:#fef08a;color:#854d0e;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700;white-space:nowrap">金額変更</span>` : ''}
             <button class="btn icon" data-action="delCard" data-card="${esc(c.name)}" title="カードを削除" style="font-size:11px;padding:1px 4px;color:#c53030;opacity:0.5">✕</button>
           </div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(c.account)} · ${esc(c.paymentDay)}</div>
         </td>
         <td class="r" style="vertical-align:middle">
           <div class="amount ${over?'red':'bold'}" style="font-size:13px">${amt ? fmt(amt) : '<span class="muted">—</span>'}</div>
+          ${changed ? `<div style="font-size:10px;color:${diff>0?'#c53030':'#276749'};font-weight:700;text-align:right">確認時比 ${diff>0?'+':''}${fmt(diff)}</div>` : ''}
           ${c.budget ? `<div style="font-size:10px;color:var(--muted);text-align:right">/ ${fmt(c.budget)}</div>` : ''}
           ${c.budget && amt > 0 ? `<div style="margin-top:3px;height:3px;background:#e2e8f0;border-radius:2px"><div style="height:3px;width:${pct}%;background:${over?'#e53e3e':'#4a6fa5'};border-radius:2px"></div></div>` : ''}
         </td>
       </tr>`,
-      `<tr class="prepaid-row" style="display:${pre>0?'':'none'};background:#f0faf4;${done ? 'opacity:0.45' : ''}">
+      `<tr class="prepaid-row" style="display:${pre>0?'':'none'};${prepaidBg}">
         <td></td>
         <td style="padding:4px 8px;font-size:11px;color:#2d7a4f;font-weight:600">
           ↳ 先入金（前払い済み額）
@@ -2806,15 +2814,10 @@ function handleChange(e) {
   if (act === 'toggleCardConfirm') {
     const md = getMonth();
     if (!md.confirmedCards) md.confirmedCards = {};
-    md.confirmedCards[e.target.dataset.card] = e.target.checked;
-    saveState();
-    // チェック状態だけ視覚反映（再レンダー不要）
-    const tr = e.target.closest('tr');
-    if (tr) {
-      tr.style.opacity = e.target.checked ? '0.45' : '';
-      const nameTd = tr.querySelector('td:nth-child(2)');
-      if (nameTd) nameTd.style.textDecoration = e.target.checked ? 'line-through' : '';
-    }
+    const card = e.target.dataset.card;
+    // チェック時は現在の金額を記録、外すときは0
+    md.confirmedCards[card] = e.target.checked ? (+e.target.dataset.amt || true) : 0;
+    saveState(); render();
     return;
   }
   if (act === 'editInitialMiles') {
