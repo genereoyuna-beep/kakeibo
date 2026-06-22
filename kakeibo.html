@@ -1866,7 +1866,7 @@ function expModalHtml(existing, defaultSection) {
       <div class="modal-footer">
         <button class="btn" data-action="closeModal">キャンセル</button>
         <button class="btn" data-action="saveTmpl" title="この内容をクイック追加テンプレートに保存">★ テンプレ保存</button>
-        <button class="btn primary" data-action="saveExp" data-id="${existing?existing.id:''}">保存</button>
+        <button class="btn primary" data-action="saveExp" data-id="${existing?.id||''}">保存</button>
       </div>
     </div>
   `;
