@@ -2637,8 +2637,8 @@ function handleClick(e) {
       account:  document.getElementById('m-account')?.value  || null,
       amount:   +document.getElementById('m-amount')?.value  || 0,
     });
-    saveState();
-    alert(`「${item}」をテンプレートに保存しました`);
+    saveState(); closeModal(); render();
+    showToast(`「${item}」をテンプレートに保存しました`);
   }
   else if (action === 'applyTmpl') {
     const t = (state.templates||[]).find(t=>t.id===el.dataset.id);
