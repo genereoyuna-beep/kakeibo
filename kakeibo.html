@@ -1032,13 +1032,28 @@ function renderBalanceCalc(expenses) {
 
   const events = [];
 
-  // ① 即時カード（PayPay/現金など）― 月を通じて発生するためまとめて表示
+  // ① 即時カード（PayPay/現金など）― 明細の日付ごとに表示
   state.cardSettings.filter(c => c.paymentDay === '即時').forEach(card => {
-    const net = (ct[card.name] || 0) - (prepaid[card.name] || 0);
-    if (net > 0 && card.account && (card.account in startBal)) {
-      events.push({ dayNum: 0, day: '即時', type: 'payment',
-        label: card.name, changes: { [card.account]: -net } });
-    }
+    if (!card.account || !(card.account in startBal)) return;
+    // 日付ごとに合計
+    const byDay = {};
+    expenses.forEach(e => {
+      if (e.payment !== card.name) return;
+      const dayNum = e.date ? +e.date.slice(8, 10) : 0;
+      const label  = dayNum ? `${dayNum}日` : '日付未設定';
+      if (!byDay[dayNum]) byDay[dayNum] = { dayNum, day: label, total: 0 };
+      byDay[dayNum].total += (e.amount || 0);
+    });
+    // 先入金を先頭日から順に相殺
+    let remainPre = prepaid[card.name] || 0;
+    Object.values(byDay).sort((a, b) => a.dayNum - b.dayNum).forEach(({ dayNum, day, total }) => {
+      const deduct = Math.max(0, total - remainPre);
+      remainPre    = Math.max(0, remainPre - total);
+      if (deduct > 0) {
+        events.push({ dayNum, day, type: 'payment',
+          label: card.name, changes: { [card.account]: -deduct } });
+      }
+    });
   });
 
   // ② 給料入金
