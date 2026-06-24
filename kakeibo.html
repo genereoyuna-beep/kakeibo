@@ -1032,26 +1032,30 @@ function renderBalanceCalc(expenses) {
 
   const events = [];
 
-  // ① 即時カード（PayPay/現金など）― 明細の日付ごとに表示
+  // ① 即時カード（PayPay/現金など）― 明細の日付×口座ごとに表示
   state.cardSettings.filter(c => c.paymentDay === '即時').forEach(card => {
-    if (!card.account || !(card.account in startBal)) return;
-    // 日付ごとに合計
-    const byDay = {};
+    // 日付×口座でグループ化（明細の口座を優先、なければカード設定の口座）
+    const byDayAcc = {};
     expenses.forEach(e => {
       if (e.payment !== card.name) return;
+      const acc    = (e.account && e.account in startBal) ? e.account : card.account;
+      if (!acc || !(acc in startBal)) return;
       const dayNum = e.date ? +e.date.slice(8, 10) : 0;
-      const label  = dayNum ? `${dayNum}日` : '日付未設定';
-      if (!byDay[dayNum]) byDay[dayNum] = { dayNum, day: label, total: 0 };
-      byDay[dayNum].total += (e.amount || 0);
+      const key    = `${dayNum}__${acc}`;
+      if (!byDayAcc[key]) byDayAcc[key] = { dayNum, day: dayNum ? `${dayNum}日` : '日付未設定', acc, total: 0 };
+      byDayAcc[key].total += (e.amount || 0);
     });
-    // 先入金を先頭日から順に相殺
+    // 先入金はカード設定の口座の分から先頭日順に相殺
     let remainPre = prepaid[card.name] || 0;
-    Object.values(byDay).sort((a, b) => a.dayNum - b.dayNum).forEach(({ dayNum, day, total }) => {
-      const deduct = Math.max(0, total - remainPre);
-      remainPre    = Math.max(0, remainPre - total);
+    Object.values(byDayAcc).sort((a, b) => a.dayNum - b.dayNum || a.acc.localeCompare(b.acc)).forEach(({ dayNum, day, acc, total }) => {
+      let deduct = total;
+      if (acc === card.account && remainPre > 0) {
+        deduct    = Math.max(0, total - remainPre);
+        remainPre = Math.max(0, remainPre - total);
+      }
       if (deduct > 0) {
         events.push({ dayNum, day, type: 'payment',
-          label: card.name, changes: { [card.account]: -deduct } });
+          label: card.name, changes: { [acc]: -deduct } });
       }
     });
   });
