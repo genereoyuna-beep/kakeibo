@@ -1083,7 +1083,7 @@ function renderBalanceCalc(expenses) {
     const day    = md.savingsDeltaPaypayDate ? +md.savingsDeltaPaypayDate : null;
     const dayNum = day || 99;
     events.push({ dayNum, day: day ? `${day}日` : '日付未設定', type: 'savings',
-      label: '貯金（Paypay）', changes: { '楽天銀行': -(md.savingsDeltaPaypay) } });
+      label: '貯金（Paypay）', changes: { '楽天銀行': -(md.savingsDeltaPaypay), 'Paypay銀行': +(md.savingsDeltaPaypay) } });
   }
 
   // ⑤ 貯金出金（楽天→現金）
@@ -1091,7 +1091,7 @@ function renderBalanceCalc(expenses) {
     const day    = md.savingsDeltaCashDate ? +md.savingsDeltaCashDate : null;
     const dayNum = day || 99;
     events.push({ dayNum, day: day ? `${day}日` : '日付未設定', type: 'savings',
-      label: '貯金（現金）', changes: { '楽天銀行': -(md.savingsDeltaCash) } });
+      label: '貯金（現金）', changes: { '楽天銀行': -(md.savingsDeltaCash), '現金': +(md.savingsDeltaCash) } });
   }
 
   // ⑥ 送金
@@ -1157,10 +1157,11 @@ function renderBalanceCalc(expenses) {
   }).join('');
 
   return `
-    <table>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table style="min-width:max-content;width:100%">
       <thead><tr>
-        <th>日付・イベント</th>
-        ${allAccounts.map(a => `<th class="r" style="font-size:10px">${esc(a)}</th>`).join('')}
+        <th style="min-width:100px">日付・イベント</th>
+        ${allAccounts.map(a => `<th class="r" style="font-size:10px;min-width:90px">${esc(a)}</th>`).join('')}
       </tr></thead>
       <tbody>
         <tr style="background:#f0f4f8">
@@ -1170,6 +1171,7 @@ function renderBalanceCalc(expenses) {
         ${rowsHtml}
       </tbody>
     </table>
+    </div>
     <div style="padding:6px 10px 8px;font-size:10px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
       <span><span style="color:#276749">↑</span> 入金</span>
       <span><span style="color:#c05621">■</span> 5万円未満</span>
