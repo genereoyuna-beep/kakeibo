@@ -1100,7 +1100,8 @@ function renderBalanceCalc(expenses) {
     const day    = t.date ? +t.date : null;
     const dayNum = day || 99;
     const fee    = t.fee || 0;
-    const chg    = { '楽天銀行': -(t.amount + fee) };
+    const from   = t.fromAccount && (t.fromAccount in startBal) ? t.fromAccount : '楽天銀行';
+    const chg    = { [from]: -(t.amount + fee) };
     if (t.targetAccount && (t.targetAccount in startBal))
       chg[t.targetAccount] = (chg[t.targetAccount] || 0) + t.amount;
     const feeStr = fee > 0 ? `（手数料 ${fmt(fee)}）` : '';
@@ -1273,7 +1274,8 @@ function calcAccountBalances(upToMonth) {
     const sc = d.savingsDeltaCash || 0;
     bal['楽天銀行']   -= sc; bal['現金']        += sc;
     (d.transfers||[]).forEach(t => {
-      bal['楽天銀行'] -= (t.amount || 0) + (t.fee || 0);
+      const from = t.fromAccount && t.fromAccount in bal ? t.fromAccount : '楽天銀行';
+      bal[from] -= (t.amount || 0) + (t.fee || 0);
       if (t.targetAccount && t.targetAccount in bal) bal[t.targetAccount] += t.amount || 0;
     });
     (d.expenses||[]).forEach(e => { if (e.account && e.account in bal) bal[e.account] -= e.amount || 0; });
@@ -1341,11 +1343,18 @@ function renderIncomePanel(md) {
           data-action="editTransferLabel" data-id="${t.id}">
       </td>
       <td>
-        <select style="width:100%;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-          data-action="editTransferTarget" data-id="${t.id}">
-          <option value="">—</option>
-          ${ACC_KEYS.map(a=>`<option value="${a}" ${t.targetAccount===a?'selected':''}>${a}</option>`).join('')}
-        </select>
+        <div style="display:flex;align-items:center;gap:3px">
+          <select style="flex:1;border:1px solid var(--border);border-radius:4px;padding:3px 4px;font-size:10px;color:var(--muted)"
+            data-action="editTransferFrom" data-id="${t.id}">
+            ${ACC_KEYS.map(a=>`<option value="${a}" ${(t.fromAccount||'楽天銀行')===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+          <span style="font-size:10px;color:var(--muted)">→</span>
+          <select style="flex:1;border:1px solid var(--border);border-radius:4px;padding:3px 4px;font-size:10px"
+            data-action="editTransferTarget" data-id="${t.id}">
+            <option value="">—</option>
+            ${ACC_KEYS.map(a=>`<option value="${a}" ${t.targetAccount===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+        </div>
       </td>
       <td style="text-align:center">${dayInp(t.date,'editTransferDate',`data-id="${t.id}"`)}</td>
       <td class="r">
@@ -1368,7 +1377,7 @@ function renderIncomePanel(md) {
       <div class="panel-header blue"><span>収入・分配</span></div>
       <table>
         <thead><tr>
-          <th>項目</th><th style="width:90px">送金先/口座</th><th style="width:44px;text-align:center">日</th><th class="r" style="width:120px">金額</th><th style="width:40px"></th>
+          <th>項目</th><th style="width:120px">元口座 → 先口座</th><th style="width:44px;text-align:center">日</th><th class="r" style="width:120px">金額</th><th style="width:40px"></th>
         </tr></thead>
         <tbody>
           <tr class="sec-row"><td colspan="5">収入</td></tr>
@@ -2777,6 +2786,9 @@ function handleInput(e) {
   } else if (act === 'editTransferTarget') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.targetAccount = e.target.value; saveState(); refreshAccountBals(); }
+  } else if (act === 'editTransferFrom') {
+    const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
+    if (t) { t.fromAccount = e.target.value; saveState(); refreshAccountBals(); }
   } else if (act === 'editAnaMiles') {
     md.mileDelta = +e.target.value || 0;
     saveState();
