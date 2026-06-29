@@ -1251,6 +1251,15 @@ function calcBalance(upToMonth) {
     sc    += d.savingsDeltaCash   || 0;
     sp    += d.bankInterest?.['Paypay銀行'] || 0;
     sc    += d.bankInterest?.['現金']       || 0;
+    // 送金でPaypay銀行・現金へ入出金した分も反映
+    (d.transfers||[]).forEach(t => {
+      const amt = t.amount || 0;
+      const fee = t.fee    || 0;
+      if (t.targetAccount === 'Paypay銀行') sp += amt;
+      if (t.fromAccount   === 'Paypay銀行') sp -= amt + fee;
+      if (t.targetAccount === '現金')       sc += amt;
+      if (t.fromAccount   === '現金')       sc -= amt + fee;
+    });
   }
   return { miles, savingsPaypay: sp, savingsCash: sc };
 }
