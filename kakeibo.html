@@ -2730,6 +2730,13 @@ function handleInput(e) {
     md.bankInterest[e.target.dataset.key] = +e.target.value || 0;
     saveState();
     refreshAccountBals();
+    const savBal = calcBalance(state.currentMonth);
+    const ep = document.getElementById('bal-paypay');
+    const ec = document.getElementById('bal-cash');
+    const et = document.getElementById('bal-total');
+    if (ep) ep.textContent = fmt(savBal.savingsPaypay);
+    if (ec) ec.textContent = fmt(savBal.savingsCash);
+    if (et) et.textContent = fmt(savBal.savingsPaypay + savBal.savingsCash);
   } else if (act === 'editSalary') {
     md.salary = +e.target.value || 0;
     saveState();
