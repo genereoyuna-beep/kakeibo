@@ -1249,6 +1249,8 @@ function calcBalance(upToMonth) {
     miles += d.mileDelta          || 0;
     sp    += d.savingsDeltaPaypay || 0;
     sc    += d.savingsDeltaCash   || 0;
+    sp    += d.bankInterest?.['Paypay銀行'] || 0;
+    sc    += d.bankInterest?.['現金']       || 0;
   }
   return { miles, savingsPaypay: sp, savingsCash: sc };
 }
