@@ -1133,10 +1133,11 @@ function renderBalanceCalc(expenses) {
     ? a.dayNum - b.dayNum
     : (typeOrder[a.type] || 0) - (typeOrder[b.type] || 0));
 
-  // 表示する口座を収集
-  const accsSet = new Set();
+  // 表示する口座：残高があるか変動がある口座を全て表示
+  const ACC_ORDER = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
+  const accsSet = new Set(ACC_ORDER.filter(a => a in startBal && startBal[a] !== 0));
   events.forEach(ev => Object.keys(ev.changes).forEach(a => { if (a in startBal) accsSet.add(a); }));
-  const allAccounts = [...accsSet];
+  const allAccounts = ACC_ORDER.filter(a => accsSet.has(a));
   if (!allAccounts.length)
     return '<div style="padding:12px;color:var(--muted);font-size:12px;text-align:center">データなし</div>';
 
@@ -1180,6 +1181,22 @@ function renderBalanceCalc(expenses) {
         </tr>
         ${rowsHtml}
       </tbody>
+      <tfoot>
+        <tr style="background:#edf2f7;border-top:2px solid #a0aec0">
+          <td style="font-size:11px;font-weight:700;color:#2d3748">月末残高（確認）</td>
+          ${(() => {
+            const endBal = calcAccountBalances(state.currentMonth);
+            return allAccounts.map(a => {
+              const calc = endBal[a] || 0;
+              const sim  = running[a] || 0;
+              const diff = calc - sim;
+              const color = diff !== 0 ? 'color:#e53e3e;' : 'color:#276749;';
+              const diffStr = diff !== 0 ? `<div style="font-size:9px;color:#e53e3e">差${diff > 0 ? '+' : ''}${fmt(diff)}</div>` : '';
+              return `<td class="r" style="font-size:12px;font-weight:700;${color}">${fmt(calc)}${diffStr}</td>`;
+            }).join('');
+          })()}
+        </tr>
+      </tfoot>
     </table>
     </div>
     <div style="padding:6px 10px 8px;font-size:10px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap">
