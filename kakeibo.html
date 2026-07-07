@@ -1298,7 +1298,18 @@ function calcAccountBalances(upToMonth) {
       bal[from] -= (t.amount || 0) + (t.fee || 0);
       if (t.targetAccount && t.targetAccount in bal) bal[t.targetAccount] += t.amount || 0;
     });
-    (d.expenses||[]).forEach(e => { if (e.account && e.account in bal) bal[e.account] -= e.amount || 0; });
+    (d.expenses||[]).forEach(e => {
+      if (!e.payment || e.payment === 'Appleギフト') {
+        if (e.account && e.account in bal) bal[e.account] -= e.amount || 0;
+        return;
+      }
+      let acc = (e.account && e.account in bal) ? e.account : null;
+      if (!acc) {
+        const card = state.cardSettings.find(c => c.name === e.payment);
+        if (card && card.account && card.account in bal) acc = card.account;
+      }
+      if (acc) bal[acc] -= e.amount || 0;
+    });
     // 先入金は前月に振替で出金済み → 当月カード費用から相殺して二重計上を防ぐ
     Object.entries(d.cardPrepaid||{}).forEach(([cardName, pre]) => {
       const card = state.cardSettings.find(c => c.name === cardName);
