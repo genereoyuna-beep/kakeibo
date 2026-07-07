@@ -1312,8 +1312,13 @@ function calcAccountBalances(upToMonth) {
     });
     // 先入金は前月に振替で出金済み → 当月カード費用から相殺して二重計上を防ぐ
     Object.entries(d.cardPrepaid||{}).forEach(([cardName, pre]) => {
+      if (!pre) return;
       const card = state.cardSettings.find(c => c.name === cardName);
-      if (card && card.account && card.account in bal) bal[card.account] += pre || 0;
+      if (!card || !card.account || !(card.account in bal)) return;
+      // 先入金は実際の費用合計を上限として足し戻す（超過分は口座外に残る）
+      const cardTotal = (d.expenses||[]).filter(e => e.payment === cardName)
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      bal[card.account] += Math.min(pre, cardTotal);
     });
   }
   return bal;
