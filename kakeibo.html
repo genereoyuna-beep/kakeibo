@@ -1078,20 +1078,26 @@ function renderBalanceCalc(expenses) {
       label: i.label || 'その他収入', changes: { [acc]: i.amount } });
   });
 
-  // ④ 貯金出金（楽天→Paypay）
-  if ((md.savingsDeltaPaypay || 0) > 0) {
+  // ④ 貯金（楽天↔Paypay）― 正値：楽天→Paypay、負値：Paypay→楽天
+  if (md.savingsDeltaPaypay) {
+    const sp     = md.savingsDeltaPaypay;
     const day    = md.savingsDeltaPaypayDate ? +md.savingsDeltaPaypayDate : null;
     const dayNum = day || 99;
-    events.push({ dayNum, day: day ? `${day}日` : '日付未設定', type: 'savings',
-      label: '貯金（Paypay）', changes: { '楽天銀行': -(md.savingsDeltaPaypay), 'Paypay銀行': +(md.savingsDeltaPaypay) } });
+    events.push({ dayNum, day: day ? `${day}日` : '日付未設定',
+      type: sp > 0 ? 'savings' : 'income',
+      label: sp > 0 ? '貯金（Paypay）' : '貯金取崩し（Paypay）',
+      changes: { '楽天銀行': -sp, 'Paypay銀行': +sp } });
   }
 
-  // ⑤ 貯金出金（楽天→現金）
-  if ((md.savingsDeltaCash || 0) > 0) {
+  // ⑤ 貯金（楽天↔現金）― 正値：楽天→現金、負値：現金→楽天
+  if (md.savingsDeltaCash) {
+    const sc     = md.savingsDeltaCash;
     const day    = md.savingsDeltaCashDate ? +md.savingsDeltaCashDate : null;
     const dayNum = day || 99;
-    events.push({ dayNum, day: day ? `${day}日` : '日付未設定', type: 'savings',
-      label: '貯金（現金）', changes: { '楽天銀行': -(md.savingsDeltaCash), '現金': +(md.savingsDeltaCash) } });
+    events.push({ dayNum, day: day ? `${day}日` : '日付未設定',
+      type: sc > 0 ? 'savings' : 'income',
+      label: sc > 0 ? '貯金（現金）' : '貯金取崩し（現金）',
+      changes: { '楽天銀行': -sc, '現金': +sc } });
   }
 
   // ⑥ 送金
