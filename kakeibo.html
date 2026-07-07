@@ -1118,6 +1118,15 @@ function renderBalanceCalc(expenses) {
       label: card.name, changes: { [card.account]: -net } });
   });
 
+  // ⑧ 銀行利息
+  if (md.bankInterest) {
+    Object.entries(md.bankInterest).forEach(([acc, amt]) => {
+      if ((amt || 0) <= 0 || !(acc in startBal)) return;
+      events.push({ dayNum: 99, day: '月末', type: 'income',
+        label: `利息（${acc}）`, changes: { [acc]: amt } });
+    });
+  }
+
   // 日付順にソート（同日：入金→送金→貯金→引き落とし）
   const typeOrder = { income: 0, transfer: 1, savings: 2, payment: 3 };
   events.sort((a, b) => a.dayNum !== b.dayNum
