@@ -908,7 +908,9 @@ function renderCardSummary(expenses, md) {
   const ct        = cardTotals(expenses);
   const confirmed = md.confirmedCards || {};
   const prepaid   = md.cardPrepaid   || {};
-  const rows = state.cardSettings.flatMap(c => {
+  const visibleCards = state.cardSettings.filter(c => !c.hidden);
+  const hiddenCards  = state.cardSettings.filter(c => c.hidden);
+  const rows = visibleCards.flatMap(c => {
     const amt        = ct[c.name] || 0;
     const pre        = prepaid[c.name] || 0;
     const remaining  = amt - pre;
@@ -932,6 +934,7 @@ function renderCardSummary(expenses, md) {
           <div style="display:flex;align-items:center;gap:6px">
             <span class="chip" data-pay="${esc(c.name)}">${esc(c.name)}</span>
             ${changed ? `<span style="background:#fef08a;color:#854d0e;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:700;white-space:nowrap">金額変更</span>` : ''}
+            <button class="btn icon" data-action="toggleCardHidden" data-card="${esc(c.name)}" title="非表示にする" style="font-size:11px;padding:1px 4px;color:#718096;opacity:0.5">👁</button>
             <button class="btn icon" data-action="delCard" data-card="${esc(c.name)}" title="カードを削除" style="font-size:11px;padding:1px 4px;color:#c53030;opacity:0.5">✕</button>
           </div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(c.account)} · ${esc(c.paymentDay)}</div>
@@ -959,10 +962,25 @@ function renderCardSummary(expenses, md) {
       </tr>`
     ];
   });
-  const total        = Object.values(ct).reduce((s,v)=>s+v,0);
-  const totalPrepaid = state.cardSettings.reduce((s,c)=>s+(prepaid[c.name]||0),0);
-  const doneCount    = state.cardSettings.filter(c=>confirmed[c.name] && ct[c.name]>0).length;
-  const totalCount   = state.cardSettings.filter(c=>ct[c.name]>0).length;
+  const total        = visibleCards.reduce((s,c)=>s+(ct[c.name]||0),0);
+  const totalPrepaid = visibleCards.reduce((s,c)=>s+(prepaid[c.name]||0),0);
+  const doneCount    = visibleCards.filter(c=>confirmed[c.name] && ct[c.name]>0).length;
+  const totalCount   = visibleCards.filter(c=>ct[c.name]>0).length;
+  const hiddenRows   = hiddenCards.length ? `
+    <tr><td colspan="3" style="padding:6px 8px 2px">
+      <details>
+        <summary style="font-size:11px;color:var(--muted);cursor:pointer;user-select:none">非表示カード（${hiddenCards.length}件）</summary>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+          ${hiddenCards.map(c => `
+            <div style="display:flex;align-items:center;gap:8px;padding:4px 6px;background:#f7fafc;border-radius:6px;font-size:12px;color:var(--muted)">
+              <span style="flex:1">${esc(c.name)}</span>
+              <span style="font-size:10px">${esc(c.account)} · ${esc(c.paymentDay)}</span>
+              <button class="btn icon" data-action="toggleCardHidden" data-card="${esc(c.name)}" title="表示に戻す" style="font-size:11px;padding:2px 6px;color:#4a6fa5">表示</button>
+              <button class="btn icon" data-action="delCard" data-card="${esc(c.name)}" title="削除" style="font-size:11px;padding:2px 4px;color:#c53030;opacity:0.5">✕</button>
+            </div>`).join('')}
+        </div>
+      </details>
+    </td></tr>` : '';
   return `
     <table>
       <thead><tr>
@@ -972,6 +990,7 @@ function renderCardSummary(expenses, md) {
       </tr></thead>
       <tbody>
         ${rows.join('')}
+        ${hiddenRows}
         <tr class="sub-row">
           <td></td>
           <td class="muted" style="font-size:11px">
@@ -2678,6 +2697,12 @@ function handleClick(e) {
     if (!state.cardSettings) state.cardSettings = [];
     state.cardSettings.push({ id: uid(), name, account, paymentDay: day, budget });
     saveState(); closeModal(); render();
+    return;
+  }
+  else if (action === 'toggleCardHidden') {
+    const name = el.dataset.card;
+    const card = state.cardSettings.find(c => c.name === name);
+    if (card) { card.hidden = !card.hidden; saveState(); render(); }
     return;
   }
   else if (action === 'delCard') {
