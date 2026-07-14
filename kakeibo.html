@@ -551,7 +551,8 @@ let sortState = {
   variable:    { col: null, dir: 'asc' },
 };
 let selectedExpIds = new Set();
-let _dragSrcId = null;
+let _dragSrcId   = null;
+let _dragSrcType = null;
 let _touchDrag  = null;
 
 function sortedSection(expenses, section) {
@@ -1395,8 +1396,9 @@ function renderIncomePanel(md) {
       data-action="${action}" ${extraData}>`;
 
   const otherIncomeRows = otherIncomes.map(i=>`
-    <tr class="data">
-      <td style="padding-left:20px">
+    <tr class="data" data-id="${i.id}" data-type="income">
+      <td class="drag-handle" data-drag-handle title="ドラッグして並び替え">⠿</td>
+      <td>
         <input type="text" value="${esc(i.label)}" placeholder="例: 副収入"
           style="width:100%;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:12px;background:#fff"
           data-action="editIncomeLabel" data-id="${i.id}">
@@ -1759,6 +1761,18 @@ function reorderExp(srcId, tgtId) {
   sortState[md.expenses[src].section] = { col: null, dir: 'asc' };
   const [item] = md.expenses.splice(src, 1);
   md.expenses.splice(tgt, 0, item);
+  saveState();
+  render();
+}
+
+function reorderIncome(srcId, tgtId) {
+  const md  = getMonth();
+  const arr = md.otherIncomes;
+  const src = arr.findIndex(r => r.id === srcId);
+  const tgt = arr.findIndex(r => r.id === tgtId);
+  if (src < 0 || tgt < 0 || src === tgt) return;
+  const [item] = arr.splice(src, 1);
+  arr.splice(tgt, 0, item);
   saveState();
   render();
 }
@@ -2985,7 +2999,8 @@ document.addEventListener('mouseup', () => {
 document.addEventListener('dragstart', e => {
   const tr = e.target.closest('tr[data-id]');
   if (!tr) return;
-  _dragSrcId = tr.dataset.id;
+  _dragSrcId   = tr.dataset.id;
+  _dragSrcType = tr.dataset.type || 'expense';
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => tr.classList.add('dragging'), 0);
 });
@@ -3006,7 +3021,8 @@ document.addEventListener('drop', e => {
   e.preventDefault();
   const tr = e.target.closest('tr[data-id]');
   if (!tr || !_dragSrcId || tr.dataset.id === _dragSrcId) return;
-  reorderExp(_dragSrcId, tr.dataset.id);
+  if (_dragSrcType === 'income') reorderIncome(_dragSrcId, tr.dataset.id);
+  else reorderExp(_dragSrcId, tr.dataset.id);
 });
 
 // ── タッチドラッグ（モバイル） ──
@@ -3026,7 +3042,7 @@ document.addEventListener('touchstart', e => {
   });
   document.body.appendChild(clone);
   tr.classList.add('dragging');
-  _touchDrag = { id:tr.dataset.id, sourceEl:tr, clone, offsetY: touch.clientY - rect.top, overId: null };
+  _touchDrag = { id:tr.dataset.id, type: tr.dataset.type||'expense', sourceEl:tr, clone, offsetY: touch.clientY - rect.top, overId: null };
 }, { passive: true });
 
 document.addEventListener('touchmove', e => {
@@ -3052,7 +3068,10 @@ document.addEventListener('touchend', () => {
   _touchDrag.clone.remove();
   _touchDrag.sourceEl.classList.remove('dragging');
   document.querySelectorAll('tr.drag-over').forEach(t => t.classList.remove('drag-over'));
-  if (_touchDrag.overId) reorderExp(_touchDrag.id, _touchDrag.overId);
+  if (_touchDrag.overId) {
+    if (_touchDrag.type === 'income') reorderIncome(_touchDrag.id, _touchDrag.overId);
+    else reorderExp(_touchDrag.id, _touchDrag.overId);
+  }
   _touchDrag = null;
 });
 
