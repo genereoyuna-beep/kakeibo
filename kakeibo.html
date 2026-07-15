@@ -1303,6 +1303,17 @@ function calcBalance(upToMonth) {
     sc    += d.savingsDeltaCash   || 0;
     sp    += d.bankInterest?.['Paypay銀行'] || 0;
     sc    += d.bankInterest?.['現金']       || 0;
+    // その他収入でPaypay銀行・現金に直接入金された分
+    (d.otherIncomes||[]).forEach(i => {
+      if (i.account === 'Paypay銀行') sp += i.amount || 0;
+      if (i.account === '現金')       sc += i.amount || 0;
+    });
+    // Paypay銀行・現金から直接支出した費用
+    (d.expenses||[]).forEach(e => {
+      const acc = e.account || null;
+      if (acc === 'Paypay銀行') sp -= e.amount || 0;
+      if (acc === '現金')       sc -= e.amount || 0;
+    });
     // 送金でPaypay銀行・現金へ入出金した分も反映
     (d.transfers||[]).forEach(t => {
       const amt = t.amount || 0;
