@@ -1394,6 +1394,10 @@ function calcAccountBalances(upToMonth) {
         .reduce((s, e) => s + (e.amount || 0), 0);
       bal[card.account] += Math.min(pre, cardTotal);
     });
+    // Wise送金：送金元口座からJPY額を控除
+    (d.wiseTrades||[]).forEach(t => {
+      if (t.sourceAccount && t.sourceAccount in bal) bal[t.sourceAccount] -= t.jpyAmount || 0;
+    });
   }
   return bal;
 }
@@ -1643,6 +1647,7 @@ function renderWisePanel(md) {
       </tr>`;
   }).join('');
 
+  const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
   const tradeRows = trades.map(t => {
     const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : '—';
     return `
@@ -1654,19 +1659,26 @@ function renderWisePanel(md) {
         </td>
         <td>
           <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
+            data-action="editWiseTradeSource" data-id="${t.id}">
+            <option value="">口座</option>
+            ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${t.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
             data-action="editWiseTradeCurrency" data-id="${t.id}">
             ${currencies.map(c=>`<option value="${c}" ${t.currency===c?'selected':''}>${c}</option>`).join('')}
           </select>
         </td>
         <td class="r">
           <input type="number" value="${t.jpyAmount||''}" placeholder="0"
-            style="width:90px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+            style="width:85px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
             data-action="editWiseTradeJpy" data-id="${t.id}">
         </td>
         <td style="text-align:center;font-size:11px;color:var(--muted)">→</td>
         <td class="r">
           <input type="number" value="${t.foreignAmount||''}" placeholder="0.00" step="0.01"
-            style="width:90px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+            style="width:85px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
             data-action="editWiseTradeAmount" data-id="${t.id}">
         </td>
         <td style="font-size:11px;color:var(--muted)">${t.foreignAmount && t.jpyAmount ? `@${rate}` : ''}</td>
@@ -1691,12 +1703,13 @@ function renderWisePanel(md) {
       <div style="padding:4px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">今月の両替（円 → 外貨）</div>
       <table>
         <thead><tr>
-          <th style="font-size:10px;width:60px">日付</th>
+          <th style="font-size:10px;width:80px">日付</th>
+          <th style="font-size:10px">送金元</th>
           <th style="font-size:10px">通貨</th>
           <th class="r" style="font-size:10px">円</th>
           <th style="width:20px"></th>
           <th class="r" style="font-size:10px">外貨</th>
-          <th style="font-size:10px;width:60px">レート</th>
+          <th style="font-size:10px;width:55px">レート</th>
           <th style="width:30px"></th>
         </tr></thead>
         <tbody>${tradeRows}</tbody>
@@ -2885,6 +2898,13 @@ function handleClick(e) {
     const md = getMonth();
     const t = (md.wiseTrades || []).find(t => t.id === id);
     if (t) { t.date = el.value; saveState(); }
+    return;
+  }
+  else if (action === 'editWiseTradeSource') {
+    const id = el.dataset.id;
+    const md = getMonth();
+    const t = (md.wiseTrades || []).find(t => t.id === id);
+    if (t) { t.sourceAccount = el.value || null; saveState(); refreshAccountBals(); }
     return;
   }
   else if (action === 'editWiseTradeCurrency') {
