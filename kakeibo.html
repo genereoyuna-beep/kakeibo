@@ -2875,47 +2875,6 @@ function handleClick(e) {
     md.wiseTrades = (md.wiseTrades || []).filter(t => t.id !== id);
     saveState(); render(); return;
   }
-  else if (action === 'editWiseTradeDate') {
-    const id = el.dataset.id;
-    const md = getMonth();
-    const t = (md.wiseTrades || []).find(t => t.id === id);
-    if (t) { t.date = el.value; saveState(); }
-    return;
-  }
-  else if (action === 'editWiseTradeSource') {
-    const id = el.dataset.id;
-    const md = getMonth();
-    const t = (md.wiseTrades || []).find(t => t.id === id);
-    if (t) { t.sourceAccount = el.value || null; saveState(); refreshAccountBals(); }
-    return;
-  }
-  else if (action === 'editWiseTradeCurrency') {
-    const id = el.dataset.id;
-    const md = getMonth();
-    const t = (md.wiseTrades || []).find(t => t.id === id);
-    if (t) { t.currency = el.value; saveState(); render(); }
-    return;
-  }
-  else if (action === 'editWiseTradeJpy') {
-    const id = el.dataset.id;
-    const md = getMonth();
-    const t = (md.wiseTrades || []).find(t => t.id === id);
-    if (t) { t.jpyAmount = parseFloat(el.value) || 0; saveState(); }
-    return;
-  }
-  else if (action === 'editWiseTradeAmount') {
-    const id = el.dataset.id;
-    const md = getMonth();
-    const t = (md.wiseTrades || []).find(t => t.id === id);
-    if (t) { t.foreignAmount = parseFloat(el.value) || 0; saveState(); }
-    return;
-  }
-  else if (action === 'editWiseInitial') {
-    const cur = el.dataset.currency;
-    if (!state.wiseInitials) state.wiseInitials = {};
-    state.wiseInitials[cur] = parseFloat(el.value) || 0;
-    saveState(); return;
-  }
   else if (action === 'delCard') {
     const name = el.dataset.card;
     if (!confirm(`「${name}」をカード一覧から削除しますか？\n（支出データは残ります）`)) return;
@@ -3128,6 +3087,16 @@ function handleInput(e) {
     const over = goal > 0 && sav >= goal;
     const fill = document.querySelector('.prog-fill');
     if (fill) { fill.style.width = pct+'%'; fill.style.background = over?'#38a169':'#4a6fa5'; }
+  } else if (act === 'editWiseTradeJpy') {
+    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
+    if (t) { t.jpyAmount = parseFloat(e.target.value) || 0; saveState(); }
+  } else if (act === 'editWiseTradeAmount') {
+    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
+    if (t) { t.foreignAmount = parseFloat(e.target.value) || 0; saveState(); }
+  } else if (act === 'editWiseInitial') {
+    if (!state.wiseInitials) state.wiseInitials = {};
+    state.wiseInitials[e.target.dataset.currency] = parseFloat(e.target.value) || 0;
+    saveState();
   }
 }
 
@@ -3168,6 +3137,18 @@ function handleChange(e) {
     if (!state.initialBalances.accounts) state.initialBalances.accounts = {};
     state.initialBalances.accounts[e.target.dataset.key] = +e.target.value || 0;
     saveState(); render();
+  } else if (act === 'editWiseTradeDate') {
+    const md = getMonth();
+    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
+    if (t) { t.date = e.target.value; saveState(); }
+  } else if (act === 'editWiseTradeSource') {
+    const md = getMonth();
+    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
+    if (t) { t.sourceAccount = e.target.value || null; saveState(); refreshAccountBals(); }
+  } else if (act === 'editWiseTradeCurrency') {
+    const md = getMonth();
+    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
+    if (t) { t.currency = e.target.value; saveState(); render(); }
   }
 }
 
