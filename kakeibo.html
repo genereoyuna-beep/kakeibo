@@ -480,7 +480,7 @@ function getMonth() {
 }
 
 function emptyMonth() {
-  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaCash:0, savingsDeltaCashDate:null, wiseTrades:[] };
+  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaCash:0, savingsDeltaCashDate:null, wiseDeposits:[], wiseTrades:[] };
 }
 
 function uid() {
@@ -1330,21 +1330,31 @@ function calcBalance(upToMonth) {
   return { miles, savingsPaypay: sp, savingsCash: sc };
 }
 
-// ── Wise 外貨残高計算 ──
+// ── Wise 残高計算（JPY + 外貨）──
 function calcWiseBalances(upToMonth) {
+  // JPY残高
+  let jpy = state.wiseInitials?.['JPY'] || 0;
+  // 外貨残高
   const bals = {};
   (state.wiseCurrencies || []).forEach(c => {
     bals[c] = { amount: state.wiseInitials?.[c] || 0, jpyCost: 0 };
   });
   for (const m of Object.keys(state.data).sort()) {
     if (m > upToMonth) break;
-    (state.data[m].wiseTrades || []).forEach(t => {
+    const d = state.data[m];
+    // 送金（銀行 → Wise JPY）
+    (d.wiseDeposits || []).forEach(dep => {
+      jpy += dep.jpyAmount || 0;
+    });
+    // 両替（Wise JPY → 外貨）
+    (d.wiseTrades || []).forEach(t => {
+      jpy -= t.jpyAmount || 0;
       if (!bals[t.currency]) bals[t.currency] = { amount: 0, jpyCost: 0 };
       bals[t.currency].amount  += t.foreignAmount || 0;
       bals[t.currency].jpyCost += t.jpyAmount     || 0;
     });
   }
-  return bals;
+  return { jpy, bals };
 }
 
 // ── 口座残高自動計算 ──
@@ -1395,8 +1405,8 @@ function calcAccountBalances(upToMonth) {
       bal[card.account] += Math.min(pre, cardTotal);
     });
     // Wise送金：送金元口座からJPY額を控除
-    (d.wiseTrades||[]).forEach(t => {
-      if (t.sourceAccount && t.sourceAccount in bal) bal[t.sourceAccount] -= t.jpyAmount || 0;
+    (d.wiseDeposits||[]).forEach(dep => {
+      if (dep.sourceAccount && dep.sourceAccount in bal) bal[dep.sourceAccount] -= dep.jpyAmount || 0;
     });
   }
   return bal;
@@ -1625,90 +1635,134 @@ function renderSavingsPanel(md) {
 
 // ── Wise 外貨残高パネル ──
 function renderWisePanel(md) {
-  const bals   = calcWiseBalances(state.currentMonth);
-  const trades = md.wiseTrades || [];
+  const { jpy, bals } = calcWiseBalances(state.currentMonth);
+  const deposits   = md.wiseDeposits || [];
+  const trades     = md.wiseTrades   || [];
   const currencies = state.wiseCurrencies || [];
 
   const CURRENCY_SYMBOLS = { USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', CHF:'CHF ', SGD:'S$', HKD:'HK$', CNY:'¥', KRW:'₩', THB:'฿' };
   const sym = c => CURRENCY_SYMBOLS[c] || (c + ' ');
+  const today = state.currentMonth.slice(0,4) + '-' + state.currentMonth.slice(4,6) + '-01';
+  const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
 
+  // 送金カード（銀行 → Wise JPY）
+  const depositCards = deposits.map(dep => `
+    <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="date" value="${dep.date||''}"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
+          data-action="editWiseDepositDate" data-id="${dep.id}">
+        <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
+          data-action="editWiseDepositSource" data-id="${dep.id}">
+          <option value="">送金元</option>
+          ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${dep.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+        <button class="btn icon" data-action="delWiseDeposit" data-id="${dep.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
+        <input type="number" value="${dep.jpyAmount||''}" placeholder="0"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+          data-action="editWiseDepositJpy" data-id="${dep.id}">
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">→ Wise JPY</span>
+      </div>
+    </div>`).join('');
+
+  // 両替カード（Wise JPY → 外貨）
+  const tradeCards = trades.map(t => {
+    const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : null;
+    return `
+    <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="date" value="${t.date||''}"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
+          data-action="editWiseTradeDate" data-id="${t.id}">
+        <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;width:64px;flex-shrink:0"
+          data-action="editWiseTradeCurrency" data-id="${t.id}">
+          ${currencies.map(c=>`<option value="${c}" ${t.currency===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+        <button class="btn icon" data-action="delWiseTrade" data-id="${t.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
+        <input type="number" value="${t.jpyAmount||''}" placeholder="0"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+          data-action="editWiseTradeJpy" data-id="${t.id}">
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">→</span>
+        <input type="number" value="${t.foreignAmount||''}" placeholder="0.00" step="0.01"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+          data-action="editWiseTradeAmount" data-id="${t.id}">
+        ${rate ? `<span style="font-size:10px;color:var(--muted);flex-shrink:0">@${rate}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // 外貨残高行
   const balRows = currencies.map(c => {
     const b = bals[c] || { amount:0, jpyCost:0 };
     const avgRate = b.jpyCost > 0 && b.amount > 0 ? (b.jpyCost / b.amount).toFixed(2) : '—';
     return `
       <tr>
         <td style="font-weight:600">${esc(c)}</td>
-        <td class="r amount bold" style="font-size:15px;color:#276749">${sym(c)}${b.amount.toLocaleString('ja-JP', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-        <td class="r" style="font-size:11px;color:var(--muted)">投資額 ${fmt(b.jpyCost)}<br>平均レート ${avgRate}</td>
+        <td class="r amount bold" style="font-size:14px;color:#276749">${sym(c)}${b.amount.toLocaleString('ja-JP', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+        <td class="r" style="font-size:10px;color:var(--muted)">投資 ${fmt(b.jpyCost)}<br>@${avgRate}</td>
         <td style="text-align:center">
           <button class="btn icon" data-action="delWiseCurrency" data-currency="${esc(c)}" title="削除" style="font-size:10px;color:#c53030;opacity:0.5">✕</button>
         </td>
       </tr>`;
   }).join('');
 
-  const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
-  const tradeCards = trades.map(t => {
-    const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : null;
-    return `
-      <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="date" value="${t.date||''}"
-            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-            data-action="editWiseTradeDate" data-id="${t.id}">
-          <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-            data-action="editWiseTradeSource" data-id="${t.id}">
-            <option value="">送金元</option>
-            ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${t.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
-          </select>
-          <button class="btn icon" data-action="delWiseTrade" data-id="${t.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;width:60px;flex-shrink:0"
-            data-action="editWiseTradeCurrency" data-id="${t.id}">
-            ${currencies.map(c=>`<option value="${c}" ${t.currency===c?'selected':''}>${c}</option>`).join('')}
-          </select>
-          <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
-          <input type="number" value="${t.jpyAmount||''}" placeholder="0"
-            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
-            data-action="editWiseTradeJpy" data-id="${t.id}">
-          <span style="font-size:11px;color:var(--muted);flex-shrink:0">→</span>
-          <input type="number" value="${t.foreignAmount||''}" placeholder="0.00" step="0.01"
-            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
-            data-action="editWiseTradeAmount" data-id="${t.id}">
-          ${rate ? `<span style="font-size:10px;color:var(--muted);flex-shrink:0">@${rate}</span>` : ''}
-        </div>
-      </div>`;
-  }).join('');
-
   return `
     <div class="panel">
       <div class="panel-header" style="background:#ebf8ff;border-color:#bee3f8">
-        <span style="color:#2b6cb0">Wise 外貨残高</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn sm" data-action="addWiseCurrency" style="font-size:10px">＋ 通貨追加</button>
-          ${currencies.length ? `<button class="btn sm" data-action="addWiseTrade" style="font-size:10px">＋ 両替追加</button>` : ''}
+        <span style="color:#2b6cb0">Wise</span>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm" data-action="addWiseCurrency" style="font-size:10px">＋ 通貨</button>
+          <button class="btn sm" data-action="addWiseDeposit" style="font-size:10px">＋ 送金</button>
+          ${currencies.length ? `<button class="btn sm" data-action="addWiseTrade" style="font-size:10px">＋ 両替</button>` : ''}
         </div>
       </div>
+
+      <!-- Wise JPY残高 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px">
+        <span style="font-size:12px;color:var(--muted)">JPY残高</span>
+        <span class="amount bold" style="font-size:16px;color:${jpy<0?'#c53030':'#2b6cb0'}">${fmt(jpy)}</span>
+      </div>
+
+      <!-- 外貨残高 -->
       ${currencies.length ? `
-      <table style="margin-bottom:4px">
+      <table style="margin-bottom:2px">
         <tbody>${balRows}</tbody>
-      </table>` : '<div style="padding:10px;font-size:12px;color:var(--muted)">「＋ 通貨追加」で管理する通貨を登録してください</div>'}
+      </table>` : '<div style="padding:6px 12px 8px;font-size:11px;color:var(--muted)">「＋ 通貨」で管理する外貨を登録</div>'}
+
+      <!-- 送金記録 -->
+      ${deposits.length ? `
+      <div style="padding:6px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">送金（銀行 → Wise）</div>
+      <div style="padding:4px 10px 6px;display:flex;flex-direction:column;gap:6px">${depositCards}</div>` : ''}
+
+      <!-- 両替記録 -->
       ${trades.length ? `
-      <div style="padding:4px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">今月の両替（円 → 外貨）</div>
-      <div style="padding:6px 10px;display:flex;flex-direction:column;gap:6px">${tradeCards}</div>` : ''}
-      <details style="padding:6px 10px 4px">
-        <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 0">初期残高・通貨設定</summary>
+      <div style="padding:6px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">両替（Wise JPY → 外貨）</div>
+      <div style="padding:4px 10px 6px;display:flex;flex-direction:column;gap:6px">${tradeCards}</div>` : ''}
+
+      <!-- 初期残高設定 -->
+      <details style="padding:4px 10px 6px">
+        <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 0">初期残高設定</summary>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+            <span style="width:40px;font-weight:600">JPY</span>
+            <input type="number" value="${state.wiseInitials?.['JPY']||''}" placeholder="0"
+              style="flex:1;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:12px;text-align:right"
+              data-action="editWiseInitial" data-currency="JPY">
+          </div>
           ${currencies.map(c => `
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px">
-              <span style="width:40px;font-weight:600">${esc(c)}</span>
-              <span style="color:var(--muted);font-size:11px">初期残高</span>
-              <input type="number" value="${state.wiseInitials?.[c]||''}" placeholder="0" step="0.01"
-                style="width:100px;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:12px;text-align:right"
-                data-action="editWiseInitial" data-currency="${esc(c)}">
-              <span style="font-size:10px;color:var(--muted)">${sym(c)}</span>
-            </div>`).join('')}
-          ${currencies.length === 0 ? '<div style="font-size:11px;color:var(--muted)">通貨を追加すると初期残高を設定できます</div>' : ''}
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+            <span style="width:40px;font-weight:600">${esc(c)}</span>
+            <input type="number" value="${state.wiseInitials?.[c]||''}" placeholder="0" step="0.01"
+              style="flex:1;border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:12px;text-align:right"
+              data-action="editWiseInitial" data-currency="${esc(c)}">
+            <span style="font-size:10px;color:var(--muted)">${sym(c)}</span>
+          </div>`).join('')}
         </div>
       </details>
     </div>
@@ -2848,6 +2902,18 @@ function handleClick(e) {
     if (card) { card.hidden = !card.hidden; saveState(); render(); }
     return;
   }
+  else if (action === 'addWiseDeposit') {
+    const md = getMonth();
+    if (!md.wiseDeposits) md.wiseDeposits = [];
+    const today = state.currentMonth.slice(0,4) + '-' + state.currentMonth.slice(4,6) + '-01';
+    md.wiseDeposits.push({ id: Date.now().toString(), date: today, sourceAccount: '', jpyAmount: 0 });
+    saveState(); render(); return;
+  }
+  else if (action === 'delWiseDeposit') {
+    const md = getMonth();
+    md.wiseDeposits = (md.wiseDeposits || []).filter(d => d.id !== el.dataset.id);
+    saveState(); render(); return;
+  }
   else if (action === 'addWiseCurrency') {
     const cur = (prompt('追加する通貨コードを入力してください（例: USD, EUR, GBP）') || '').trim().toUpperCase();
     if (!cur) return;
@@ -3093,6 +3159,9 @@ function handleInput(e) {
   } else if (act === 'editWiseTradeAmount') {
     const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
     if (t) { t.foreignAmount = parseFloat(e.target.value) || 0; saveState(); }
+  } else if (act === 'editWiseDepositJpy') {
+    const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
+    if (dep) { dep.jpyAmount = parseFloat(e.target.value) || 0; saveState(); refreshAccountBals(); }
   } else if (act === 'editWiseInitial') {
     if (!state.wiseInitials) state.wiseInitials = {};
     state.wiseInitials[e.target.dataset.currency] = parseFloat(e.target.value) || 0;
@@ -3141,14 +3210,18 @@ function handleChange(e) {
     const md = getMonth();
     const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
     if (t) { t.date = e.target.value; saveState(); }
-  } else if (act === 'editWiseTradeSource') {
-    const md = getMonth();
-    const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
-    if (t) { t.sourceAccount = e.target.value || null; saveState(); refreshAccountBals(); }
   } else if (act === 'editWiseTradeCurrency') {
     const md = getMonth();
     const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
     if (t) { t.currency = e.target.value; saveState(); render(); }
+  } else if (act === 'editWiseDepositDate') {
+    const md = getMonth();
+    const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
+    if (dep) { dep.date = e.target.value; saveState(); }
+  } else if (act === 'editWiseDepositSource') {
+    const md = getMonth();
+    const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
+    if (dep) { dep.sourceAccount = e.target.value || null; saveState(); refreshAccountBals(); }
   }
 }
 
