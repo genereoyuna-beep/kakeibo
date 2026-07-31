@@ -1625,7 +1625,6 @@ function renderSavingsPanel(md) {
 
 // ── Wise 外貨残高パネル ──
 function renderWisePanel(md) {
-  if (!(state.wiseCurrencies || []).length && !(md.wiseTrades || []).length) return '';
   const bals   = calcWiseBalances(state.currentMonth);
   const trades = md.wiseTrades || [];
   const currencies = state.wiseCurrencies || [];
