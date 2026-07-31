@@ -1647,42 +1647,37 @@ function renderWisePanel(md) {
   }).join('');
 
   const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
-  const tradeRows = trades.map(t => {
-    const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : '—';
+  const tradeCards = trades.map(t => {
+    const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : null;
     return `
-      <tr class="data">
-        <td>
+      <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px">
           <input type="date" value="${t.date||''}"
-            style="width:80px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:10px"
+            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
             data-action="editWiseTradeDate" data-id="${t.id}">
-        </td>
-        <td>
-          <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
+          <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
             data-action="editWiseTradeSource" data-id="${t.id}">
-            <option value="">口座</option>
+            <option value="">送金元</option>
             ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${t.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
           </select>
-        </td>
-        <td>
-          <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
+          <button class="btn icon" data-action="delWiseTrade" data-id="${t.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;width:60px;flex-shrink:0"
             data-action="editWiseTradeCurrency" data-id="${t.id}">
             ${currencies.map(c=>`<option value="${c}" ${t.currency===c?'selected':''}>${c}</option>`).join('')}
           </select>
-        </td>
-        <td class="r">
+          <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
           <input type="number" value="${t.jpyAmount||''}" placeholder="0"
-            style="width:85px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
             data-action="editWiseTradeJpy" data-id="${t.id}">
-        </td>
-        <td style="text-align:center;font-size:11px;color:var(--muted)">→</td>
-        <td class="r">
+          <span style="font-size:11px;color:var(--muted);flex-shrink:0">→</span>
           <input type="number" value="${t.foreignAmount||''}" placeholder="0.00" step="0.01"
-            style="width:85px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
+            style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
             data-action="editWiseTradeAmount" data-id="${t.id}">
-        </td>
-        <td style="font-size:11px;color:var(--muted)">${t.foreignAmount && t.jpyAmount ? `@${rate}` : ''}</td>
-        <td><button class="btn icon" data-action="delWiseTrade" data-id="${t.id}" title="削除">🗑</button></td>
-      </tr>`;
+          ${rate ? `<span style="font-size:10px;color:var(--muted);flex-shrink:0">@${rate}</span>` : ''}
+        </div>
+      </div>`;
   }).join('');
 
   return `
@@ -1700,19 +1695,7 @@ function renderWisePanel(md) {
       </table>` : '<div style="padding:10px;font-size:12px;color:var(--muted)">「＋ 通貨追加」で管理する通貨を登録してください</div>'}
       ${trades.length ? `
       <div style="padding:4px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">今月の両替（円 → 外貨）</div>
-      <table>
-        <thead><tr>
-          <th style="font-size:10px;width:80px">日付</th>
-          <th style="font-size:10px">送金元</th>
-          <th style="font-size:10px">通貨</th>
-          <th class="r" style="font-size:10px">円</th>
-          <th style="width:20px"></th>
-          <th class="r" style="font-size:10px">外貨</th>
-          <th style="font-size:10px;width:55px">レート</th>
-          <th style="width:30px"></th>
-        </tr></thead>
-        <tbody>${tradeRows}</tbody>
-      </table>` : ''}
+      <div style="padding:6px 10px;display:flex;flex-direction:column;gap:6px">${tradeCards}</div>` : ''}
       <details style="padding:6px 10px 4px">
         <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 0">初期残高・通貨設定</summary>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
