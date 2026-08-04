@@ -1642,59 +1642,81 @@ function renderWisePanel(md) {
 
   const CURRENCY_SYMBOLS = { USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', CHF:'CHF ', SGD:'S$', HKD:'HK$', CNY:'¥', KRW:'₩', THB:'฿' };
   const sym = c => CURRENCY_SYMBOLS[c] || (c + ' ');
-  const today = state.currentMonth.slice(0,4) + '-' + state.currentMonth.slice(4,6) + '-01';
   const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
 
-  // 送金カード（銀行 → Wise JPY）
-  const depositCards = deposits.map(dep => `
-    <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="date" value="${dep.date||''}"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-          data-action="editWiseDepositDate" data-id="${dep.id}">
-        <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-          data-action="editWiseDepositSource" data-id="${dep.id}">
-          <option value="">送金元</option>
-          ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${dep.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
-        </select>
-        <button class="btn icon" data-action="delWiseDeposit" data-id="${dep.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
-        <input type="number" value="${dep.jpyAmount||''}" placeholder="0"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
-          data-action="editWiseDepositJpy" data-id="${dep.id}">
-        <span style="font-size:11px;color:var(--muted);flex-shrink:0">→ Wise JPY</span>
-      </div>
-    </div>`).join('');
+  // 前月末JPY残高（今月のスタート残高）
+  const [cy, cm] = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4,6)];
+  const prevKey = `${cm===1?cy-1:cy}${String(cm===1?12:cm-1).padStart(2,'0')}`;
+  const startJpy = calcWiseBalances(prevKey).jpy;
 
-  // 両替カード（Wise JPY → 外貨）
-  const tradeCards = trades.map(t => {
-    const rate = t.jpyAmount > 0 && t.foreignAmount > 0 ? (t.jpyAmount / t.foreignAmount).toFixed(2) : null;
-    return `
-    <div style="border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="date" value="${t.date||''}"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px"
-          data-action="editWiseTradeDate" data-id="${t.id}">
-        <select style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;width:64px;flex-shrink:0"
-          data-action="editWiseTradeCurrency" data-id="${t.id}">
-          ${currencies.map(c=>`<option value="${c}" ${t.currency===c?'selected':''}>${c}</option>`).join('')}
-        </select>
-        <button class="btn icon" data-action="delWiseTrade" data-id="${t.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.6">🗑</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
-        <input type="number" value="${t.jpyAmount||''}" placeholder="0"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
-          data-action="editWiseTradeJpy" data-id="${t.id}">
-        <span style="font-size:11px;color:var(--muted);flex-shrink:0">→</span>
-        <input type="number" value="${t.foreignAmount||''}" placeholder="0.00" step="0.01"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;text-align:right"
-          data-action="editWiseTradeAmount" data-id="${t.id}">
-        ${rate ? `<span style="font-size:10px;color:var(--muted);flex-shrink:0">@${rate}</span>` : ''}
-      </div>
-    </div>`;
+  // 送金・両替を日付順にマージ
+  const allEvents = [
+    ...deposits.map(d => ({ ...d, kind:'deposit' })),
+    ...trades.map(t => ({ ...t, kind:'trade' }))
+  ].sort((a, b) => (a.date||'').localeCompare(b.date||'') || a.id.localeCompare(b.id));
+
+  // タイムライン行（JPY残高推移つき）
+  let runJpy = startJpy;
+  const timelineRows = allEvents.map(ev => {
+    const isDeposit = ev.kind === 'deposit';
+    const delta = isDeposit ? (ev.jpyAmount||0) : -(ev.jpyAmount||0);
+    runJpy += delta;
+    const balColor = runJpy < 0 ? '#c53030' : '#2b6cb0';
+    const dayLabel = ev.date ? ev.date.slice(5).replace('-','/') : '日付未設定';
+
+    if (isDeposit) {
+      return `
+        <div style="border:1px solid #bee3f8;border-radius:6px;padding:8px 10px;background:#f7fbff">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span style="font-size:10px;background:#3182ce;color:#fff;border-radius:3px;padding:1px 5px;flex-shrink:0">送金</span>
+            <input type="date" value="${ev.date||''}"
+              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
+              data-action="editWiseDepositDate" data-id="${ev.id}">
+            <span style="font-size:11px;font-weight:700;color:${balColor};flex-shrink:0">${fmt(runJpy)}</span>
+            <button class="btn icon" data-action="delWiseDeposit" data-id="${ev.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.5;font-size:11px">🗑</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <select style="border:1px solid var(--border);border-radius:4px;padding:2px 5px;font-size:11px"
+              data-action="editWiseDepositSource" data-id="${ev.id}">
+              <option value="">送金元</option>
+              ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${ev.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
+            </select>
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0">+¥</span>
+            <input type="number" value="${ev.jpyAmount||''}" placeholder="0"
+              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
+              data-action="editWiseDepositJpy" data-id="${ev.id}">
+          </div>
+        </div>`;
+    } else {
+      const rate = ev.jpyAmount > 0 && ev.foreignAmount > 0
+        ? (ev.jpyAmount / ev.foreignAmount).toFixed(2) : null;
+      return `
+        <div style="border:1px solid #c6f6d5;border-radius:6px;padding:8px 10px;background:#f0fff8">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <span style="font-size:10px;background:#38a169;color:#fff;border-radius:3px;padding:1px 5px;flex-shrink:0">両替</span>
+            <input type="date" value="${ev.date||''}"
+              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px"
+              data-action="editWiseTradeDate" data-id="${ev.id}">
+            <span style="font-size:11px;font-weight:700;color:${balColor};flex-shrink:0">${fmt(runJpy)}</span>
+            <button class="btn icon" data-action="delWiseTrade" data-id="${ev.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.5;font-size:11px">🗑</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;width:58px;flex-shrink:0"
+              data-action="editWiseTradeCurrency" data-id="${ev.id}">
+              ${currencies.map(c=>`<option value="${c}" ${ev.currency===c?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0">-¥</span>
+            <input type="number" value="${ev.jpyAmount||''}" placeholder="0"
+              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 5px;font-size:12px;text-align:right"
+              data-action="editWiseTradeJpy" data-id="${ev.id}">
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0">→</span>
+            <input type="number" value="${ev.foreignAmount||''}" placeholder="0.00" step="0.01"
+              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 5px;font-size:12px;text-align:right"
+              data-action="editWiseTradeAmount" data-id="${ev.id}">
+            ${rate ? `<span style="font-size:9px;color:var(--muted);flex-shrink:0">@${rate}</span>` : ''}
+          </div>
+        </div>`;
+    }
   }).join('');
 
   // 外貨残高行
@@ -1704,10 +1726,10 @@ function renderWisePanel(md) {
     return `
       <tr>
         <td style="font-weight:600">${esc(c)}</td>
-        <td class="r amount bold" style="font-size:14px;color:#276749">${sym(c)}${b.amount.toLocaleString('ja-JP', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+        <td class="r amount bold" style="font-size:14px;color:#276749">${sym(c)}${b.amount.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
         <td class="r" style="font-size:10px;color:var(--muted)">投資 ${fmt(b.jpyCost)}<br>@${avgRate}</td>
         <td style="text-align:center">
-          <button class="btn icon" data-action="delWiseCurrency" data-currency="${esc(c)}" title="削除" style="font-size:10px;color:#c53030;opacity:0.5">✕</button>
+          <button class="btn icon" data-action="delWiseCurrency" data-currency="${esc(c)}" style="font-size:10px;color:#c53030;opacity:0.5">✕</button>
         </td>
       </tr>`;
   }).join('');
@@ -1723,30 +1745,26 @@ function renderWisePanel(md) {
         </div>
       </div>
 
-      <!-- Wise JPY残高 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px">
-        <span style="font-size:12px;color:var(--muted)">JPY残高</span>
-        <span class="amount bold" style="font-size:16px;color:${jpy<0?'#c53030':'#2b6cb0'}">${fmt(jpy)}</span>
+      <!-- 外貨残高サマリー -->
+      ${currencies.length ? `<table style="margin-bottom:2px"><tbody>${balRows}</tbody></table>`
+        : '<div style="padding:6px 12px 6px;font-size:11px;color:var(--muted)">「＋ 通貨」で管理する外貨を登録</div>'}
+
+      <!-- JPY残高タイムライン -->
+      <div style="padding:6px 10px 2px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--muted)">JPY残高推移</span>
+        <span style="font-size:10px;color:var(--muted)">前月末 ${fmt(startJpy)}</span>
       </div>
-
-      <!-- 外貨残高 -->
-      ${currencies.length ? `
-      <table style="margin-bottom:2px">
-        <tbody>${balRows}</tbody>
-      </table>` : '<div style="padding:6px 12px 8px;font-size:11px;color:var(--muted)">「＋ 通貨」で管理する外貨を登録</div>'}
-
-      <!-- 送金記録 -->
-      ${deposits.length ? `
-      <div style="padding:6px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">送金（銀行 → Wise）</div>
-      <div style="padding:4px 10px 6px;display:flex;flex-direction:column;gap:6px">${depositCards}</div>` : ''}
-
-      <!-- 両替記録 -->
-      ${trades.length ? `
-      <div style="padding:6px 10px 2px;font-size:11px;font-weight:600;color:var(--muted)">両替（Wise JPY → 外貨）</div>
-      <div style="padding:4px 10px 6px;display:flex;flex-direction:column;gap:6px">${tradeCards}</div>` : ''}
+      ${allEvents.length
+        ? `<div style="padding:0 10px 8px;display:flex;flex-direction:column;gap:6px">${timelineRows}</div>`
+        : `<div style="padding:4px 12px 10px;font-size:11px;color:var(--muted)">「＋ 送金」か「＋ 両替」で記録を追加</div>`}
+      ${allEvents.length ? `
+      <div style="padding:0 12px 8px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:6px">
+        <span style="font-size:11px;color:var(--muted)">月末 JPY残高</span>
+        <span class="amount bold" style="font-size:15px;color:${jpy<0?'#c53030':'#2b6cb0'}">${fmt(jpy)}</span>
+      </div>` : ''}
 
       <!-- 初期残高設定 -->
-      <details style="padding:4px 10px 6px">
+      <details style="padding:2px 10px 6px">
         <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 0">初期残高設定</summary>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
           <div style="display:flex;align-items:center;gap:8px;font-size:12px">
@@ -3209,7 +3227,7 @@ function handleChange(e) {
   } else if (act === 'editWiseTradeDate') {
     const md = getMonth();
     const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
-    if (t) { t.date = e.target.value; saveState(); }
+    if (t) { t.date = e.target.value; saveState(); render(); }
   } else if (act === 'editWiseTradeCurrency') {
     const md = getMonth();
     const t = (md.wiseTrades||[]).find(t => t.id === e.target.dataset.id);
@@ -3217,7 +3235,7 @@ function handleChange(e) {
   } else if (act === 'editWiseDepositDate') {
     const md = getMonth();
     const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
-    if (dep) { dep.date = e.target.value; saveState(); }
+    if (dep) { dep.date = e.target.value; saveState(); render(); }
   } else if (act === 'editWiseDepositSource') {
     const md = getMonth();
     const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
