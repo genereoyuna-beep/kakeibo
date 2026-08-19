@@ -1156,6 +1156,17 @@ function renderBalanceCalc(expenses) {
     });
   }
 
+  // ⑨ Wise送金（銀行口座 → Wise）
+  (md.wiseDeposits || []).forEach(dep => {
+    if ((dep.jpyAmount || 0) <= 0) return;
+    if (!dep.sourceAccount || !(dep.sourceAccount in startBal)) return;
+    const dayNum = dep.date ? +dep.date.slice(8, 10) : 99;
+    const day    = dep.date ? `${dayNum}日` : '日付未設定';
+    events.push({ dayNum, day, type: 'transfer',
+      label: `Wise送金（${dep.sourceAccount}）`,
+      changes: { [dep.sourceAccount]: -(dep.jpyAmount) } });
+  });
+
   // 日付順にソート（同日：入金→送金→貯金→引き落とし）
   const typeOrder = { income: 0, transfer: 1, savings: 2, payment: 3 };
   events.sort((a, b) => a.dayNum !== b.dayNum
