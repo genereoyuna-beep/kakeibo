@@ -1600,14 +1600,31 @@ function renderTagPanel() {
   const currentTotal = currentTagged.reduce((s, e) => s + (e.amount || 0), 0);
   const hasAny = grandTotal > 0;
 
-  const monthRows = Object.entries(byMonth).map(([ym, {total, items}]) => {
+  const monthBlocks = Object.entries(byMonth).map(([ym, {total, items}]) => {
     const y = ym.slice(0,4), m = +ym.slice(4);
-    const isCurrentMonth = ym === state.currentMonth;
+    const itemRows = items.map(e => `
+      <tr>
+        <td style="font-size:11px;color:var(--muted);padding:3px 10px;white-space:nowrap">${e.date ? e.date.slice(5).replace('-','/') : '—'}</td>
+        <td style="font-size:11px;padding:3px 10px">${esc(e.item)}${e.memo ? `<span style="color:var(--muted);font-style:italic"> · ${esc(e.memo)}</span>` : ''}</td>
+        <td class="r" style="font-size:11px;padding:3px 10px;white-space:nowrap">${fmt(e.amount)}</td>
+      </tr>
+    `).join('');
     return `
       <tr class="data">
-        <td style="font-size:11px;color:var(--muted)">${y}/${String(m).padStart(2,'0')}</td>
-        <td class="r bold" style="font-size:12px">${fmt(total)}</td>
-        <td style="font-size:10px;color:var(--muted)">${items.length}件</td>
+        <td colspan="3" style="padding:0">
+          <details style="padding:0">
+            <summary style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;cursor:pointer;user-select:none;list-style:none">
+              <span style="font-size:11px;color:var(--muted)">${y}/${String(m).padStart(2,'0')}</span>
+              <span style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;color:var(--muted)">${items.length}件</span>
+                <span class="bold" style="font-size:12px">${fmt(total)}</span>
+              </span>
+            </summary>
+            <table style="width:100%;background:#fffbeb">
+              <tbody>${itemRows}</tbody>
+            </table>
+          </details>
+        </td>
       </tr>
     `;
   }).join('');
@@ -1626,19 +1643,12 @@ function renderTagPanel() {
       </div>
       ${hasAny ? `
         <table>
-          <thead><tr>
-            <th>月</th><th class="r">合計</th><th>件数</th>
-          </tr></thead>
-          <tbody>${monthRows}</tbody>
+          <tbody>${monthBlocks}</tbody>
           <tfoot><tr style="background:#fef3c7">
             <td class="bold" style="font-size:12px;padding:6px 10px">合計</td>
-            <td class="r bold" style="font-size:13px;color:#92400e;padding:6px 10px">${fmt(grandTotal)}</td>
-            <td style="font-size:10px;color:var(--muted);padding:6px 10px">${Object.values(byMonth).reduce((s,b)=>s+b.items.length,0)}件</td>
+            <td class="r bold" style="font-size:13px;color:#92400e;padding:6px 10px" colspan="2">${fmt(grandTotal)}（${Object.values(byMonth).reduce((s,b)=>s+b.items.length,0)}件）</td>
           </tr></tfoot>
         </table>
-        <div style="padding:6px 12px 8px">
-          <div style="font-size:10px;color:var(--muted)">明細の ☆ ボタンで印をつけると自動集計されます</div>
-        </div>
       ` : `
         <div style="padding:10px 14px 12px;font-size:12px;color:var(--muted)">
           各明細の ☆ ボタンを押して対象を選んでください
