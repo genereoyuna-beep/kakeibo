@@ -416,7 +416,7 @@ function mk202605() {
 // ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
-let state = { currentMonth:'202604', data:{}, cardSettings:[], templates:[], initialBalances:{ miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} }, wiseCurrencies:[], wiseInitials:{} };
+let state = { currentMonth:'202604', data:{}, cardSettings:[], templates:[], initialBalances:{ miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} }, wiseCurrencies:[], wiseInitials:{}, tagLabel:'' };
 
 function migrateMonthData(md) {
   if (md.income && md.salary === undefined) {
@@ -450,6 +450,7 @@ function applyRemoteState(s) {
   if (!state.initialBalances) state.initialBalances = { miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} };
   if (!state.initialBalances.accounts) state.initialBalances.accounts = {'楽天銀行':0,'UFJ銀行':0};
   if (!state.templates) state.templates = [];
+  if (!state.tagLabel) state.tagLabel = '';
   Object.values(state.data).forEach(migrateMonthData);
 }
 
@@ -806,6 +807,9 @@ function render() {
           </details>
         </div>
 
+        <!-- ★ 印つき明細集計 -->
+        ${renderTagPanel()}
+
         <!-- 貯金目標 -->
         ${renderSavingsPanel(md)}
 
@@ -899,6 +903,7 @@ function expRow(r) {
       <td>
         <div class="btn-row">
           <input type="checkbox" class="exp-ck" data-action="toggleExpCk" data-id="${r.id}" data-section="${r.section}" ${selectedExpIds.has(r.id)?'checked':''}>
+          <button class="btn icon" data-action="toggleTag" data-id="${r.id}" title="${r.tagged?'印を外す':'集計対象に印をつける'}" style="font-size:15px;color:${r.tagged?'#e67e22':'#cbd5e0'}">${r.tagged?'★':'☆'}</button>
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
           <button class="btn icon" data-action="delExp"  data-id="${r.id}" title="削除">🗑</button>
@@ -1571,6 +1576,73 @@ function renderIncomePanel(md) {
           </tr>
         </tbody>
       </table>
+    </div>
+  `;
+}
+
+// ── ★印つき明細集計 ──
+function renderTagPanel() {
+  const label = state.tagLabel || '';
+
+  // 全月の印つき明細を集める
+  const byMonth = {};
+  let grandTotal = 0;
+  Object.entries(state.data).sort().forEach(([ym, md]) => {
+    const tagged = (md.expenses || []).filter(e => e.tagged);
+    if (!tagged.length) return;
+    const total = tagged.reduce((s, e) => s + (e.amount || 0), 0);
+    byMonth[ym] = { total, items: tagged };
+    grandTotal += total;
+  });
+
+  const currentTagged = (getMonth().expenses || []).filter(e => e.tagged);
+  const currentTotal = currentTagged.reduce((s, e) => s + (e.amount || 0), 0);
+  const hasAny = grandTotal > 0;
+
+  const monthRows = Object.entries(byMonth).map(([ym, {total, items}]) => {
+    const y = ym.slice(0,4), m = +ym.slice(4);
+    const isCurrentMonth = ym === state.currentMonth;
+    return `
+      <tr class="data">
+        <td style="font-size:11px;color:var(--muted)">${y}/${String(m).padStart(2,'0')}</td>
+        <td class="r bold" style="font-size:12px">${fmt(total)}</td>
+        <td style="font-size:10px;color:var(--muted)">${items.length}件</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-header gray" style="background:#fffbeb">
+        <span style="color:#92400e">★ 印つき集計</span>
+        ${hasAny ? `<span class="bold" style="color:#92400e;font-size:13px">${fmt(grandTotal)}</span>` : ''}
+      </div>
+      <div style="padding:8px 12px 6px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap">ラベル</span>
+        <input type="text" value="${esc(label)}" placeholder="例：ヨーロッパ旅行"
+          style="flex:1;border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:12px"
+          data-action="editTagLabel">
+      </div>
+      ${hasAny ? `
+        <table>
+          <thead><tr>
+            <th>月</th><th class="r">合計</th><th>件数</th>
+          </tr></thead>
+          <tbody>${monthRows}</tbody>
+          <tfoot><tr style="background:#fef3c7">
+            <td class="bold" style="font-size:12px;padding:6px 10px">合計</td>
+            <td class="r bold" style="font-size:13px;color:#92400e;padding:6px 10px">${fmt(grandTotal)}</td>
+            <td style="font-size:10px;color:var(--muted);padding:6px 10px">${Object.values(byMonth).reduce((s,b)=>s+b.items.length,0)}件</td>
+          </tr></tfoot>
+        </table>
+        <div style="padding:6px 12px 8px">
+          <div style="font-size:10px;color:var(--muted)">明細の ☆ ボタンで印をつけると自動集計されます</div>
+        </div>
+      ` : `
+        <div style="padding:10px 14px 12px;font-size:12px;color:var(--muted)">
+          各明細の ☆ ボタンを押して対象を選んでください
+        </div>
+      `}
     </div>
   `;
 }
@@ -2671,6 +2743,11 @@ function handleClick(e) {
     md.transfers = (md.transfers||[]).filter(t=>t.id!==el.dataset.id);
     saveState(); render();
   }
+  else if (action === 'toggleTag') {
+    const md = getMonth();
+    const r = md.expenses.find(r => r.id === el.dataset.id);
+    if (r) { r.tagged = !r.tagged; saveState(); render(); }
+  }
   else if (action === 'addExp') {
     showModal(expModalHtml(null, el.dataset.section));
   }
@@ -3204,6 +3281,11 @@ function handleChange(e) {
     const id = e.target.dataset.id;
     e.target.checked ? selectedExpIds.add(id) : selectedExpIds.delete(id);
     updateBulkDeleteBtns(e.target.dataset.section);
+    return;
+  }
+  if (act === 'editTagLabel') {
+    state.tagLabel = e.target.value;
+    saveState();
     return;
   }
   if (act === 'editCardPrepaid') {
