@@ -441,6 +441,7 @@ function migrateMonthData(md) {
   if (md.savingsDeltaCashDate   === undefined) md.savingsDeltaCashDate   = null;
   if (!md.confirmedCards)  md.confirmedCards = {};
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
+  if (!md.cardBudgets)     md.cardBudgets    = {};
   if (!md.otherIncomes)   md.otherIncomes   = [];
   if (!md.expenses)        md.expenses       = [];
 }
@@ -918,14 +919,17 @@ function renderCardSummary(expenses, md) {
   const ct        = cardTotals(expenses);
   const confirmed = md.confirmedCards || {};
   const prepaid   = md.cardPrepaid   || {};
+  const monthBudgets = md.cardBudgets || {};
   const visibleCards = state.cardSettings.filter(c => !c.hidden);
   const hiddenCards  = state.cardSettings.filter(c => c.hidden);
   const rows = visibleCards.flatMap(c => {
     const amt        = ct[c.name] || 0;
     const pre        = prepaid[c.name] || 0;
     const remaining  = amt - pre;
-    const over       = c.budget > 0 && amt > c.budget;
-    const pct        = c.budget > 0 ? Math.min(100, Math.round(amt/c.budget*100)) : 0;
+    const budget     = monthBudgets[c.name] !== undefined ? monthBudgets[c.name] : c.budget;
+    const over       = budget > 0 && amt > budget;
+    const pct        = budget > 0 ? Math.min(100, Math.round(amt/budget*100)) : 0;
+    const isOverridden = monthBudgets[c.name] !== undefined;
     const confVal    = confirmed[c.name]; // 数値（確認時の金額）or true(旧) or falsy
     const done       = !!confVal;
     const confAmt    = typeof confVal === 'number' ? confVal : (done ? amt : 0);
@@ -952,8 +956,14 @@ function renderCardSummary(expenses, md) {
         <td class="r" style="vertical-align:middle">
           <div class="amount ${over?'red':'bold'}" style="font-size:13px">${amt ? fmt(amt) : '<span class="muted">—</span>'}</div>
           ${changed ? `<div style="font-size:10px;color:${diff>0?'#c53030':'#276749'};font-weight:700;text-align:right">確認時比 ${diff>0?'+':''}${fmt(diff)}</div>` : ''}
-          ${c.budget ? `<div style="font-size:10px;color:var(--muted);text-align:right">/ ${fmt(c.budget)}</div>` : ''}
-          ${c.budget && amt > 0 ? `<div style="margin-top:3px;height:3px;background:#e2e8f0;border-radius:2px"><div style="height:3px;width:${pct}%;background:${over?'#e53e3e':'#4a6fa5'};border-radius:2px"></div></div>` : ''}
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:2px">
+            ${isOverridden ? `<span style="font-size:9px;color:#4a6fa5;font-weight:600;background:#ebf8ff;border-radius:3px;padding:0 3px">今月</span>` : ''}
+            <span style="font-size:10px;color:var(--muted)">予算</span>
+            <input type="number" value="${budget || ''}" placeholder="—"
+              style="width:68px;border:1px solid var(--border);border-radius:4px;padding:1px 4px;font-size:11px;text-align:right;background:${isOverridden?'#ebf8ff':'#f7fafc'}"
+              data-action="editMonthBudget" data-card="${esc(c.name)}">
+          </div>
+          ${budget && amt > 0 ? `<div style="margin-top:3px;height:3px;background:#e2e8f0;border-radius:2px"><div style="height:3px;width:${pct}%;background:${over?'#e53e3e':'#4a6fa5'};border-radius:2px"></div></div>` : ''}
         </td>
       </tr>`,
       `<tr class="prepaid-row" style="display:${pre>0?'':'none'};${prepaidBg}">
@@ -3297,6 +3307,18 @@ function handleChange(e) {
   if (act === 'editTagLabel') {
     state.tagLabel = e.target.value;
     saveState();
+    return;
+  }
+  if (act === 'editMonthBudget') {
+    const md = getMonth();
+    if (!md.cardBudgets) md.cardBudgets = {};
+    const val = +e.target.value || 0;
+    if (val === 0) {
+      delete md.cardBudgets[e.target.dataset.card];
+    } else {
+      md.cardBudgets[e.target.dataset.card] = val;
+    }
+    saveState(); render();
     return;
   }
   if (act === 'editCardPrepaid') {
