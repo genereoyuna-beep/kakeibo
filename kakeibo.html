@@ -85,6 +85,8 @@
     [data-pay="AC"]           { background: #fed7d7; color: #c05621; }
     [data-pay="DCカード"]     { background: #e9d8fd; color: #553c9a; }
     [data-pay="現金"]         { background: #c6f6d5; color: #276749; }
+    [data-pay="現金（貯金）"] { background: #c6f6d5; color: #276749; }
+    [data-pay="引出し"]       { background: #e9d8fd; color: #553c9a; }
     [data-pay="Appleギフト"]  { background: #e2e8f0; color: #4a5568; }
 
     /* ── BUTTONS ── */
@@ -283,12 +285,13 @@ const CAT_COLORS = {
   '美容費':'#fc8181','交際費':'#4fd1c5','推し活費':'#f6e05e','書籍・試験費':'#48bb78',
   '交通費':'#76e4f7','旅費':'#fbbf24','趣味費':'#a3e635','その他':'#a0aec0',
 };
-const PAYMENTS = ['ANAカード','セゾンカード','楽天カード','JCBカード(旧)','Paidy','atone','PayPay','AC','DCカード','現金','Appleギフト'];
+const PAYMENTS = ['ANAカード','セゾンカード','楽天カード','JCBカード(旧)','Paidy','atone','PayPay','AC','DCカード','現金（貯金）','引出し','Appleギフト'];
 const ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','振込'];
 const PAY_ACCOUNT = {
   'ANAカード':'楽天銀行','セゾンカード':'楽天銀行','楽天カード':'楽天銀行',
   'JCBカード(旧)':'楽天銀行','Paidy':'楽天銀行','atone':'振込',
-  'PayPay':'UFJ銀行','AC':'UFJ銀行','DCカード':'UFJ銀行','現金':'楽天銀行','Appleギフト':null,
+  'PayPay':'UFJ銀行','AC':'UFJ銀行','DCカード':'UFJ銀行',
+  '現金（貯金）':'現金','引出し':'楽天銀行','現金':'現金','Appleギフト':null,
 };
 const SECTIONS = { fixed:'固定', installment:'分割', variable:'変動費' };
 
@@ -305,7 +308,8 @@ const DEFAULT_CARD_SETTINGS = [
   { id:'c7', name:'PayPay',       account:'UFJ銀行',  paymentDay:'即時', budget:20000 },
   { id:'c8', name:'AC',           account:'UFJ銀行',  paymentDay:'6日',  budget:15000 },
   { id:'c9', name:'DCカード',     account:'UFJ銀行',  paymentDay:'10日', budget:6000  },
-  { id:'c10',name:'現金',         account:'楽天銀行', paymentDay:'即時', budget:10000 },
+  { id:'c10',name:'現金（貯金）', account:'現金',     paymentDay:'即時', budget:10000 },
+  { id:'c11',name:'引出し',       account:'楽天銀行', paymentDay:'即時', budget:0     },
 ];
 
 function mk202604() {
@@ -442,6 +446,8 @@ function migrateMonthData(md) {
   if (!md.confirmedCards)  md.confirmedCards = {};
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
+  // 「現金」→「現金（貯金）」移行
+  (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
   if (!md.otherIncomes)   md.otherIncomes   = [];
   if (!md.expenses)        md.expenses       = [];
 }
@@ -1342,7 +1348,7 @@ function calcBalance(upToMonth) {
     (d.expenses||[]).forEach(e => {
       const acc = e.account || null;
       if (acc === 'Paypay銀行') sp -= e.amount || 0;
-      if (acc === '現金' || e.payment === '現金') sc -= e.amount || 0;
+      if (acc === '現金' || e.payment === '現金' || e.payment === '現金（貯金）') sc -= e.amount || 0;
     });
     // 送金でPaypay銀行・現金へ入出金した分も反映
     (d.transfers||[]).forEach(t => {
@@ -1414,7 +1420,7 @@ function calcAccountBalances(upToMonth) {
         if (e.account && e.account in bal) bal[e.account] -= e.amount || 0;
         return;
       }
-      if (e.payment === '現金') { bal['現金'] -= e.amount || 0; return; }
+      if (e.payment === '現金' || e.payment === '現金（貯金）') { bal['現金'] -= e.amount || 0; return; }
       let acc = (e.account && e.account in bal) ? e.account : null;
       if (!acc) {
         const card = state.cardSettings.find(c => c.name === e.payment);
