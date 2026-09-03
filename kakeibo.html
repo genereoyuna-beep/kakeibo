@@ -990,6 +990,10 @@ function renderCardSummary(expenses, md) {
   });
   const total        = visibleCards.reduce((s,c)=>s+(ct[c.name]||0),0);
   const totalPrepaid = visibleCards.reduce((s,c)=>s+(prepaid[c.name]||0),0);
+  const totalBudget  = visibleCards.reduce((s,c)=>{
+    const b = monthBudgets[c.name] !== undefined ? monthBudgets[c.name] : c.budget;
+    return s + (b || 0);
+  }, 0);
   const doneCount    = visibleCards.filter(c=>confirmed[c.name] && ct[c.name]>0).length;
   const totalCount   = visibleCards.filter(c=>ct[c.name]>0).length;
   const hiddenRows   = hiddenCards.length ? `
@@ -1024,7 +1028,9 @@ function renderCardSummary(expenses, md) {
             ${totalCount > 0 ? `<span style="font-weight:400;color:${doneCount===totalCount?'#38a169':'var(--muted)'}">（${doneCount}/${totalCount} 確認済）</span>` : ''}
           </td>
           <td class="r">
-            <div class="amount">${fmt(total)}</div>
+            <div class="amount ${totalBudget > 0 && total > totalBudget ? 'red' : ''}">${fmt(total)}</div>
+            ${totalBudget > 0 ? `<div style="font-size:10px;color:var(--muted);text-align:right">/ ${fmt(totalBudget)}</div>` : ''}
+            ${totalBudget > 0 ? `<div style="margin-top:3px;height:3px;background:#e2e8f0;border-radius:2px"><div style="height:3px;width:${Math.min(100,Math.round(total/totalBudget*100))}%;background:${total>totalBudget?'#e53e3e':'#4a6fa5'};border-radius:2px"></div></div>` : ''}
             ${totalPrepaid > 0 ? `<div style="font-size:11px;color:#2d7a4f;font-weight:700">残 ${fmt(total - totalPrepaid)}</div>` : ''}
           </td>
         </tr>
