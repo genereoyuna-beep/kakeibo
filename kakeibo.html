@@ -1685,7 +1685,11 @@ function renderTagPanel() {
 function renderSavingsPanel(md) {
   const bal         = calcBalance(state.currentMonth);
   const total       = bal.savingsPaypay + bal.savingsCash;
-  const monthSavings= (md.savingsDeltaPaypay||0) + (md.savingsDeltaCash||0);
+  const [y, m]      = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4)];
+  const prevYm      = m === 1 ? `${y-1}12` : `${y}${String(m-1).padStart(2,'0')}`;
+  const prevBal     = calcBalance(prevYm);
+  const prevTotal   = prevBal.savingsPaypay + prevBal.savingsCash;
+  const monthSavings= total - prevTotal;
   const goal        = md.savingsGoal || 0;
   const pct         = goal > 0 ? Math.min(100, Math.round(monthSavings/goal*100)) : 0;
   const over        = goal > 0 && monthSavings >= goal;
