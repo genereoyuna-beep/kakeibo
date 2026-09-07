@@ -624,6 +624,7 @@ function render() {
     <div class="header">
       <div class="header-title">📊 家計簿</div>
       <button class="btn sm" data-action="openImport">📥 CSV読込</button>
+      <button class="btn sm" data-action="exportForAI" style="color:#4a6fa5;border-color:#bee3f8">🤖 AIに相談</button>
       <button class="btn sm" data-action="openScreenshot">📷 スクショ</button>
       <button class="btn sm" data-action="toggleCalView">${calView ? '📋 明細' : '📅 カレンダー'}</button>
       <div class="header-nav">
@@ -2727,6 +2728,102 @@ function bindImpEvents() {
 }
 
 // ═══════════════════════════════════════════════
+//  AI EXPORT
+// ═══════════════════════════════════════════════
+function buildAIExportText() {
+  const ym = state.currentMonth;
+  const y = ym.slice(0,4), m = +ym.slice(4);
+  const md = getMonth();
+  const expenses = md.expenses || [];
+  const bal = calcBalance(ym);
+  const prevYm = m === 1 ? `${+y-1}12` : `${y}${String(m-1).padStart(2,'0')}`;
+  const prevBal = calcBalance(prevYm);
+  const prevTotal = prevBal.savingsPaypay + prevBal.savingsCash;
+  const curTotal  = bal.savingsPaypay + bal.savingsCash;
+  const monthDelta = curTotal - prevTotal;
+
+  const salary = md.salary || 0;
+  const otherInc = (md.otherIncomes||[]).reduce((s,i) => s + (i.amount||0), 0);
+  const totalInc = salary + otherInc;
+  const totalExp = expenses.reduce((s,e) => s + (e.amount||0), 0);
+
+  const catTotals = {};
+  CATEGORIES.forEach(c => { catTotals[c] = 0; });
+  expenses.forEach(e => { if (e.category && catTotals[e.category] !== undefined) catTotals[e.category] += e.amount||0; });
+
+  const ct = cardTotals(expenses);
+  const monthBudgets = md.cardBudgets || {};
+
+  // 6ヶ月トレンド
+  const trend = [];
+  for (let i = 5; i >= 0; i--) {
+    let tm = m - i, ty = +y;
+    while (tm <= 0) { tm += 12; ty--; }
+    const tmStr = `${ty}${String(tm).padStart(2,'0')}`;
+    const tmd = state.data[tmStr];
+    if (!tmd) continue;
+    const tExp = (tmd.expenses||[]).reduce((s,e) => s+(e.amount||0), 0);
+    const tInc = (tmd.salary||0) + (tmd.otherIncomes||[]).reduce((s,i)=>s+(i.amount||0),0);
+    trend.push(`  ${ty}年${tm}月: 収入 ${fmt(tInc)} / 支出 ${fmt(tExp)} / 差引 ${fmt(tInc - tExp)}`);
+  }
+
+  const lines = [
+    `■ 家計簿データ（${y}年${m}月）`,
+    ``,
+    `【収入】`,
+    `  給与: ${fmt(salary)}`,
+    otherInc > 0 ? `  その他収入: ${fmt(otherInc)}` : null,
+    `  合計: ${fmt(totalInc)}`,
+    ``,
+    `【支出合計】 ${fmt(totalExp)}`,
+    ``,
+    `【カテゴリ別支出】`,
+    ...CATEGORIES.filter(c => catTotals[c] > 0).map(c => `  ${c}: ${fmt(catTotals[c])}`),
+    ``,
+    `【カード別請求額】`,
+    ...state.cardSettings.filter(c => !c.hidden && ct[c.name] > 0).map(c => {
+      const budget = monthBudgets[c.name] !== undefined ? monthBudgets[c.name] : c.budget;
+      return `  ${c.name}: ${fmt(ct[c.name])}${budget ? ` / 予算 ${fmt(budget)}` : ''}`;
+    }),
+    ``,
+    `【貯金残高】`,
+    `  Paypay銀行: ${fmt(bal.savingsPaypay)}`,
+    `  現金: ${fmt(bal.savingsCash)}`,
+    `  合計: ${fmt(curTotal)}`,
+    `  前月比: ${monthDelta >= 0 ? '+' : ''}${fmt(monthDelta)}`,
+    md.savingsGoal ? `  今月目標: ${fmt(md.savingsGoal)} (実績 ${fmt(monthDelta)})` : null,
+    ``,
+    `【収支推移（直近6ヶ月）】`,
+    ...trend,
+    ``,
+    `---`,
+    `上記は私の家計簿データです。資産形成についてアドバイスをお願いします。`,
+  ].filter(l => l !== null).join('\n');
+
+  return lines;
+}
+
+function buildAIExportModal() {
+  const text = buildAIExportText();
+  return `
+    <div class="modal-box" data-action="noop" style="max-width:640px;width:95%;max-height:85vh;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:700">🤖 AIに相談</div>
+        <button class="btn sm" data-action="closeModal">✕</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">以下のテキストをコピーしてAIチャット（Claude・ChatGPT等）に貼り付けてください。</p>
+      <textarea id="ai-export-text" readonly
+        style="flex:1;min-height:300px;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;font-family:monospace;resize:none;background:#f7fafc;color:var(--text);line-height:1.6"
+      >${text.replace(/</g,'&lt;')}</textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn" data-action="closeModal">閉じる</button>
+        <button id="copy-ai-btn" class="btn primary" data-action="copyAIText">📋 コピー</button>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
 //  ACTIONS
 // ═══════════════════════════════════════════════
 function handleClick(e) {
@@ -3151,6 +3248,16 @@ function handleClick(e) {
     saveState();
     const label = `${+nextKey.slice(0,4)}年${+nextKey.slice(4)}月`;
     showToast(`${label} にコピーしました`);
+  }
+  else if (action === 'exportForAI') {
+    showModal(buildAIExportModal());
+  }
+  else if (action === 'copyAIText') {
+    const txt = document.getElementById('ai-export-text')?.value || '';
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.getElementById('copy-ai-btn');
+      if (btn) { btn.textContent = '✅ コピーしました'; setTimeout(() => { btn.textContent = '📋 コピー'; }, 2000); }
+    });
   }
   else if (action === 'noop') { /* modal-box クリックは何もしない */ }
   else if (action === 'closeModal') {
