@@ -1200,11 +1200,13 @@ function renderBalanceCalc(expenses) {
   (md.wiseDeposits || []).forEach(dep => {
     if ((dep.jpyAmount || 0) <= 0) return;
     if (!dep.sourceAccount || !(dep.sourceAccount in startBal)) return;
-    const dayNum = dep.date ? +dep.date.slice(8, 10) : 99;
-    const day    = dep.date ? `${dayNum}日` : '日付未設定';
+    const dayNum  = dep.date ? +dep.date.slice(8, 10) : 99;
+    const day     = dep.date ? `${dayNum}日` : '日付未設定';
+    const total   = (dep.jpyAmount || 0) + (dep.fee || 0);
+    const feeStr  = dep.fee ? `（手数料 ${fmt(dep.fee)}）` : '';
     events.push({ dayNum, day, type: 'transfer',
-      label: `Wise送金（${dep.sourceAccount}）`,
-      changes: { [dep.sourceAccount]: -(dep.jpyAmount) } });
+      label: `Wise送金${feeStr}`,
+      changes: { [dep.sourceAccount]: -total } });
   });
 
   // ⑩ 証券入金（日付ベースで口座から差し引き）
@@ -1484,7 +1486,7 @@ function calcAccountBalances(upToMonth) {
     });
     // Wise送金：送金元口座からJPY額を控除
     (d.wiseDeposits||[]).forEach(dep => {
-      if (dep.sourceAccount && dep.sourceAccount in bal) bal[dep.sourceAccount] -= dep.jpyAmount || 0;
+      if (dep.sourceAccount && dep.sourceAccount in bal) bal[dep.sourceAccount] -= (dep.jpyAmount || 0) + (dep.fee || 0);
     });
   }
   return bal;
@@ -1909,7 +1911,7 @@ function renderWisePanel(md) {
             <span style="font-size:11px;font-weight:700;color:${balColor};flex-shrink:0">${fmt(runJpy)}</span>
             <button class="btn icon" data-action="delWiseDeposit" data-id="${ev.id}" title="削除" style="flex-shrink:0;color:#c53030;opacity:0.5;font-size:11px">🗑</button>
           </div>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <select style="border:1px solid var(--border);border-radius:4px;padding:2px 5px;font-size:11px"
               data-action="editWiseDepositSource" data-id="${ev.id}">
               <option value="">送金元</option>
@@ -1917,8 +1919,12 @@ function renderWisePanel(md) {
             </select>
             <span style="font-size:11px;color:var(--muted);flex-shrink:0">+¥</span>
             <input type="number" value="${ev.jpyAmount||''}" placeholder="0"
-              style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
+              style="flex:1;min-width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
               data-action="editWiseDepositJpy" data-id="${ev.id}">
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0">手数料¥</span>
+            <input type="number" value="${ev.fee||''}" placeholder="0"
+              style="width:70px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
+              data-action="editWiseDepositFee" data-id="${ev.id}">
           </div>
         </div>`;
     } else {
@@ -3628,6 +3634,10 @@ function handleChange(e) {
     const md = getMonth();
     const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
     if (dep) { dep.sourceAccount = e.target.value || null; saveState(); refreshAccountBals(); }
+  } else if (act === 'editWiseDepositFee') {
+    const md = getMonth();
+    const dep = (md.wiseDeposits||[]).find(d => d.id === e.target.dataset.id);
+    if (dep) { dep.fee = parseFloat(e.target.value) || 0; saveState(); refreshAccountBals(); }
   }
 }
 
