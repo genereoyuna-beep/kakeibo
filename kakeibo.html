@@ -568,6 +568,7 @@ let selectedExpIds = new Set();
 let _dragSrcId   = null;
 let _dragSrcType = null;
 let _touchDrag  = null;
+let _sidebarW    = +localStorage.getItem('kakeibo_sidebar_width') || 320;
 
 function sortedSection(expenses, section) {
   const st   = sortState[section];
@@ -776,7 +777,7 @@ function render() {
 
       <div class="col-resizer" id="colResizer"></div>
 
-      <div class="sidebar" id="sidebarCol">
+      <div class="sidebar" id="sidebarCol" style="width:${_sidebarW}px">
 
         <!-- 口座残高 -->
         <div class="panel">
@@ -3811,39 +3812,44 @@ fbAuth.onAuthStateChanged(user => {
   });
 });
 
-// ── カラムリサイザー ──────────────────────────────────────
-(function() {
-  const STORAGE_KEY = 'kakeibo_sidebar_width';
-  const resizer  = document.getElementById('colResizer');
-  const sidebar  = document.getElementById('sidebarCol');
-  if (!resizer || !sidebar) return;
+// ── カラムリサイザー（イベント委譲、render後も有効）──────────
+{
+  let _resizerActive = false;
+  let _resizerStartX = 0;
+  let _resizerStartW = 0;
 
-  const saved = +localStorage.getItem(STORAGE_KEY) || 320;
-  sidebar.style.width = saved + 'px';
-
-  let startX, startW;
-  resizer.addEventListener('mousedown', e => {
-    startX = e.clientX;
-    startW = sidebar.offsetWidth;
-    resizer.classList.add('active');
+  document.addEventListener('mousedown', e => {
+    const handle = e.target.closest('#colResizer');
+    if (!handle) return;
+    const sidebar = document.getElementById('sidebarCol');
+    if (!sidebar) return;
+    _resizerActive = true;
+    _resizerStartX = e.clientX;
+    _resizerStartW = sidebar.offsetWidth;
+    handle.classList.add('active');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     e.preventDefault();
   });
+
   document.addEventListener('mousemove', e => {
-    if (!resizer.classList.contains('active')) return;
-    const delta = startX - e.clientX;
-    const newW  = Math.max(220, Math.min(600, startW + delta));
-    sidebar.style.width = newW + 'px';
+    if (!_resizerActive) return;
+    const sidebar = document.getElementById('sidebarCol');
+    if (!sidebar) return;
+    const delta = _resizerStartX - e.clientX;
+    _sidebarW   = Math.max(220, Math.min(600, _resizerStartW + delta));
+    sidebar.style.width = _sidebarW + 'px';
   });
+
   document.addEventListener('mouseup', () => {
-    if (!resizer.classList.contains('active')) return;
-    resizer.classList.remove('active');
+    if (!_resizerActive) return;
+    _resizerActive = false;
+    document.querySelector('#colResizer')?.classList.remove('active');
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
-    localStorage.setItem(STORAGE_KEY, parseInt(sidebar.style.width));
+    localStorage.setItem('kakeibo_sidebar_width', _sidebarW);
   });
-})();
+}
 </script>
 </body>
 </html>
