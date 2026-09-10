@@ -32,10 +32,13 @@
     .month-label { font-weight: 700; font-size: 16px; min-width: 90px; text-align: center; }
 
     /* ── LAYOUT ── */
-    .layout { display: flex; gap: 14px; padding: 14px; align-items: flex-start; }
+    .layout { display: flex; gap: 0; padding: 14px; align-items: flex-start; }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+    .col-resizer { width: 8px; flex-shrink: 0; cursor: col-resize; display: flex; align-items: stretch; justify-content: center; user-select: none; padding: 0 3px; box-sizing: border-box; }
+    .col-resizer::after { content: ''; display: block; width: 2px; background: var(--border); border-radius: 1px; transition: background .15s; }
+    .col-resizer:hover::after, .col-resizer.active::after { background: #667eea; }
     .sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
-    @media (max-width: 1050px) { .layout { flex-direction: column; } .sidebar { width: 100%; } }
+    @media (max-width: 1050px) { .layout { flex-direction: column; } .col-resizer { display: none; } .sidebar { width: 100%; } }
 
     /* ── PANEL ── */
     .panel { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
@@ -771,7 +774,9 @@ function render() {
 
       </div><!-- /main -->
 
-      <div class="sidebar">
+      <div class="col-resizer" id="colResizer"></div>
+
+      <div class="sidebar" id="sidebarCol">
 
         <!-- 口座残高 -->
         <div class="panel">
@@ -1199,6 +1204,18 @@ function renderBalanceCalc(expenses) {
     events.push({ dayNum, day, type: 'transfer',
       label: `Wise送金（${dep.sourceAccount}）`,
       changes: { [dep.sourceAccount]: -(dep.jpyAmount) } });
+  });
+
+  // ⑩ 証券入金（日付ベースで口座から差し引き）
+  (md.investDeposits || []).forEach(dep => {
+    if ((dep.amount || 0) <= 0) return;
+    const from = dep.sourceAccount && (dep.sourceAccount in startBal) ? dep.sourceAccount : '楽天銀行';
+    if (!(from in startBal)) return;
+    const dayNum = dep.date ? +dep.date.slice(8, 10) : 99;
+    const day    = dep.date ? `${dayNum}日` : '日付未設定';
+    events.push({ dayNum, day, type: 'transfer',
+      label: `証券入金`,
+      changes: { [from]: -(dep.amount) } });
   });
 
   // 日付順にソート（同日：入金→送金→貯金→引き落とし）
@@ -3793,6 +3810,40 @@ fbAuth.onAuthStateChanged(user => {
     showLoginScreen('データの読み込みに失敗しました: ' + e.message);
   });
 });
+
+// ── カラムリサイザー ──────────────────────────────────────
+(function() {
+  const STORAGE_KEY = 'kakeibo_sidebar_width';
+  const resizer  = document.getElementById('colResizer');
+  const sidebar  = document.getElementById('sidebarCol');
+  if (!resizer || !sidebar) return;
+
+  const saved = +localStorage.getItem(STORAGE_KEY) || 320;
+  sidebar.style.width = saved + 'px';
+
+  let startX, startW;
+  resizer.addEventListener('mousedown', e => {
+    startX = e.clientX;
+    startW = sidebar.offsetWidth;
+    resizer.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizer.classList.contains('active')) return;
+    const delta = startX - e.clientX;
+    const newW  = Math.max(220, Math.min(600, startW + delta));
+    sidebar.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizer.classList.contains('active')) return;
+    resizer.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem(STORAGE_KEY, parseInt(sidebar.style.width));
+  });
+})();
 </script>
 </body>
 </html>
