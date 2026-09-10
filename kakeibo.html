@@ -34,9 +34,9 @@
     /* ── LAYOUT ── */
     .layout { display: flex; gap: 0; padding: 14px; align-items: flex-start; }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-    .col-resizer { width: 8px; flex-shrink: 0; cursor: col-resize; display: flex; align-items: stretch; justify-content: center; user-select: none; padding: 0 3px; box-sizing: border-box; }
-    .col-resizer::after { content: ''; display: block; width: 2px; background: var(--border); border-radius: 1px; transition: background .15s; }
-    .col-resizer:hover::after, .col-resizer.active::after { background: #667eea; }
+    .col-resizer { width: 14px; flex-shrink: 0; align-self: stretch; cursor: col-resize; display: flex; align-items: center; justify-content: center; user-select: none; position: relative; }
+    .col-resizer::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 3px; background: var(--border); border-radius: 2px; transition: background .15s, width .15s; }
+    .col-resizer:hover::after, .col-resizer.active::after { background: #667eea; width: 4px; }
     .sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; }
     @media (max-width: 1050px) { .layout { flex-direction: column; } .col-resizer { display: none; } .sidebar { width: 100%; } }
 
