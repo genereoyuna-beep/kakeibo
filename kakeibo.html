@@ -446,6 +446,8 @@ function migrateMonthData(md) {
   if (!md.confirmedCards)  md.confirmedCards = {};
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
+  if (!md.investDeposits)  md.investDeposits = [];
+  if (md.investValuation === undefined) md.investValuation = 0;
   // 「現金」→「現金（貯金）」移行
   (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
   if (!md.otherIncomes)   md.otherIncomes   = [];
@@ -489,7 +491,7 @@ function getMonth() {
 }
 
 function emptyMonth() {
-  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaCash:0, savingsDeltaCashDate:null, wiseDeposits:[], wiseTrades:[] };
+  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaCash:0, savingsDeltaCashDate:null, wiseDeposits:[], wiseTrades:[], investDeposits:[], investValuation:0 };
 }
 
 function uid() {
@@ -821,6 +823,9 @@ function render() {
 
         <!-- 貯金目標 -->
         ${renderSavingsPanel(md)}
+
+        <!-- 楽天証券 投資 -->
+        ${renderInvestPanel(md)}
 
         <!-- Wise 外貨 -->
         ${renderWisePanel(md)}
@@ -1370,6 +1375,16 @@ function calcBalance(upToMonth) {
   return { miles, savingsPaypay: sp, savingsCash: sc };
 }
 
+// ── 投資累計計算 ──
+function calcInvestBalance(upToMonth) {
+  let totalDeposited = state.investInitial || 0;
+  for (const m of Object.keys(state.data).sort()) {
+    if (m > upToMonth) break;
+    (state.data[m].investDeposits || []).forEach(d => { totalDeposited += d.amount || 0; });
+  }
+  return totalDeposited;
+}
+
 // ── Wise 残高計算（JPY + 外貨）──
 function calcWiseBalances(upToMonth) {
   // JPY残高
@@ -1421,6 +1436,10 @@ function calcAccountBalances(upToMonth) {
       const from = t.fromAccount && t.fromAccount in bal ? t.fromAccount : '楽天銀行';
       bal[from] -= (t.amount || 0) + (t.fee || 0);
       if (t.targetAccount && t.targetAccount in bal) bal[t.targetAccount] += t.amount || 0;
+    });
+    (d.investDeposits||[]).forEach(dep => {
+      const from = dep.sourceAccount && dep.sourceAccount in bal ? dep.sourceAccount : '楽天銀行';
+      bal[from] -= dep.amount || 0;
     });
     (d.expenses||[]).forEach(e => {
       if (!e.payment || e.payment === 'Appleギフト') {
@@ -1756,6 +1775,81 @@ function renderSavingsPanel(md) {
 }
 
 // ── Wise 外貨残高パネル ──
+function renderInvestPanel(md) {
+  const SOURCE_ACCOUNTS = ['楽天銀行','UFJ銀行','Paypay銀行','現金'];
+  const deposits = md.investDeposits || [];
+  const valuation = md.investValuation || 0;
+  const totalDeposited = calcInvestBalance(state.currentMonth);
+  const monthDeposited = deposits.reduce((s, d) => s + (d.amount || 0), 0);
+  const pnl = valuation > 0 ? valuation - totalDeposited : null;
+  const pnlColor = pnl === null ? '' : pnl >= 0 ? '#276749' : '#c53030';
+  const today = new Date().toISOString().slice(0,10);
+
+  const depositRows = deposits.map(dep => `
+    <div style="border:1px solid #c6f6d5;border-radius:6px;padding:7px 10px;background:#f0fff8">
+      <div style="display:flex;align-items:center;gap:5px">
+        <input type="date" value="${dep.date||''}"
+          style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
+          data-action="editInvestDepositDate" data-id="${dep.id}">
+        <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
+          data-action="editInvestDepositSource" data-id="${dep.id}">
+          <option value="">送金元</option>
+          ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${dep.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
+        <input type="number" value="${dep.amount||''}" placeholder="0"
+          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
+          data-action="editInvestDepositAmount" data-id="${dep.id}">
+        <button class="btn icon" data-action="delInvestDeposit" data-id="${dep.id}" style="color:#c53030;opacity:0.5;font-size:11px;flex-shrink:0">🗑</button>
+      </div>
+    </div>`).join('');
+
+  return `
+    <div class="panel">
+      <div class="panel-header" style="background:#f0fff4;color:#276749;border-color:#c6f6d5">
+        <span>📈 楽天証券</span>
+        <button class="btn sm" data-action="addInvestDeposit" style="font-size:10px">＋ 入金</button>
+      </div>
+      <div style="padding:8px 12px 4px">
+        <!-- 今月の入金記録 -->
+        ${deposits.length
+          ? `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">${depositRows}</div>`
+          : `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">「＋ 入金」で今月の入金を記録</div>`}
+
+        <!-- 評価額 -->
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--muted);flex:1">月末評価額（手入力）</span>
+          <span style="font-size:11px;color:var(--muted)">¥</span>
+          <input type="number" value="${valuation||''}" placeholder="0"
+            style="width:110px;border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:12px;text-align:right;font-weight:700"
+            data-action="editInvestValuation">
+        </div>
+
+        <!-- サマリー -->
+        <div style="display:flex;flex-direction:column;gap:4px;padding:7px 0 4px;border-top:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">今月入金</span>
+            <span class="bold">${fmt(monthDeposited)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">累計入金</span>
+            <span class="bold">${fmt(totalDeposited)}</span>
+          </div>
+          ${valuation > 0 ? `
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">評価額</span>
+            <span class="bold" style="color:#276749">${fmt(valuation)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:3px;border-top:1px solid var(--border)">
+            <span>損益</span>
+            <span style="color:${pnlColor}">${pnl >= 0 ? '+' : ''}${fmt(pnl)}</span>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderWisePanel(md) {
   const { jpy, bals } = calcWiseBalances(state.currentMonth);
   const deposits   = md.wiseDeposits || [];
@@ -3249,6 +3343,17 @@ function handleClick(e) {
     const label = `${+nextKey.slice(0,4)}年${+nextKey.slice(4)}月`;
     showToast(`${label} にコピーしました`);
   }
+  else if (action === 'addInvestDeposit') {
+    const md = getMonth();
+    if (!md.investDeposits) md.investDeposits = [];
+    md.investDeposits.push({ id: uid(), date: new Date().toISOString().slice(0,10), sourceAccount: '楽天銀行', amount: 0 });
+    saveState(); render();
+  }
+  else if (action === 'delInvestDeposit') {
+    const md = getMonth();
+    md.investDeposits = (md.investDeposits||[]).filter(d => d.id !== el.dataset.id);
+    saveState(); render();
+  }
   else if (action === 'exportForAI') {
     showModal(buildAIExportModal());
   }
@@ -3432,6 +3537,21 @@ function handleChange(e) {
     state.tagLabel = e.target.value;
     saveState();
     return;
+  }
+  if (act === 'editInvestDepositDate') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.date = e.target.value; saveState(); render(); } return;
+  }
+  if (act === 'editInvestDepositSource') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.sourceAccount = e.target.value; saveState(); refreshAccountBals(); } return;
+  }
+  if (act === 'editInvestDepositAmount') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.amount = +e.target.value||0; saveState(); refreshAccountBals(); } return;
+  }
+  if (act === 'editInvestValuation') {
+    const md = getMonth(); md.investValuation = +e.target.value||0; saveState(); render(); return;
   }
   if (act === 'editMonthBudget') {
     const md = getMonth();
