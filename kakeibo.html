@@ -424,7 +424,8 @@ function mk202605() {
 // ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
-let state = { currentMonth:'202604', data:{}, cardSettings:[], templates:[], initialBalances:{ miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} }, wiseCurrencies:[], wiseInitials:{}, tagLabel:'' };
+let state = { currentMonth:'202604', data:{}, cardSettings:[], templates:[], initialBalances:{ miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} }, wiseCurrencies:[], wiseInitials:{}, tagLabel:'', tags:[] };
+const TAG_COLORS = ['#e67e22','#e53e3e','#38a169','#3182ce','#805ad5','#d53f8c'];
 
 function migrateMonthData(md) {
   if (md.income && md.salary === undefined) {
@@ -464,6 +465,9 @@ function applyRemoteState(s) {
   if (!state.initialBalances.accounts) state.initialBalances.accounts = {'楽天銀行':0,'UFJ銀行':0};
   if (!state.templates) state.templates = [];
   if (!state.tagLabel) state.tagLabel = '';
+  if (!state.tags || !state.tags.length) {
+    state.tags = [{ id: 'tag0', label: state.tagLabel || '', hidden: false }];
+  }
   Object.values(state.data).forEach(migrateMonthData);
 }
 
@@ -824,8 +828,8 @@ function render() {
           </details>
         </div>
 
-        <!-- ★ 印つき明細集計 -->
-        ${renderTagPanel()}
+        <!-- ★ 印つき明細集計（複数） -->
+        ${renderTagPanels()}
 
         <!-- 貯金目標 -->
         ${renderSavingsPanel(md)}
@@ -923,7 +927,10 @@ function expRow(r) {
       <td>
         <div class="btn-row">
           <input type="checkbox" class="exp-ck" data-action="toggleExpCk" data-id="${r.id}" data-section="${r.section}" ${selectedExpIds.has(r.id)?'checked':''}>
-          <button class="btn icon" data-action="toggleTag" data-id="${r.id}" title="${r.tagged?'印を外す':'集計対象に印をつける'}" style="font-size:15px;color:${r.tagged?'#e67e22':'#cbd5e0'}">${r.tagged?'★':'☆'}</button>
+          ${(state.tags||[]).filter(t=>!t.hidden).map((t,i)=>{
+            const on=isTagged(r,t.id);const c=TAG_COLORS[i%TAG_COLORS.length];
+            return `<button class="btn icon" data-action="toggleTag" data-id="${r.id}" data-tagid="${esc(t.id)}" title="${on?'印を外す':esc(t.label||'集計')+'に追加'}" style="font-size:${(state.tags||[]).filter(x=>!x.hidden).length>1?'12':'15'}px;color:${on?c:'#cbd5e0'}">${on?'★':'☆'}</button>`;
+          }).join('')}
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
           <button class="btn icon" data-action="delExp"  data-id="${r.id}" title="削除">🗑</button>
@@ -1644,7 +1651,100 @@ function renderIncomePanel(md) {
   `;
 }
 
-// ── ★印つき明細集計 ──
+function isTagged(r, tagId) {
+  if (r.tagIds && r.tagIds[tagId] !== undefined) return !!r.tagIds[tagId];
+  const firstId = (state.tags && state.tags[0]) ? state.tags[0].id : 'tag0';
+  return tagId === firstId ? !!r.tagged : false;
+}
+
+// ── ★印つき明細集計（複数対応）──
+function renderTagPanels() {
+  const tags = state.tags || [];
+  const visible = tags.filter(t => !t.hidden);
+  const hidden  = tags.filter(t => t.hidden);
+
+  const panels = visible.map((t, i) => {
+    const color = TAG_COLORS[i % TAG_COLORS.length];
+    const byMonth = {};
+    let grandTotal = 0;
+    Object.entries(state.data).sort().forEach(([ym, md]) => {
+      const tagged = (md.expenses || []).filter(e => isTagged(e, t.id));
+      if (!tagged.length) return;
+      const total = tagged.reduce((s, e) => s + (e.amount || 0), 0);
+      byMonth[ym] = { total, items: tagged };
+      grandTotal += total;
+    });
+    const hasAny = grandTotal > 0;
+
+    const monthBlocks = Object.entries(byMonth).map(([ym, {total, items}]) => {
+      const y = ym.slice(0,4), m = +ym.slice(4);
+      const itemRows = items.map(e => `
+        <tr>
+          <td style="font-size:11px;color:var(--muted);padding:3px 10px;white-space:nowrap">${e.date ? e.date.slice(5).replace('-','/') : '—'}</td>
+          <td style="font-size:11px;padding:3px 10px">${esc(e.item)}${e.memo ? `<span style="color:var(--muted);font-style:italic"> · ${esc(e.memo)}</span>` : ''}</td>
+          <td class="r" style="font-size:11px;padding:3px 10px;white-space:nowrap">${fmt(e.amount)}</td>
+        </tr>`).join('');
+      return `
+        <tr class="data"><td colspan="3" style="padding:0">
+          <details style="padding:0">
+            <summary style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;cursor:pointer;user-select:none;list-style:none">
+              <span style="font-size:11px;color:var(--muted)">${y}/${String(m).padStart(2,'0')}</span>
+              <span style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;color:var(--muted)">${items.length}件</span>
+                <span class="bold" style="font-size:12px">${fmt(total)}</span>
+              </span>
+            </summary>
+            <table style="width:100%;background:#fffbeb"><tbody>${itemRows}</tbody></table>
+          </details>
+        </td></tr>`;
+    }).join('');
+
+    return `
+      <div class="panel">
+        <div class="panel-header gray" style="background:#fffbeb">
+          <span style="color:${color}">★ ${esc(t.label || '印つき集計')}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${hasAny ? `<span class="bold" style="color:${color};font-size:13px">${fmt(grandTotal)}</span>` : ''}
+            <button class="btn sm" data-action="hideTag" data-tagid="${esc(t.id)}" style="font-size:10px;color:var(--muted)">非表示</button>
+          </div>
+        </div>
+        <div style="padding:8px 12px 6px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">ラベル</span>
+          <input type="text" value="${esc(t.label || '')}" placeholder="例：ヨーロッパ旅行"
+            style="flex:1;border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:12px"
+            data-action="editTagLabel" data-tagid="${esc(t.id)}">
+        </div>
+        ${hasAny ? `
+          <table><tbody>${monthBlocks}</tbody>
+            <tfoot><tr style="background:#fef3c7">
+              <td class="bold" style="font-size:12px;padding:6px 10px">合計</td>
+              <td class="r bold" style="font-size:13px;color:${color};padding:6px 10px" colspan="2">${fmt(grandTotal)}（${Object.values(byMonth).reduce((s,b)=>s+b.items.length,0)}件）</td>
+            </tr></tfoot>
+          </table>` : `
+          <div style="padding:10px 14px 12px;font-size:12px;color:var(--muted)">
+            各明細の ☆ ボタンを押して対象を選んでください
+          </div>`}
+      </div>`;
+  }).join('');
+
+  const addBtn = `
+    <div style="padding:4px 0 2px">
+      <button class="btn sm" data-action="addTag" style="width:100%;font-size:12px">＋ 集計を追加</button>
+    </div>`;
+
+  const hiddenInfo = hidden.length ? `
+    <div style="padding:4px 0 2px;display:flex;flex-wrap:wrap;gap:4px">
+      ${hidden.map((t, i) => {
+        const allTagIdx = tags.indexOf(t);
+        const color = TAG_COLORS[allTagIdx % TAG_COLORS.length];
+        return `<button class="btn sm" data-action="showTag" data-tagid="${esc(t.id)}" style="font-size:11px;color:${color}">★ ${esc(t.label || '集計')} を表示</button>`;
+      }).join('')}
+    </div>` : '';
+
+  return panels + addBtn + hiddenInfo;
+}
+
+// ── （旧）単一タグパネル（後方互換のため残す） ──
 function renderTagPanel() {
   const label = state.tagLabel || '';
 
@@ -2999,7 +3099,27 @@ function handleClick(e) {
   else if (action === 'toggleTag') {
     const md = getMonth();
     const r = md.expenses.find(r => r.id === el.dataset.id);
-    if (r) { r.tagged = !r.tagged; saveState(); render(); }
+    const tagId = el.dataset.tagid;
+    if (r && tagId) {
+      if (!r.tagIds) r.tagIds = {};
+      r.tagIds[tagId] = !isTagged(r, tagId);
+      const firstId = (state.tags && state.tags[0]) ? state.tags[0].id : 'tag0';
+      if (tagId === firstId) r.tagged = r.tagIds[tagId];
+      saveState(); render();
+    }
+  }
+  else if (action === 'addTag') {
+    if (!state.tags) state.tags = [];
+    state.tags.push({ id: 'tag' + uid(), label: '', hidden: false });
+    saveState(); render();
+  }
+  else if (action === 'hideTag') {
+    const t = (state.tags||[]).find(t => t.id === el.dataset.tagid);
+    if (t) { t.hidden = true; saveState(); render(); }
+  }
+  else if (action === 'showTag') {
+    const t = (state.tags||[]).find(t => t.id === el.dataset.tagid);
+    if (t) { t.hidden = false; saveState(); render(); }
   }
   else if (action === 'addExp') {
     showModal(expModalHtml(null, el.dataset.section));
@@ -3558,7 +3678,10 @@ function handleChange(e) {
     return;
   }
   if (act === 'editTagLabel') {
-    state.tagLabel = e.target.value;
+    const tagId = e.target.dataset.tagid;
+    const t = (state.tags||[]).find(t => t.id === tagId);
+    if (t) { t.label = e.target.value; state.tagLabel = state.tags[0]?.label || ''; }
+    else state.tagLabel = e.target.value;
     saveState();
     return;
   }
