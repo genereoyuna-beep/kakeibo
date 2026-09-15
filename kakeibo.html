@@ -470,6 +470,9 @@ function migrateMonthData(md) {
   (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
   if (!md.otherIncomes)   md.otherIncomes   = [];
   if (!md.expenses)        md.expenses       = [];
+  (md.expenses||[]).forEach(e => {
+    if (e.recurringMonths === undefined) e.recurringMonths = 0; // 0=無期限
+  });
 }
 
 function applyRemoteState(s) {
@@ -704,6 +707,8 @@ function render() {
               <span class="amount" style="font-size:11px;color:#c53030">${fmt(fixedTotal)}</span>
               <button class="btn sm" id="merge-fixed" data-action="mergeExp" data-section="fixed" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-fixed" data-action="bulkDelete" data-section="fixed" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
+              <input id="bulk-recurring-months" type="number" min="1" placeholder="∞" style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:center">
+              <button class="btn sm" data-action="bulkRecurringOn" style="color:#38a169;border-color:#9ae6b4">🔄 全件</button>
               <button class="btn sm" data-action="addExp" data-section="fixed">＋ 追加</button>
             </div>
           </div>
@@ -950,7 +955,8 @@ function expRow(r) {
             const on=isTagged(r,t.id);const c=TAG_COLORS[i%TAG_COLORS.length];
             return `<button class="btn icon" data-action="toggleTag" data-id="${r.id}" data-tagid="${esc(t.id)}" title="${on?'印を外す':esc(t.label||'集計')+'に追加'}" style="font-size:${(state.tags||[]).filter(x=>!x.hidden).length>1?'12':'15'}px;color:${on?c:'#cbd5e0'}">${on?'★':'☆'}</button>`;
           }).join('')}
-          ${r.section==='fixed'?`<button class="btn icon" data-action="toggleRecurring" data-id="${r.id}" title="${r.recurring?'自動引き継ぎON（クリックでOFF）':'自動引き継ぎOFF（クリックでON）'}" style="font-size:13px;${r.recurring?'background:#c6f6d5;border-radius:4px;outline:1px solid #38a169;':'opacity:0.3;'}">🔄</button>`:''}
+          ${r.section==='fixed'?`<button class="btn icon" data-action="toggleRecurring" data-id="${r.id}" title="${r.recurring?'自動引き継ぎON（クリックでOFF）':'自動引き継ぎOFF（クリックでON）'}" style="font-size:13px;${r.recurring?'background:#c6f6d5;border-radius:4px;outline:1px solid #38a169;':'opacity:0.3;'}">🔄</button>${r.recurring?`<input type="number" min="1" value="${r.recurringMonths||''}" placeholder="∞" data-action="editRecurringMonths" data-id="${r.id}" title="あと何ヶ月繰り返すか（空=無期限）" style="width:34px;padding:1px 3px;border:1px solid #9ae6b4;border-radius:4px;font-size:10px;text-align:center"><span style="font-size:10px;color:#38a169;white-space:nowrap">ヶ月</span>`:''}`:''}
+
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
           <button class="btn icon" data-action="delExp"  data-id="${r.id}" title="削除">🗑</button>
@@ -3143,8 +3149,16 @@ function handleClick(e) {
       const recurring = state.data[prevKey].expenses.filter(e => e.section === 'fixed' && e.recurring);
       state.data[nym].expenses = [
         ...state.data[nym].expenses,
-        ...recurring.map(e => ({ ...e, id: uid(), tagged: false, tagIds: {},
-          date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null })),
+        ...recurring.map(e => {
+          const months = e.recurringMonths || 0;
+          const newMonths = months > 0 ? months - 1 : 0;
+          return {
+            ...e, id: uid(), tagged: false, tagIds: {},
+            recurringMonths: newMonths,
+            recurring: newMonths === 0 && months > 0 ? false : true, // 残0になったらOFF
+            date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null,
+          };
+        }),
       ];
     }
     saveState(); render();
@@ -3538,6 +3552,15 @@ function handleClick(e) {
     state.templates = (state.templates||[]).filter(t=>t.id!==id);
     saveState(); render();
   }
+  else if (action === 'bulkRecurringOn') {
+    const md = getMonth();
+    const months = +(document.getElementById('bulk-recurring-months')?.value || 0);
+    md.expenses.filter(e => e.section === 'fixed').forEach(e => {
+      e.recurring = true;
+      e.recurringMonths = months;
+    });
+    saveState(); render();
+  }
   else if (action === 'toggleTrendMode') {
     _trendMode = _trendMode === 'category' ? 'summary' : 'category';
     if (trendChartInst) { trendChartInst.destroy(); trendChartInst = null; }
@@ -3689,6 +3712,9 @@ function handleInput(e) {
   } else if (act === 'editTransferFee') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.fee = +e.target.value || 0; }
+  } else if (act === 'editRecurringMonths') {
+    const exp = (md.expenses||[]).find(ex=>ex.id===e.target.dataset.id);
+    if (exp) { exp.recurringMonths = +(e.target.value) || 0; saveState(); }
   } else if (act === 'editTransferFeeByPoint') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.feeByPoint = e.target.checked; saveState(); render(); }
