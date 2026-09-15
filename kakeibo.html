@@ -464,6 +464,7 @@ function migrateMonthData(md) {
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
   if (!md.investDeposits)  md.investDeposits = [];
+  (md.investDeposits||[]).forEach(d => { if (d.byCard === undefined) d.byCard = false; });
   if (md.investValuation === undefined) md.investValuation = 0;
   // 「現金」→「現金（貯金）」移行
   (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
@@ -1239,6 +1240,7 @@ function renderBalanceCalc(expenses) {
   // ⑩ 証券入金（日付ベースで口座から差し引き）
   (md.investDeposits || []).forEach(dep => {
     if ((dep.amount || 0) <= 0) return;
+    if (dep.byCard) return; // クレカ払いは固定費の引落で処理
     const from = dep.sourceAccount && (dep.sourceAccount in startBal) ? dep.sourceAccount : '楽天銀行';
     if (!(from in startBal)) return;
     const dayNum = dep.date ? +dep.date.slice(8, 10) : 99;
@@ -1488,6 +1490,7 @@ function calcAccountBalances(upToMonth) {
       if (t.targetAccount && t.targetAccount in bal) bal[t.targetAccount] += t.amount || 0;
     });
     (d.investDeposits||[]).forEach(dep => {
+      if (dep.byCard) return; // クレカ払いは固定費経由で計上済み
       const from = dep.sourceAccount && dep.sourceAccount in bal ? dep.sourceAccount : '楽天銀行';
       bal[from] -= dep.amount || 0;
     });
@@ -1956,19 +1959,23 @@ function renderInvestPanel(md) {
   const today = new Date().toISOString().slice(0,10);
 
   const depositRows = deposits.map(dep => `
-    <div style="border:1px solid #c6f6d5;border-radius:6px;padding:7px 10px;background:#f0fff8">
-      <div style="display:flex;align-items:center;gap:5px">
+    <div style="border:1px solid ${dep.byCard?'#bee3f8':'#c6f6d5'};border-radius:6px;padding:7px 10px;background:${dep.byCard?'#ebf8ff':'#f0fff8'}">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
         <input type="date" value="${dep.date||''}"
           style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
           data-action="editInvestDepositDate" data-id="${dep.id}">
+        <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:${dep.byCard?'#2b6cb0':'var(--muted)'};cursor:pointer;flex-shrink:0;white-space:nowrap">
+          <input type="checkbox" ${dep.byCard?'checked':''} data-action="editInvestDepositByCard" data-id="${dep.id}" style="width:11px;height:11px;cursor:pointer">クレカ
+        </label>
+        ${!dep.byCard ? `
         <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
           data-action="editInvestDepositSource" data-id="${dep.id}">
           <option value="">送金元</option>
           ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${dep.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
-        </select>
+        </select>` : `<span style="font-size:10px;color:#2b6cb0;flex-shrink:0">固定費から計上</span>`}
         <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
         <input type="number" value="${dep.amount||''}" placeholder="0"
-          style="flex:1;min-width:0;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
+          style="flex:1;min-width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
           data-action="editInvestDepositAmount" data-id="${dep.id}">
         <button class="btn icon" data-action="delInvestDeposit" data-id="${dep.id}" style="color:#c53030;opacity:0.5;font-size:11px;flex-shrink:0">🗑</button>
       </div>
@@ -3755,6 +3762,10 @@ function handleChange(e) {
   if (act === 'editInvestDepositDate') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
     if (d) { d.date = e.target.value; saveState(); render(); } return;
+  }
+  if (act === 'editInvestDepositByCard') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.byCard = e.target.checked; saveState(); render(); } return;
   }
   if (act === 'editInvestDepositSource') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
