@@ -443,6 +443,7 @@ function migrateMonthData(md) {
   md.transfers.forEach(t => {
     if (t.targetAccount === undefined) t.targetAccount = '';
     if (t.fee           === undefined) t.fee           = 0;
+    if (t.feeByPoint    === undefined) t.feeByPoint    = false;
   });
   if (md.salaryDate         === undefined) md.salaryDate          = 10;
   if (md.savingsDeltaPaypayDate === undefined) md.savingsDeltaPaypayDate = null;
@@ -619,7 +620,7 @@ function render() {
   const installTotal = sectionTotal(expenses,'installment');
   const varTotal     = sectionTotal(expenses,'variable');
   const expTotal     = totalExpenses(expenses);
-  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.fee||0),0);
+  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
   const takehome     = totalIncome - deductions;
   const balance      = takehome - expTotal;
 
@@ -1175,7 +1176,7 @@ function renderBalanceCalc(expenses) {
     if ((t.amount || 0) <= 0) return;
     const day    = t.date ? +t.date : null;
     const dayNum = day || 99;
-    const fee    = t.fee || 0;
+    const fee    = t.feeByPoint ? 0 : (t.fee || 0);
     const from   = t.fromAccount && (t.fromAccount in startBal) ? t.fromAccount : '楽天銀行';
     const chg    = { [from]: -(t.amount + fee) };
     if (t.targetAccount && (t.targetAccount in startBal))
@@ -1392,7 +1393,7 @@ function calcBalance(upToMonth) {
     // 送金でPaypay銀行・現金へ入出金した分も反映
     (d.transfers||[]).forEach(t => {
       const amt = t.amount || 0;
-      const fee = t.fee    || 0;
+      const fee = t.feeByPoint ? 0 : (t.fee || 0);
       if (t.targetAccount === 'Paypay銀行') sp += amt;
       if (t.fromAccount   === 'Paypay銀行') sp -= amt + fee;
       if (t.targetAccount === '現金')       sc += amt;
@@ -1461,7 +1462,7 @@ function calcAccountBalances(upToMonth) {
     bal['楽天銀行']   -= sc; bal['現金']        += sc;
     (d.transfers||[]).forEach(t => {
       const from = t.fromAccount && t.fromAccount in bal ? t.fromAccount : '楽天銀行';
-      bal[from] -= (t.amount || 0) + (t.fee || 0);
+      bal[from] -= (t.amount || 0) + (t.feeByPoint ? 0 : (t.fee || 0));
       if (t.targetAccount && t.targetAccount in bal) bal[t.targetAccount] += t.amount || 0;
     });
     (d.investDeposits||[]).forEach(dep => {
@@ -1514,7 +1515,7 @@ function renderIncomePanel(md) {
   const { salary=0, salaryDate=10, savingsDeltaPaypay=0, savingsDeltaPaypayDate=null, savingsDeltaCash=0, savingsDeltaCashDate=null, transfers=[], otherIncomes=[] } = md;
   const otherIncomeTotal = otherIncomes.reduce((s,i)=>s+(i.amount||0),0);
   const totalIncome  = salary + otherIncomeTotal;
-  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.fee||0),0);
+  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
   const takehome     = totalIncome - deductions;
 
   const numInp = (val, action, id_='', extraData='') =>
@@ -1578,8 +1579,11 @@ function renderIncomePanel(md) {
         <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
           <span style="font-size:10px;color:var(--muted)">手数料</span>
           <input type="number" value="${t.fee||''}" placeholder="0" min="0"
-            style="width:64px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;color:var(--muted)"
+            style="width:64px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;color:${t.feeByPoint?'#a0aec0':'var(--muted)'};${t.feeByPoint?'text-decoration:line-through':''}"
             data-action="editTransferFee" data-id="${t.id}">
+          <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:${t.feeByPoint?'#3182ce':'var(--muted)'};cursor:pointer;white-space:nowrap">
+            <input type="checkbox" ${t.feeByPoint?'checked':''} data-action="editTransferFeeByPoint" data-id="${t.id}" style="width:11px;height:11px;cursor:pointer">Pt
+          </label>
         </div>
       </td>
       <td><button class="btn icon" data-action="delTransfer" data-id="${t.id}" title="削除">🗑</button></td>
@@ -3602,6 +3606,9 @@ function handleInput(e) {
   } else if (act === 'editTransferFee') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.fee = +e.target.value || 0; }
+  } else if (act === 'editTransferFeeByPoint') {
+    const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
+    if (t) { t.feeByPoint = e.target.checked; saveState(); render(); }
     saveState();
     const { deductions, takehome, balance } = calcIncomeNums(md);
     updateIncomeDisplay(deductions, takehome, balance);
