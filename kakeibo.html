@@ -446,8 +446,12 @@ function migrateMonthData(md) {
     if (t.feeByPoint    === undefined) t.feeByPoint    = false;
   });
   if (md.salaryDate         === undefined) md.salaryDate          = 10;
-  if (md.savingsDeltaPaypayDate === undefined) md.savingsDeltaPaypayDate = null;
-  if (md.savingsDeltaCashDate   === undefined) md.savingsDeltaCashDate   = null;
+  if (md.savingsDeltaPaypayDate    === undefined) md.savingsDeltaPaypayDate    = null;
+  if (md.savingsDeltaCashDate      === undefined) md.savingsDeltaCashDate      = null;
+  if (md.savingsDeltaPaypayFee     === undefined) md.savingsDeltaPaypayFee     = 0;
+  if (md.savingsDeltaPaypayFeePt   === undefined) md.savingsDeltaPaypayFeePt   = false;
+  if (md.savingsDeltaCashFee       === undefined) md.savingsDeltaCashFee       = 0;
+  if (md.savingsDeltaCashFeePt     === undefined) md.savingsDeltaCashFeePt     = false;
   if (!md.confirmedCards)  md.confirmedCards = {};
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
@@ -499,7 +503,8 @@ function getMonth() {
 }
 
 function emptyMonth() {
-  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaCash:0, savingsDeltaCashDate:null, wiseDeposits:[], wiseTrades:[], investDeposits:[], investValuation:0 };
+  return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaPaypayFee:0, savingsDeltaPaypayFeePt:false,
+    savingsDeltaCash:0, savingsDeltaCashDate:null, savingsDeltaCashFee:0, savingsDeltaCashFeePt:false, wiseDeposits:[], wiseTrades:[], investDeposits:[], investValuation:0 };
 }
 
 function uid() {
@@ -620,7 +625,9 @@ function render() {
   const installTotal = sectionTotal(expenses,'installment');
   const varTotal     = sectionTotal(expenses,'variable');
   const expTotal     = totalExpenses(expenses);
-  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
+  const ppFee2       = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
+  const csFee2       = md.savingsDeltaCashFeePt   ? 0 : (md.savingsDeltaCashFee||0);
+  const deductions   = savingsDeltaPaypay + ppFee2 + savingsDeltaCash + csFee2 + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
   const takehome     = totalIncome - deductions;
   const balance      = takehome - expTotal;
 
@@ -1152,23 +1159,27 @@ function renderBalanceCalc(expenses) {
   // ④ 貯金（楽天↔Paypay）― 正値：楽天→Paypay、負値：Paypay→楽天
   if (md.savingsDeltaPaypay) {
     const sp     = md.savingsDeltaPaypay;
+    const spFee  = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
     const day    = md.savingsDeltaPaypayDate ? +md.savingsDeltaPaypayDate : null;
     const dayNum = day || 99;
+    const feeStr = spFee > 0 ? `（手数料 ${fmt(spFee)}）` : '';
     events.push({ dayNum, day: day ? `${day}日` : '日付未設定',
       type: sp > 0 ? 'savings' : 'income',
-      label: sp > 0 ? '貯金（Paypay）' : '貯金取崩し（Paypay）',
-      changes: { '楽天銀行': -sp, 'Paypay銀行': +sp } });
+      label: (sp > 0 ? '貯金（Paypay）' : '貯金取崩し（Paypay）') + feeStr,
+      changes: { '楽天銀行': -(sp + spFee), 'Paypay銀行': +sp } });
   }
 
   // ⑤ 貯金（楽天↔現金）― 正値：楽天→現金、負値：現金→楽天
   if (md.savingsDeltaCash) {
     const sc     = md.savingsDeltaCash;
+    const scFee  = md.savingsDeltaCashFeePt ? 0 : (md.savingsDeltaCashFee||0);
     const day    = md.savingsDeltaCashDate ? +md.savingsDeltaCashDate : null;
     const dayNum = day || 99;
+    const feeStr = scFee > 0 ? `（手数料 ${fmt(scFee)}）` : '';
     events.push({ dayNum, day: day ? `${day}日` : '日付未設定',
       type: sc > 0 ? 'savings' : 'income',
-      label: sc > 0 ? '貯金（現金）' : '貯金取崩し（現金）',
-      changes: { '楽天銀行': -sc, '現金': +sc } });
+      label: (sc > 0 ? '貯金（現金）' : '貯金取崩し（現金）') + feeStr,
+      changes: { '楽天銀行': -(sc + scFee), '現金': +sc } });
   }
 
   // ⑥ 送金
@@ -1377,6 +1388,7 @@ function calcBalance(upToMonth) {
     miles += d.mileDelta          || 0;
     sp    += d.savingsDeltaPaypay || 0;
     sc    += d.savingsDeltaCash   || 0;
+    // 貯金手数料（楽天→Paypay/現金の振込手数料はPaypay/現金残高には影響しない）
     sp    += d.bankInterest?.['Paypay銀行'] || 0;
     sc    += d.bankInterest?.['現金']       || 0;
     // その他収入でPaypay銀行・現金に直接入金された分
@@ -1457,9 +1469,11 @@ function calcAccountBalances(upToMonth) {
     (d.otherIncomes||[]).forEach(i => { const acc = i.account || '楽天銀行'; if (acc in bal) bal[acc] += i.amount || 0; });
     if (d.bankInterest) Object.entries(d.bankInterest).forEach(([k,v]) => { if (k in bal) bal[k] += v||0; });
     const sp = d.savingsDeltaPaypay || 0;
-    bal['楽天銀行']   -= sp; bal['Paypay銀行'] += sp;
+    const spFee = d.savingsDeltaPaypayFeePt ? 0 : (d.savingsDeltaPaypayFee||0);
+    bal['楽天銀行']   -= sp + spFee; bal['Paypay銀行'] += sp;
     const sc = d.savingsDeltaCash || 0;
-    bal['楽天銀行']   -= sc; bal['現金']        += sc;
+    const scFee = d.savingsDeltaCashFeePt ? 0 : (d.savingsDeltaCashFee||0);
+    bal['楽天銀行']   -= sc + scFee; bal['現金']        += sc;
     (d.transfers||[]).forEach(t => {
       const from = t.fromAccount && t.fromAccount in bal ? t.fromAccount : '楽天銀行';
       bal[from] -= (t.amount || 0) + (t.feeByPoint ? 0 : (t.fee || 0));
@@ -1515,7 +1529,9 @@ function renderIncomePanel(md) {
   const { salary=0, salaryDate=10, savingsDeltaPaypay=0, savingsDeltaPaypayDate=null, savingsDeltaCash=0, savingsDeltaCashDate=null, transfers=[], otherIncomes=[] } = md;
   const otherIncomeTotal = otherIncomes.reduce((s,i)=>s+(i.amount||0),0);
   const totalIncome  = salary + otherIncomeTotal;
-  const deductions   = savingsDeltaPaypay + savingsDeltaCash + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
+  const ppFee        = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
+  const csFee        = md.savingsDeltaCashFeePt   ? 0 : (md.savingsDeltaCashFee||0);
+  const deductions   = savingsDeltaPaypay + ppFee + savingsDeltaCash + csFee + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
   const takehome     = totalIncome - deductions;
 
   const numInp = (val, action, id_='', extraData='') =>
@@ -1623,14 +1639,36 @@ function renderIncomePanel(md) {
             <td class="muted" style="padding-left:20px">貯金（Paypay銀行）</td>
             <td></td>
             <td style="text-align:center">${dayInp(savingsDeltaPaypayDate,'editSavingsPaypayDate')}</td>
-            <td class="r">${numInp(savingsDeltaPaypay,'editSavingsDeltaPaypay')}</td>
+            <td class="r">
+              ${numInp(savingsDeltaPaypay,'editSavingsDeltaPaypay')}
+              <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
+                <span style="font-size:10px;color:var(--muted)">手数料</span>
+                <input type="number" value="${md.savingsDeltaPaypayFee||''}" placeholder="0" min="0"
+                  style="width:60px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;${md.savingsDeltaPaypayFeePt?'text-decoration:line-through;color:#a0aec0':''}"
+                  data-action="editSavingsPaypayFee">
+                <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:${md.savingsDeltaPaypayFeePt?'#3182ce':'var(--muted)'};cursor:pointer">
+                  <input type="checkbox" ${md.savingsDeltaPaypayFeePt?'checked':''} data-action="editSavingsPaypayFeePt" style="width:11px;height:11px;cursor:pointer">Pt
+                </label>
+              </div>
+            </td>
             <td></td>
           </tr>
           <tr class="data">
             <td class="muted" style="padding-left:20px">貯金（現金）</td>
             <td></td>
             <td style="text-align:center">${dayInp(savingsDeltaCashDate,'editSavingsCashDate')}</td>
-            <td class="r">${numInp(savingsDeltaCash,'editSavingsDeltaCash')}</td>
+            <td class="r">
+              ${numInp(savingsDeltaCash,'editSavingsDeltaCash')}
+              <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
+                <span style="font-size:10px;color:var(--muted)">手数料</span>
+                <input type="number" value="${md.savingsDeltaCashFee||''}" placeholder="0" min="0"
+                  style="width:60px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;${md.savingsDeltaCashFeePt?'text-decoration:line-through;color:#a0aec0':''}"
+                  data-action="editSavingsCashFee">
+                <label style="display:flex;align-items:center;gap:2px;font-size:10px;color:${md.savingsDeltaCashFeePt?'#3182ce':'var(--muted)'};cursor:pointer">
+                  <input type="checkbox" ${md.savingsDeltaCashFeePt?'checked':''} data-action="editSavingsCashFeePt" style="width:11px;height:11px;cursor:pointer">Pt
+                </label>
+              </div>
+            </td>
             <td></td>
           </tr>
           ${transferRows}
@@ -3651,6 +3689,18 @@ function handleInput(e) {
     const { deductions, takehome, balance } = calcIncomeNums(md);
     updateIncomeDisplay(deductions, takehome, balance);
     refreshAccountBals();
+  } else if (act === 'editSavingsPaypayFee') {
+    md.savingsDeltaPaypayFee = +e.target.value || 0;
+    saveState(); refreshAccountBals();
+  } else if (act === 'editSavingsPaypayFeePt') {
+    md.savingsDeltaPaypayFeePt = e.target.checked;
+    saveState(); render();
+  } else if (act === 'editSavingsCashFee') {
+    md.savingsDeltaCashFee = +e.target.value || 0;
+    saveState(); refreshAccountBals();
+  } else if (act === 'editSavingsCashFeePt') {
+    md.savingsDeltaCashFeePt = e.target.checked;
+    saveState(); render();
   } else if (act === 'editSavingsGoal') {
     md.savingsGoal = +e.target.value || 0;
     saveState();
