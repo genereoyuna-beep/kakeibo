@@ -174,7 +174,7 @@
     .prog-fill { height: 100%; border-radius: 99px; }
 
     /* ── TREND CHART ── */
-    .trend-canvas-wrap { padding: 8px 10px 4px; position: relative; height: 220px; }
+    .trend-canvas-wrap { padding: 8px 10px 4px; position: relative; height: 300px; }
 
     /* ── SORT TH ── */
     th[data-action="sortSection"]:hover { background: #edf2f7; color: var(--text); }
@@ -505,25 +505,8 @@ function saveState() {
 }
 
 function getMonth() {
-  const ym = state.currentMonth;
-  if (!state.data[ym]) {
-    state.data[ym] = emptyMonth();
-    // 🔄 自動引き継ぎ：recurring=trueの固定費を直近月からコピー
-    const prevYms = Object.keys(state.data).filter(k => k < ym).sort().reverse();
-    for (const pym of prevYms) {
-      const recurring = (state.data[pym].expenses||[]).filter(e => e.section === 'fixed' && e.recurring);
-      if (recurring.length) {
-        const [y, m] = [+ym.slice(0,4), +ym.slice(4)];
-        state.data[ym].expenses = recurring.map(e => ({
-          ...e, id: uid(),
-          date: e.date ? `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${e.date.slice(8)}` : null,
-          tagged: false, tagIds: {},
-        }));
-        break;
-      }
-    }
-  }
-  return state.data[ym];
+  if (!state.data[state.currentMonth]) state.data[state.currentMonth] = emptyMonth();
+  return state.data[state.currentMonth];
 }
 
 function emptyMonth() {
@@ -3149,20 +3132,29 @@ function handleClick(e) {
   }
   else if (action === 'nextMonth') {
     const [y,m] = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4)];
-    state.currentMonth = m===12 ? `${y+1}01` : `${y}${String(m+1).padStart(2,'0')}`;
-    const md = getMonth(); // creates empty if not exists
-    // Copy fixed+installment from previous month if new
     const prevKey = m===12 ? `${y}12` : `${y}${String(m).padStart(2,'0')}`;
-    const hasCarryover = state.data[state.currentMonth].expenses.some(e => e.section === 'fixed' || e.section === 'installment');
-    if (!hasCarryover && state.data[prevKey]) {
-      const prev = state.data[prevKey].expenses.filter(e=>e.section==='fixed'||e.section==='installment');
-      state.data[state.currentMonth].expenses = prev.map(e => {
+    state.currentMonth = m===12 ? `${y+1}01` : `${y}${String(m+1).padStart(2,'0')}`;
+    const nym = state.currentMonth;
+    const [ny, nm] = [+nym.slice(0,4), +nym.slice(4)];
+    if (!state.data[nym]) state.data[nym] = emptyMonth();
+    // 固定費・分割払いの引き継ぎ（既に入力済みなら何もしない）
+    const hasFixed = state.data[nym].expenses.some(e => e.section === 'fixed' || e.section === 'installment');
+    if (!hasFixed && state.data[prevKey]) {
+      const prevExps = state.data[prevKey].expenses.filter(e => e.section === 'fixed' || e.section === 'installment');
+      const anyRecurring = prevExps.some(e => e.section === 'fixed' && e.recurring);
+      state.data[nym].expenses = prevExps.map(e => {
+        // 固定費: recurringフラグがあればそれに従う。なければ全件コピー（従来動作）
+        if (e.section === 'fixed') {
+          if (anyRecurring && !e.recurring) return null; // 一部でもrecurring管理してたら非recurringはスキップ
+        }
         if (e.section === 'installment' && e.totalInstallments) {
           const newPaid = (e.paidInstallments || 0) + 1;
-          if (newPaid > e.totalInstallments) return null; // 完済済み → コピーしない
-          return { ...e, id: uid(), paidInstallments: newPaid };
+          if (newPaid > e.totalInstallments) return null;
+          return { ...e, id: uid(), paidInstallments: newPaid,
+            date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null };
         }
-        return { ...e, id: uid() };
+        return { ...e, id: uid(),
+          date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null };
       }).filter(Boolean);
     }
     saveState(); render();
