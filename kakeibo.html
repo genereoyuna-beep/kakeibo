@@ -3137,25 +3137,15 @@ function handleClick(e) {
     const nym = state.currentMonth;
     const [ny, nm] = [+nym.slice(0,4), +nym.slice(4)];
     if (!state.data[nym]) state.data[nym] = emptyMonth();
-    // 固定費・分割払いの引き継ぎ（既に入力済みなら何もしない）
-    const hasFixed = state.data[nym].expenses.some(e => e.section === 'fixed' || e.section === 'installment');
+    // 🔄ONの固定費だけ引き継ぎ（既に入力済みなら何もしない）
+    const hasFixed = state.data[nym].expenses.some(e => e.section === 'fixed');
     if (!hasFixed && state.data[prevKey]) {
-      const prevExps = state.data[prevKey].expenses.filter(e => e.section === 'fixed' || e.section === 'installment');
-      const anyRecurring = prevExps.some(e => e.section === 'fixed' && e.recurring);
-      state.data[nym].expenses = prevExps.map(e => {
-        // 固定費: recurringフラグがあればそれに従う。なければ全件コピー（従来動作）
-        if (e.section === 'fixed') {
-          if (anyRecurring && !e.recurring) return null; // 一部でもrecurring管理してたら非recurringはスキップ
-        }
-        if (e.section === 'installment' && e.totalInstallments) {
-          const newPaid = (e.paidInstallments || 0) + 1;
-          if (newPaid > e.totalInstallments) return null;
-          return { ...e, id: uid(), paidInstallments: newPaid,
-            date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null };
-        }
-        return { ...e, id: uid(),
-          date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null };
-      }).filter(Boolean);
+      const recurring = state.data[prevKey].expenses.filter(e => e.section === 'fixed' && e.recurring);
+      state.data[nym].expenses = [
+        ...state.data[nym].expenses,
+        ...recurring.map(e => ({ ...e, id: uid(), tagged: false, tagIds: {},
+          date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null })),
+      ];
     }
     saveState(); render();
   }
