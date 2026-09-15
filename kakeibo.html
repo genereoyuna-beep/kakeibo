@@ -426,6 +426,14 @@ function mk202605() {
 // ═══════════════════════════════════════════════
 let state = { currentMonth:'202604', data:{}, cardSettings:[], templates:[], initialBalances:{ miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} }, wiseCurrencies:[], wiseInitials:{}, tagLabel:'', tags:[] };
 const TAG_COLORS = ['#e67e22','#e53e3e','#38a169','#3182ce','#805ad5','#d53f8c'];
+// 自口座一覧 — この口座への送金は手取り計算上の差し引きに含めない（口座間移動は収支に影響しない）
+const OWN_ACCOUNTS = new Set(['楽天銀行','UFJ銀行','Paypay銀行','現金']);
+function xferDeduction(transfers) {
+  return (transfers||[]).reduce((s,t) => {
+    if (t.targetAccount && OWN_ACCOUNTS.has(t.targetAccount)) return s;
+    return s + (t.amount||0) + (t.feeByPoint ? 0 : (t.fee||0));
+  }, 0);
+}
 
 function migrateMonthData(md) {
   if (md.income && md.salary === undefined) {
@@ -627,7 +635,7 @@ function render() {
   const expTotal     = totalExpenses(expenses);
   const ppFee2       = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
   const csFee2       = md.savingsDeltaCashFeePt   ? 0 : (md.savingsDeltaCashFee||0);
-  const deductions   = savingsDeltaPaypay + ppFee2 + savingsDeltaCash + csFee2 + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
+  const deductions   = savingsDeltaPaypay + ppFee2 + savingsDeltaCash + csFee2 + xferDeduction(transfers);
   const takehome     = totalIncome - deductions;
   const balance      = takehome - expTotal;
 
@@ -1531,7 +1539,7 @@ function renderIncomePanel(md) {
   const totalIncome  = salary + otherIncomeTotal;
   const ppFee        = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
   const csFee        = md.savingsDeltaCashFeePt   ? 0 : (md.savingsDeltaCashFee||0);
-  const deductions   = savingsDeltaPaypay + ppFee + savingsDeltaCash + csFee + transfers.reduce((s,t)=>s+(t.amount||0)+(t.feeByPoint?0:(t.fee||0)),0);
+  const deductions   = savingsDeltaPaypay + ppFee + savingsDeltaCash + csFee + xferDeduction(transfers);
   const takehome     = totalIncome - deductions;
 
   const numInp = (val, action, id_='', extraData='') =>
@@ -3561,7 +3569,7 @@ function handleClick(e) {
 function calcIncomeNums(md) {
   const otherIncomeTotal = (md.otherIncomes||[]).reduce((s,i)=>s+(i.amount||0),0);
   const totalIncome  = (md.salary||0) + otherIncomeTotal;
-  const deductions   = (md.savingsDeltaPaypay||0) + (md.savingsDeltaCash||0) + (md.transfers||[]).reduce((s,t)=>s+(t.amount||0)+(t.fee||0),0);
+  const deductions   = (md.savingsDeltaPaypay||0) + (md.savingsDeltaCash||0) + xferDeduction(md.transfers);
   const takehome     = totalIncome - deductions;
   const balance      = takehome - totalExpenses(md.expenses);
   return { deductions, takehome, balance };
