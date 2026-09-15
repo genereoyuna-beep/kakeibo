@@ -1090,32 +1090,7 @@ function renderCardSummary(expenses, md) {
             ${totalPrepaid > 0 ? `<div style="font-size:11px;color:#2d7a4f;font-weight:700">残 ${fmt(total - totalPrepaid)}</div>` : ''}
           </td>
         </tr>
-        ${(() => {
-          const nextCards = visibleCards.filter(c => {
-            // 即時払い（支払日が空or「即時」）は翌月引落なし
-            const pd = (c.paymentDay || '').toString().trim();
-            return pd && pd !== '即時' && pd !== '即日';
-          });
-          if (!nextCards.length) return '';
-          const [cy, cm] = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4)];
-          let ny = cy, nm = cm + 1;
-          if (nm > 12) { nm = 1; ny++; }
-          const nextLabel = `${ny}年${nm}月`;
-          const rows = nextCards.map(c => {
-            const amt = ct[c.name] || 0;
-            return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px">
-              <span class="chip" data-pay="${esc(c.name)}" style="font-size:10px">${esc(c.name)}</span>
-              <span style="font-size:10px;color:var(--muted)">${esc(c.paymentDay)}日払</span>
-              <span style="margin-left:auto;font-weight:${amt?'600':'400'};color:${amt?'var(--fg)':'var(--muted)'}">${amt ? fmt(amt) : '—'}</span>
-            </div>`;
-          }).join('');
-          return `<tr><td colspan="3" style="padding:4px 8px 6px">
-            <details>
-              <summary style="font-size:11px;color:var(--muted);cursor:pointer;user-select:none;padding:2px 0">来月（${nextLabel}）カード引落予定</summary>
-              <div style="margin-top:6px">${rows}</div>
-            </details>
-          </td></tr>`;
-        })()}
+
       </tbody>
     </table>
   `;
