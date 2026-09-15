@@ -680,8 +680,8 @@ function render() {
         <div class="sum-val" style="color:#c53030">${fmt(expTotal)}</div>
       </div>
       <div class="sum-card">
-        <div class="sum-label">残高</div>
-        <div class="sum-val" style="color:${balance>=0?'#4a6fa5':'#c53030'}" id="sum-balance">${fmt(balance)}</div>
+        <div class="sum-label">口座合計</div>
+        <div class="sum-val" style="color:#276749" id="sum-balance">${fmt(Object.values(accountBals).reduce((s,v)=>s+v,0))}</div>
       </div>
     </div>
     </div><!-- /sticky-shell -->
@@ -3583,7 +3583,7 @@ function updateIncomeDisplay(deductions, takehome, balance) {
   if (ed) ed.textContent = fmt(deductions);
   if (et) et.textContent = fmt(takehome);
   if (st) st.textContent = fmt(takehome);
-  if (sb) { sb.textContent = fmt(balance); sb.style.color = balance>=0?'#4a6fa5':'#c53030'; }
+  if (sb) { const accs = calcAccountBalances(state.currentMonth); sb.textContent = fmt(Object.values(accs).reduce((s,v)=>s+v,0)); sb.style.color = '#276749'; }
 }
 
 function handleInput(e) {
