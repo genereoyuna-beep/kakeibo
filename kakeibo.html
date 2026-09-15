@@ -2251,11 +2251,13 @@ function getMonthTrend(n) {
     while (mm <= 0) { mm += 12; my--; }
     const key = `${my}${String(mm).padStart(2,'0')}`;
     const d = state.data[key];
+    const otherInc = d ? (d.otherIncomes||[]).reduce((s,i)=>s+(i.amount||0),0) : 0;
+    const sav = d ? (d.savingsDeltaPaypay||0) + (d.savingsDeltaCash||0) : 0;
     result.push({
       label:    `${mm}月`,
-      income:   d ? (d.salary||0) : 0,
+      income:   d ? (d.salary||0) + otherInc : 0,
       expenses: d ? totalExpenses(d.expenses) : 0,
-      savings:  d ? ((d.savingsDeltaPaypay||0) + (d.savingsDeltaCash||0)) : 0,
+      savings:  Math.max(0, sav),
     });
   }
   return result;
@@ -2279,7 +2281,7 @@ function initTrendChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: { legend: { position:'bottom', labels:{font:{size:10},boxWidth:10,padding:6} } },
       scales: {
-        y: { ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
+        y: { min:0, ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
         x: { ticks:{ font:{size:10} } }
       }
     }
