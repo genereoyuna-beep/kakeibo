@@ -931,7 +931,7 @@ function expRow(r) {
         ${esc(r.item)}
         ${r.memo ? `<div style="font-size:10px;color:var(--muted);margin-top:1px;font-style:italic">${esc(r.memo)}</div>` : ''}
         ${instBadge}
-        <div class="show-sp" style="margin-top:2px;display:flex;gap:3px;flex-wrap:wrap">
+        <div class="show-sp" style="margin-top:2px;gap:3px;flex-wrap:wrap">
           ${r.category ? `<span class="chip" data-cat="${esc(r.category)}" style="font-size:10px">${esc(r.category)}</span>` : ''}
           ${r.payment  ? `<span class="chip" data-pay="${esc(r.payment)}"  style="font-size:10px">${esc(r.payment)}</span>`  : ''}
         </div>
