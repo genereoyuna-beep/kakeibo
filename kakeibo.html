@@ -967,7 +967,7 @@ function expRow(r) {
             const on=isTagged(r,t.id);const c=TAG_COLORS[i%TAG_COLORS.length];
             return `<button class="btn icon" data-action="toggleTag" data-id="${r.id}" data-tagid="${esc(t.id)}" title="${on?'印を外す':esc(t.label||'集計')+'に追加'}" style="font-size:${(state.tags||[]).filter(x=>!x.hidden).length>1?'12':'15'}px;color:${on?c:'#cbd5e0'}">${on?'★':'☆'}</button>`;
           }).join('')}
-          ${r.section==='fixed'?`<button class="btn icon" data-action="toggleRecurring" data-id="${r.id}" title="${r.recurring?'自動引き継ぎON（クリックでOFF）':'自動引き継ぎOFF（クリックでON）'}" style="font-size:13px;color:${r.recurring?'#38a169':'#cbd5e0'}">🔄</button>`:''}
+          ${r.section==='fixed'?`<button class="btn icon" data-action="toggleRecurring" data-id="${r.id}" title="${r.recurring?'自動引き継ぎON（クリックでOFF）':'自動引き継ぎOFF（クリックでON）'}" style="font-size:13px;${r.recurring?'background:#c6f6d5;border-radius:4px;outline:1px solid #38a169;':'opacity:0.3;'}">🔄</button>`:''}
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
           <button class="btn icon" data-action="delExp"  data-id="${r.id}" title="削除">🗑</button>
