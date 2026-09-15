@@ -2291,14 +2291,14 @@ function initTrendChart() {
   const canvas = document.getElementById('trend-chart');
   if (!canvas) return;
   const data = getMonthTrend(6);
-  trendChartInst = new Chart(canvas, {
+  try { trendChartInst = new Chart(canvas, {
     type: 'line',
     data: {
       labels: data.map(d=>d.label),
       datasets: [
-        { label:'収入', data: data.map(d=>d.income),   borderColor:'rgba(74,111,165,0.9)',  backgroundColor:'rgba(74,111,165,0.08)',  tension:0.3, pointRadius:3, fill:false },
-        { label:'支出', data: data.map(d=>d.expenses), borderColor:'rgba(229,62,62,0.9)',   backgroundColor:'rgba(229,62,62,0.08)',   tension:0.3, pointRadius:3, fill:false },
-        { label:'貯金', data: data.map(d=>d.savings),  borderColor:'rgba(192,86,33,0.8)',   backgroundColor:'rgba(192,86,33,0.06)',   tension:0.3, pointRadius:3, fill:false },
+        { label:'収入', data: data.map(d=>d.income),   borderColor:'#4a6fa5', backgroundColor:'rgba(74,111,165,0.1)',  borderWidth:2, tension:0.3, pointRadius:3, fill:false },
+        { label:'支出', data: data.map(d=>d.expenses), borderColor:'#e53e3e', backgroundColor:'rgba(229,62,62,0.1)',   borderWidth:2, tension:0.3, pointRadius:3, fill:false },
+        { label:'貯金', data: data.map(d=>d.savings),  borderColor:'#c05621', backgroundColor:'rgba(192,86,33,0.1)',   borderWidth:2, tension:0.3, pointRadius:3, fill:false },
       ]
     },
     options: {
@@ -2309,7 +2309,7 @@ function initTrendChart() {
         x: { ticks:{ font:{size:10} } }
       }
     }
-  });
+  }); } catch(e) { console.error('trend chart error:', e); }
 }
 
 function initChart(expenses) {
