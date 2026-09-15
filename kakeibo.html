@@ -1604,7 +1604,7 @@ function renderIncomePanel(md) {
           style="width:110px;padding:3px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-weight:700;text-align:right"
           data-action="editTransferAmount" data-id="${t.id}">
         <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
-          <span style="font-size:10px;color:var(--muted)">手数料</span>
+          <span style="font-size:10px;color:var(--muted);white-space:nowrap">手数料</span>
           <input type="number" value="${t.fee||''}" placeholder="0" min="0"
             style="width:64px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;color:${t.feeByPoint?'#a0aec0':'var(--muted)'};${t.feeByPoint?'text-decoration:line-through':''}"
             data-action="editTransferFee" data-id="${t.id}">
@@ -1653,7 +1653,7 @@ function renderIncomePanel(md) {
             <td class="r">
               ${numInp(savingsDeltaPaypay,'editSavingsDeltaPaypay')}
               <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
-                <span style="font-size:10px;color:var(--muted)">手数料</span>
+                <span style="font-size:10px;color:var(--muted);white-space:nowrap">手数料</span>
                 <input type="number" value="${md.savingsDeltaPaypayFee||''}" placeholder="0" min="0"
                   style="width:60px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;${md.savingsDeltaPaypayFeePt?'text-decoration:line-through;color:#a0aec0':''}"
                   data-action="editSavingsPaypayFee">
@@ -1671,7 +1671,7 @@ function renderIncomePanel(md) {
             <td class="r">
               ${numInp(savingsDeltaCash,'editSavingsDeltaCash')}
               <div style="margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end">
-                <span style="font-size:10px;color:var(--muted)">手数料</span>
+                <span style="font-size:10px;color:var(--muted);white-space:nowrap">手数料</span>
                 <input type="number" value="${md.savingsDeltaCashFee||''}" placeholder="0" min="0"
                   style="width:60px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:right;${md.savingsDeltaCashFeePt?'text-decoration:line-through;color:#a0aec0':''}"
                   data-action="editSavingsCashFee">
