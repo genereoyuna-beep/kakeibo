@@ -603,7 +603,6 @@ let _dragSrcId   = null;
 let _dragSrcType = null;
 let _touchDrag  = null;
 let _sidebarW    = +localStorage.getItem('kakeibo_sidebar_width') || 320;
-let _trendMode   = 'summary'; // 'summary' | 'category'
 
 function sortedSection(expenses, section) {
   const st   = sortState[section];
@@ -908,10 +907,7 @@ function render() {
 
         <!-- 月次推移 -->
         <div class="panel">
-          <div class="panel-header gray">
-            <span>月次推移（6ヶ月）</span>
-            <button class="btn icon" data-action="toggleTrendMode" style="font-size:11px;padding:2px 7px;color:#4a6fa5;margin-left:auto">${_trendMode==='category'?'▶ サマリー':'▶ カテゴリ別'}</button>
-          </div>
+          <div class="panel-header gray"><span>月次推移（6ヶ月）</span></div>
           <div class="trend-canvas-wrap">
             <canvas id="trend-chart"></canvas>
           </div>
@@ -2281,14 +2277,11 @@ function getMonthTrend(n) {
     const d = state.data[key];
     const otherInc = d ? (d.otherIncomes||[]).reduce((s,i)=>s+(i.amount||0),0) : 0;
     const sav = d ? (d.savingsDeltaPaypay||0) + (d.savingsDeltaCash||0) : 0;
-    const catMap = {};
-    if (d) CATEGORIES.forEach(c => { catMap[c] = categoryTotals(d.expenses)[c] || 0; });
     result.push({
       label:    `${mm}月`,
       income:   d ? (d.salary||0) + otherInc : 0,
       expenses: d ? totalExpenses(d.expenses) : 0,
       savings:  Math.max(0, sav),
-      cats:     catMap,
     });
   }
   return result;
@@ -2298,38 +2291,22 @@ function initTrendChart() {
   const canvas = document.getElementById('trend-chart');
   if (!canvas) return;
   const data = getMonthTrend(6);
-  let chartData;
-  if (_trendMode === 'category') {
-    const activeCats = CATEGORIES.filter(c => data.some(d => (d.cats[c]||0) > 0));
-    chartData = {
-      labels: data.map(d=>d.label),
-      datasets: activeCats.map(c => ({
-        label: c,
-        data: data.map(d => d.cats[c]||0),
-        backgroundColor: CAT_COLORS[c] || '#ccc',
-        borderRadius: 2,
-        stack: 'expenses',
-      }))
-    };
-  } else {
-    chartData = {
+  trendChartInst = new Chart(canvas, {
+    type: 'line',
+    data: {
       labels: data.map(d=>d.label),
       datasets: [
-        { label:'収入', data: data.map(d=>d.income),   backgroundColor:'rgba(74,111,165,0.75)', borderRadius:3 },
-        { label:'支出', data: data.map(d=>d.expenses), backgroundColor:'rgba(229,62,62,0.75)',  borderRadius:3 },
-        { label:'貯金', data: data.map(d=>d.savings),  backgroundColor:'rgba(192,86,33,0.65)',  borderRadius:3 },
+        { label:'収入', data: data.map(d=>d.income),   borderColor:'rgba(74,111,165,0.9)',  backgroundColor:'rgba(74,111,165,0.08)',  tension:0.3, pointRadius:3, fill:false },
+        { label:'支出', data: data.map(d=>d.expenses), borderColor:'rgba(229,62,62,0.9)',   backgroundColor:'rgba(229,62,62,0.08)',   tension:0.3, pointRadius:3, fill:false },
+        { label:'貯金', data: data.map(d=>d.savings),  borderColor:'rgba(192,86,33,0.8)',   backgroundColor:'rgba(192,86,33,0.06)',   tension:0.3, pointRadius:3, fill:false },
       ]
-    };
-  }
-  trendChartInst = new Chart(canvas, {
-    type: 'bar',
-    data: chartData,
+    },
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: { legend: { position:'bottom', labels:{font:{size:10},boxWidth:10,padding:6} } },
       scales: {
-        x: { stacked: _trendMode==='category', ticks:{ font:{size:10} } },
-        y: { stacked: _trendMode==='category', min:0, ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
+        y: { min:0, ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
+        x: { ticks:{ font:{size:10} } }
       }
     }
   });
@@ -3561,11 +3538,6 @@ function handleClick(e) {
     const id = el.dataset.id;
     state.templates = (state.templates||[]).filter(t=>t.id!==id);
     saveState(); render();
-  }
-  else if (action === 'toggleTrendMode') {
-    _trendMode = _trendMode === 'category' ? 'summary' : 'category';
-    if (trendChartInst) { trendChartInst.destroy(); trendChartInst = null; }
-    render();
   }
   else if (action === 'toggleRecurring') {
     const md = getMonth();
