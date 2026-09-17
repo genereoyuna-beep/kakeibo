@@ -460,6 +460,7 @@ function migrateMonthData(md) {
   if (md.savingsDeltaPaypayFeePt   === undefined) md.savingsDeltaPaypayFeePt   = false;
   if (md.savingsDeltaCashFee       === undefined) md.savingsDeltaCashFee       = 0;
   if (md.savingsDeltaCashFeePt     === undefined) md.savingsDeltaCashFeePt     = false;
+  if (md.savingsDeltaCashFromBank  === undefined) md.savingsDeltaCashFromBank  = true;
   if (!md.confirmedCards)  md.confirmedCards = {};
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
@@ -1188,17 +1189,22 @@ function renderBalanceCalc(expenses) {
       changes: { '楽天銀行': -(sp + spFee), 'Paypay銀行': +sp } });
   }
 
-  // ⑤ 貯金（楽天↔現金）― 正値：楽天→現金、負値：現金→楽天
+  // ⑤ 貯金（現金）
   if (md.savingsDeltaCash) {
-    const sc     = md.savingsDeltaCash;
-    const scFee  = md.savingsDeltaCashFeePt ? 0 : (md.savingsDeltaCashFee||0);
-    const day    = md.savingsDeltaCashDate ? +md.savingsDeltaCashDate : null;
-    const dayNum = day || 99;
-    const feeStr = scFee > 0 ? `（手数料 ${fmt(scFee)}）` : '';
+    const sc         = md.savingsDeltaCash;
+    const scFee      = md.savingsDeltaCashFeePt ? 0 : (md.savingsDeltaCashFee||0);
+    const fromBank   = md.savingsDeltaCashFromBank !== false;
+    const day        = md.savingsDeltaCashDate ? +md.savingsDeltaCashDate : null;
+    const dayNum     = day || 99;
+    const feeStr     = scFee > 0 ? `（手数料 ${fmt(scFee)}）` : '';
+    const sourceStr  = fromBank ? '' : '（外部受取）';
+    const changes    = fromBank
+      ? { '楽天銀行': -(sc + scFee), '現金': +sc }
+      : { '現金': +sc };
     events.push({ dayNum, day: day ? `${day}日` : '日付未設定',
       type: sc > 0 ? 'savings' : 'income',
-      label: (sc > 0 ? '貯金（現金）' : '貯金取崩し（現金）') + feeStr,
-      changes: { '楽天銀行': -(sc + scFee), '現金': +sc } });
+      label: (sc > 0 ? '貯金（現金）' : '貯金取崩し（現金）') + sourceStr + feeStr,
+      changes });
   }
 
   // ⑥ 送金
@@ -1493,7 +1499,9 @@ function calcAccountBalances(upToMonth) {
     bal['楽天銀行']   -= sp + spFee; bal['Paypay銀行'] += sp;
     const sc = d.savingsDeltaCash || 0;
     const scFee = d.savingsDeltaCashFeePt ? 0 : (d.savingsDeltaCashFee||0);
-    bal['楽天銀行']   -= sc + scFee; bal['現金']        += sc;
+    const scFromBank = d.savingsDeltaCashFromBank !== false;
+    if (scFromBank) bal['楽天銀行'] -= sc + scFee;
+    bal['現金'] += sc;
     (d.transfers||[]).forEach(t => {
       const from = t.fromAccount && t.fromAccount in bal ? t.fromAccount : '楽天銀行';
       bal[from] -= (t.amount || 0) + (t.feeByPoint ? 0 : (t.fee || 0));
@@ -1676,7 +1684,11 @@ function renderIncomePanel(md) {
           </tr>
           <tr class="data">
             <td class="muted" style="padding-left:20px">貯金（現金）</td>
-            <td></td>
+            <td>
+              <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:${md.savingsDeltaCashFromBank?'#276749':'var(--muted)'};cursor:pointer;white-space:nowrap">
+                <input type="checkbox" ${md.savingsDeltaCashFromBank?'checked':''} data-action="editSavingsCashFromBank" style="width:11px;height:11px;cursor:pointer">銀行から出金
+              </label>
+            </td>
             <td style="text-align:center">${dayInp(savingsDeltaCashDate,'editSavingsCashDate')}</td>
             <td class="r">
               ${numInp(savingsDeltaCash,'editSavingsDeltaCash')}
@@ -3771,6 +3783,9 @@ function handleInput(e) {
     saveState(); refreshAccountBals();
   } else if (act === 'editSavingsCashFeePt') {
     md.savingsDeltaCashFeePt = e.target.checked;
+    saveState(); render();
+  } else if (act === 'editSavingsCashFromBank') {
+    md.savingsDeltaCashFromBank = e.target.checked;
     saveState(); render();
   } else if (act === 'editSavingsGoal') {
     md.savingsGoal = +e.target.value || 0;
