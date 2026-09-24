@@ -716,7 +716,6 @@ function render() {
               <span class="amount" style="font-size:11px;color:#c53030">${fmt(fixedTotal)}</span>
               <button class="btn sm" id="merge-fixed" data-action="mergeExp" data-section="fixed" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-fixed" data-action="bulkDelete" data-section="fixed" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
-              <button class="btn sm" id="bulk-dup-fixed" data-action="bulkDuplicate" data-section="fixed" style="display:none;color:#744210;border-color:#fbd38d">複製</button>
               <button class="btn sm" id="bulk-copy-fixed" data-action="bulkCopyNextMonth" data-section="fixed" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="fixed">＋ 追加</button>
             </div>
@@ -746,7 +745,6 @@ function render() {
               <span class="amount" style="font-size:11px;color:#744210">${fmt(installTotal)}</span>
               <button class="btn sm" id="merge-installment" data-action="mergeExp" data-section="installment" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-installment" data-action="bulkDelete" data-section="installment" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
-              <button class="btn sm" id="bulk-dup-installment" data-action="bulkDuplicate" data-section="installment" style="display:none;color:#744210;border-color:#fbd38d">複製</button>
               <button class="btn sm" id="bulk-copy-installment" data-action="bulkCopyNextMonth" data-section="installment" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="installment">＋ 追加</button>
             </div>
@@ -776,7 +774,6 @@ function render() {
               <span class="amount" style="font-size:11px;color:var(--muted)">${fmt(varTotal)}</span>
               <button class="btn sm" id="merge-variable" data-action="mergeExp" data-section="variable" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-variable" data-action="bulkDelete" data-section="variable" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
-              <button class="btn sm" id="bulk-dup-variable" data-action="bulkDuplicate" data-section="variable" style="display:none;color:#744210;border-color:#fbd38d">複製</button>
               <button class="btn sm" id="bulk-copy-variable" data-action="bulkCopyNextMonth" data-section="variable" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="variable">＋ 追加</button>
             </div>
@@ -970,6 +967,7 @@ function expRow(r) {
           }).join('')}
 
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
+          ${r.section==='variable'?`<button class="btn icon" data-action="duplicateExp" data-id="${r.id}" title="複製" style="font-size:11px;color:#744210">複製</button>`:''}
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
           <button class="btn icon" data-action="delExp"  data-id="${r.id}" title="削除">🗑</button>
         </div>
@@ -2437,8 +2435,6 @@ function updateBulkDeleteBtns(section) {
     const mergeBtn = document.getElementById('merge-' + s);
     if (delBtn)   { delBtn.style.display   = count > 0  ? '' : 'none'; delBtn.textContent = `🗑 ${count}件削除`; }
     if (mergeBtn) { mergeBtn.style.display = count >= 2 ? '' : 'none'; }
-    const dupBtn  = document.getElementById('bulk-dup-'  + s);
-    if (dupBtn)   { dupBtn.style.display   = count > 0  ? '' : 'none'; dupBtn.textContent  = `複製 ${count}件`; }
     const copyBtn = document.getElementById('bulk-copy-' + s);
     if (copyBtn)  { copyBtn.style.display  = count > 0  ? '' : 'none'; copyBtn.textContent = `→翌 ${count}件`; }
   });
@@ -3562,16 +3558,12 @@ function handleClick(e) {
     state.templates = (state.templates||[]).filter(t=>t.id!==id);
     saveState(); render();
   }
-  else if (action === 'bulkDuplicate') {
-    const section = el.dataset.section;
+  else if (action === 'duplicateExp') {
     const md = getMonth();
-    const ids = new Set([...document.querySelectorAll(`.exp-ck[data-section="${section}"]:checked`)].map(el=>el.dataset.id));
-    if (!ids.size) { showToast('複製する行を選択してください'); return; }
-    md.expenses.filter(e => ids.has(e.id)).forEach(exp => {
-      md.expenses.push({ ...exp, id: uid(), tagged: false, tagIds: {} });
-    });
+    const exp = md.expenses.find(r => r.id === el.dataset.id);
+    if (!exp) return;
+    md.expenses.push({ ...exp, id: uid(), tagged: false, tagIds: {} });
     saveState(); render();
-    showToast(`${ids.size}件を複製しました`);
   }
   else if (action === 'bulkCopyNextMonth') {
     const section = el.dataset.section;
