@@ -465,7 +465,10 @@ function migrateMonthData(md) {
   if (!md.cardPrepaid)     md.cardPrepaid    = {};
   if (!md.cardBudgets)     md.cardBudgets    = {};
   if (!md.investDeposits)  md.investDeposits = [];
-  (md.investDeposits||[]).forEach(d => { if (d.byCard === undefined) d.byCard = false; });
+  (md.investDeposits||[]).forEach(d => {
+    if (d.byCard     === undefined) d.byCard     = false;
+    if (d.cardName   === undefined) d.cardName   = '楽天カード';
+  });
   if (md.investValuation === undefined) md.investValuation = 0;
   // 「現金」→「現金（貯金）」移行
   (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
@@ -529,11 +532,16 @@ function fmt(n) {
 // ═══════════════════════════════════════════════
 //  COMPUTED
 // ═══════════════════════════════════════════════
-function cardTotals(expenses) {
+function cardTotals(expenses, investDeposits) {
   const t = {};
   expenses.forEach(e => {
     if (!e.payment || e.payment === 'Appleギフト') return;
     t[e.payment] = (t[e.payment]||0) + (e.amount||0);
+  });
+  (investDeposits||[]).forEach(d => {
+    if (d.byCard && d.cardName && (d.amount||0) > 0) {
+      t[d.cardName] = (t[d.cardName]||0) + (d.amount||0);
+    }
   });
   return t;
 }
@@ -968,7 +976,7 @@ function expRow(r) {
 }
 
 function renderCardSummary(expenses, md) {
-  const ct        = cardTotals(expenses);
+  const ct        = cardTotals(expenses, md.investDeposits);
   const confirmed = md.confirmedCards || {};
   const prepaid   = md.cardPrepaid   || {};
   const monthBudgets = md.cardBudgets || {};
@@ -1125,7 +1133,7 @@ function renderBalanceCalc(expenses) {
   const md         = getMonth();
   const prevMonth  = getPrevMonth(state.currentMonth);
   const startBal   = calcAccountBalances(prevMonth);
-  const ct         = cardTotals(expenses);
+  const ct         = cardTotals(expenses, md.investDeposits);
   const prepaid    = md.cardPrepaid || {};
 
   const events = [];
@@ -1994,7 +2002,11 @@ function renderInvestPanel(md) {
           data-action="editInvestDepositSource" data-id="${dep.id}">
           <option value="">送金元</option>
           ${SOURCE_ACCOUNTS.map(a=>`<option value="${a}" ${dep.sourceAccount===a?'selected':''}>${a}</option>`).join('')}
-        </select>` : `<span style="font-size:10px;color:#2b6cb0;flex-shrink:0">固定費から計上</span>`}
+        </select>` : `
+        <select style="border:1px solid #bee3f8;border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0;background:#ebf8ff"
+          data-action="editInvestDepositCard" data-id="${dep.id}">
+          ${state.cardSettings.map(c=>`<option value="${esc(c.name)}" ${dep.cardName===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}
+        </select>`}
         <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
         <input type="number" value="${dep.amount||''}" placeholder="0"
           style="flex:1;min-width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;text-align:right"
@@ -2505,7 +2517,7 @@ function renderQuickAdd() {
 }
 
 function renderPaymentCalendar(expenses, md) {
-  const ct      = cardTotals(expenses);
+  const ct      = cardTotals(expenses, md.investDeposits);
   const prepaid = md.cardPrepaid   || {};
   const confirmed = md.confirmedCards || {};
   const cards = state.cardSettings
@@ -3063,7 +3075,7 @@ function buildAIExportText() {
   CATEGORIES.forEach(c => { catTotals[c] = 0; });
   expenses.forEach(e => { if (e.category && catTotals[e.category] !== undefined) catTotals[e.category] += e.amount||0; });
 
-  const ct = cardTotals(expenses);
+  const ct = cardTotals(expenses, md.investDeposits);
   const monthBudgets = md.cardBudgets || {};
 
   // 6ヶ月トレンド
@@ -3839,6 +3851,10 @@ function handleChange(e) {
   if (act === 'editInvestDepositSource') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
     if (d) { d.sourceAccount = e.target.value; saveState(); refreshAccountBals(); } return;
+  }
+  if (act === 'editInvestDepositCard') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.cardName = e.target.value; saveState(); render(); } return;
   }
   if (act === 'editInvestDepositAmount') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
