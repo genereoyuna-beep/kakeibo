@@ -716,8 +716,7 @@ function render() {
               <span class="amount" style="font-size:11px;color:#c53030">${fmt(fixedTotal)}</span>
               <button class="btn sm" id="merge-fixed" data-action="mergeExp" data-section="fixed" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-fixed" data-action="bulkDelete" data-section="fixed" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
-              <input id="bulk-recurring-months" type="number" min="1" placeholder="∞" style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;text-align:center">
-              <button class="btn sm" data-action="bulkRecurringOn" style="color:#38a169;border-color:#9ae6b4">🔄 全件</button>
+              <button class="btn sm" id="bulk-copy-fixed" data-action="bulkCopyNextMonth" data-section="fixed" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="fixed">＋ 追加</button>
             </div>
           </div>
@@ -746,6 +745,7 @@ function render() {
               <span class="amount" style="font-size:11px;color:#744210">${fmt(installTotal)}</span>
               <button class="btn sm" id="merge-installment" data-action="mergeExp" data-section="installment" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-installment" data-action="bulkDelete" data-section="installment" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
+              <button class="btn sm" id="bulk-copy-installment" data-action="bulkCopyNextMonth" data-section="installment" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="installment">＋ 追加</button>
             </div>
           </div>
@@ -774,6 +774,7 @@ function render() {
               <span class="amount" style="font-size:11px;color:var(--muted)">${fmt(varTotal)}</span>
               <button class="btn sm" id="merge-variable" data-action="mergeExp" data-section="variable" style="display:none;color:#276749;border-color:#c6f6d5">⊕ まとめる</button>
               <button class="btn sm" id="bulk-del-variable" data-action="bulkDelete" data-section="variable" style="display:none;color:#c53030;border-color:#feb2b2">🗑 一括削除</button>
+              <button class="btn sm" id="bulk-copy-variable" data-action="bulkCopyNextMonth" data-section="variable" style="display:none;color:#4a6fa5;border-color:#bee3f8">→翌 一括</button>
               <button class="btn sm" data-action="addExp" data-section="variable">＋ 追加</button>
             </div>
           </div>
@@ -964,7 +965,6 @@ function expRow(r) {
             const on=isTagged(r,t.id);const c=TAG_COLORS[i%TAG_COLORS.length];
             return `<button class="btn icon" data-action="toggleTag" data-id="${r.id}" data-tagid="${esc(t.id)}" title="${on?'印を外す':esc(t.label||'集計')+'に追加'}" style="font-size:${(state.tags||[]).filter(x=>!x.hidden).length>1?'12':'15'}px;color:${on?c:'#cbd5e0'}">${on?'★':'☆'}</button>`;
           }).join('')}
-          ${r.section==='fixed'?`<button class="btn icon" data-action="toggleRecurring" data-id="${r.id}" title="${r.recurring?'自動引き継ぎON（クリックでOFF）':'自動引き継ぎOFF（クリックでON）'}" style="font-size:13px;${r.recurring?'background:#c6f6d5;border-radius:4px;outline:1px solid #38a169;':'opacity:0.3;'}">🔄</button>${r.recurring?`<input type="number" min="1" value="${r.recurringMonths||''}" placeholder="∞" data-action="editRecurringMonths" data-id="${r.id}" title="あと何ヶ月繰り返すか（空=無期限）" style="width:34px;padding:1px 3px;border:1px solid #9ae6b4;border-radius:4px;font-size:10px;text-align:center"><span style="font-size:10px;color:#38a169;white-space:nowrap">ヶ月</span>`:''}`:''}
 
           <button class="btn icon" data-action="editExp" data-id="${r.id}" title="編集">✏️</button>
           <button class="btn icon" data-action="copyNextMonth" data-id="${r.id}" title="翌月にコピー" style="font-size:11px;color:#4a6fa5">→翌</button>
@@ -2434,6 +2434,8 @@ function updateBulkDeleteBtns(section) {
     const mergeBtn = document.getElementById('merge-' + s);
     if (delBtn)   { delBtn.style.display   = count > 0  ? '' : 'none'; delBtn.textContent = `🗑 ${count}件削除`; }
     if (mergeBtn) { mergeBtn.style.display = count >= 2 ? '' : 'none'; }
+    const copyBtn = document.getElementById('bulk-copy-' + s);
+    if (copyBtn)  { copyBtn.style.display  = count > 0  ? '' : 'none'; copyBtn.textContent = `→翌 ${count}件`; }
   });
 }
 
@@ -3162,29 +3164,8 @@ function handleClick(e) {
   }
   else if (action === 'nextMonth') {
     const [y,m] = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4)];
-    const prevKey = m===12 ? `${y}12` : `${y}${String(m).padStart(2,'0')}`;
     state.currentMonth = m===12 ? `${y+1}01` : `${y}${String(m+1).padStart(2,'0')}`;
-    const nym = state.currentMonth;
-    const [ny, nm] = [+nym.slice(0,4), +nym.slice(4)];
-    if (!state.data[nym]) state.data[nym] = emptyMonth();
-    // 🔄ONの固定費だけ引き継ぎ（既に入力済みなら何もしない）
-    const hasFixed = state.data[nym].expenses.some(e => e.section === 'fixed');
-    if (!hasFixed && state.data[prevKey]) {
-      const recurring = state.data[prevKey].expenses.filter(e => e.section === 'fixed' && e.recurring);
-      state.data[nym].expenses = [
-        ...state.data[nym].expenses,
-        ...recurring.map(e => {
-          const months = e.recurringMonths || 0;
-          const newMonths = months > 0 ? months - 1 : 0;
-          return {
-            ...e, id: uid(), tagged: false, tagIds: {},
-            recurringMonths: newMonths,
-            recurring: newMonths === 0 && months > 0 ? false : true, // 残0になったらOFF
-            date: e.date ? `${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-${e.date.slice(8)}` : null,
-          };
-        }),
-      ];
-    }
+    if (!state.data[state.currentMonth]) state.data[state.currentMonth] = emptyMonth();
     saveState(); render();
   }
   else if (action === 'addIncome') {
@@ -3576,26 +3557,33 @@ function handleClick(e) {
     state.templates = (state.templates||[]).filter(t=>t.id!==id);
     saveState(); render();
   }
-  else if (action === 'bulkRecurringOn') {
+  else if (action === 'bulkCopyNextMonth') {
+    const section = el.dataset.section;
     const md = getMonth();
-    const months = +(document.getElementById('bulk-recurring-months')?.value || 0);
-    md.expenses.filter(e => e.section === 'fixed').forEach(e => {
-      e.recurring = true;
-      e.recurringMonths = months;
+    const ids = new Set([...document.querySelectorAll(`.exp-ck[data-section="${section}"]:checked`)].map(el=>el.dataset.id));
+    if (!ids.size) { showToast('コピーする行を選択してください'); return; }
+    const [y, m] = [+state.currentMonth.slice(0,4), +state.currentMonth.slice(4)];
+    const nextKey = m===12 ? `${y+1}01` : `${y}${String(m+1).padStart(2,'0')}`;
+    if (!state.data[nextKey]) state.data[nextKey] = emptyMonth();
+    const nextMd = state.data[nextKey];
+    md.expenses.filter(e => ids.has(e.id)).forEach(exp => {
+      let newExp;
+      if (exp.section === 'installment' && exp.totalInstallments) {
+        const newPaid = (exp.paidInstallments || 0) + 1;
+        if (newPaid > exp.totalInstallments) return;
+        newExp = { ...exp, id: uid(), paidInstallments: newPaid };
+      } else {
+        newExp = { ...exp, id: uid() };
+      }
+      nextMd.expenses.push(newExp);
     });
-    saveState(); render();
+    saveState();
+    showToast(`${ids.size}件を翌月にコピーしました`);
   }
   else if (action === 'toggleTrendMode') {
     _trendMode = _trendMode === 'category' ? 'summary' : 'category';
     if (trendChartInst) { trendChartInst.destroy(); trendChartInst = null; }
     render();
-  }
-  else if (action === 'toggleRecurring') {
-    const md = getMonth();
-    const exp = md.expenses.find(r => r.id === el.dataset.id);
-    if (!exp) return;
-    exp.recurring = !exp.recurring;
-    saveState(); render();
   }
   else if (action === 'copyNextMonth') {
     const md  = getMonth();
@@ -3736,9 +3724,6 @@ function handleInput(e) {
   } else if (act === 'editTransferFee') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.fee = +e.target.value || 0; }
-  } else if (act === 'editRecurringMonths') {
-    const exp = (md.expenses||[]).find(ex=>ex.id===e.target.dataset.id);
-    if (exp) { exp.recurringMonths = +(e.target.value) || 0; saveState(); }
   } else if (act === 'editTransferFeeByPoint') {
     const t = (md.transfers||[]).find(t=>t.id===e.target.dataset.id);
     if (t) { t.feeByPoint = e.target.checked; saveState(); render(); }
