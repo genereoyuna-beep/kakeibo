@@ -472,8 +472,10 @@ function migrateMonthData(md) {
   if (md.investValuation === undefined) md.investValuation = 0;
   // 「現金」→「現金（貯金）」移行
   (md.expenses||[]).forEach(e => { if (e.payment === '現金') e.payment = '現金（貯金）'; });
-  if (!md.otherIncomes)   md.otherIncomes   = [];
-  if (!md.expenses)        md.expenses       = [];
+  if (!md.otherIncomes)          md.otherIncomes   = [];
+  if (!md.expenses)              md.expenses       = [];
+  if (md.coin500Save  === undefined) md.coin500Save  = 0;
+  if (md.coin500Spend === undefined) md.coin500Spend = 0;
   (md.expenses||[]).forEach(e => {
     if (e.recurringMonths === undefined) e.recurringMonths = 0; // 0=無期限
   });
@@ -482,8 +484,9 @@ function migrateMonthData(md) {
 function applyRemoteState(s) {
   if (!s || !s.data) return;
   Object.assign(state, s);
-  if (!state.initialBalances) state.initialBalances = { miles:0, savingsPaypay:0, savingsCash:0, accounts:{'楽天銀行':0,'UFJ銀行':0} };
+  if (!state.initialBalances) state.initialBalances = { miles:0, savingsPaypay:0, savingsCash:0, coin500:0, accounts:{'楽天銀行':0,'UFJ銀行':0} };
   if (!state.initialBalances.accounts) state.initialBalances.accounts = {'楽天銀行':0,'UFJ銀行':0};
+  if (state.initialBalances.coin500 === undefined) state.initialBalances.coin500 = 0;
   if (!state.templates) state.templates = [];
   if (!state.tagLabel) state.tagLabel = '';
   if (!state.tags || !state.tags.length) {
@@ -518,7 +521,7 @@ function getMonth() {
 
 function emptyMonth() {
   return { salary:0, salaryDate:10, otherIncomes:[], transfers:[], appleBalance:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, bankInterest:{'楽天銀行':0,'UFJ銀行':0,'Paypay銀行':0,'現金':0}, confirmedCards:{}, cardPrepaid:{}, expenses:[], savingsGoal:0, mileDelta:0, savingsDeltaPaypay:0, savingsDeltaPaypayDate:null, savingsDeltaPaypayFee:0, savingsDeltaPaypayFeePt:false,
-    savingsDeltaCash:0, savingsDeltaCashDate:null, savingsDeltaCashFee:0, savingsDeltaCashFeePt:false, wiseDeposits:[], wiseTrades:[], investDeposits:[], investValuation:0 };
+    savingsDeltaCash:0, savingsDeltaCashDate:null, savingsDeltaCashFee:0, savingsDeltaCashFeePt:false, savingsDeltaCashFromBank:true, wiseDeposits:[], wiseTrades:[], investDeposits:[], investValuation:0, coin500Save:0, coin500Spend:0 };
 }
 
 function uid() {
@@ -864,6 +867,9 @@ function render() {
 
         <!-- 貯金目標 -->
         ${renderSavingsPanel(md)}
+
+        <!-- 500円玉貯金 -->
+        ${renderCoin500Panel(md)}
 
         <!-- 楽天証券 投資 -->
         ${renderInvestPanel(md)}
@@ -1413,16 +1419,18 @@ function renderCalendar(expenses, ym) {
 
 // ── 累積残高計算 ──
 function calcBalance(upToMonth) {
-  const init = state.initialBalances || { miles:0, savingsPaypay:0, savingsCash:0 };
-  let miles = init.miles || 0;
-  let sp    = init.savingsPaypay || 0;
-  let sc    = init.savingsCash   || 0;
+  const init = state.initialBalances || { miles:0, savingsPaypay:0, savingsCash:0, coin500:0 };
+  let miles  = init.miles   || 0;
+  let sp     = init.savingsPaypay || 0;
+  let sc     = init.savingsCash   || 0;
+  let c500   = init.coin500 || 0;
   for (const m of Object.keys(state.data).sort()) {
     if (m > upToMonth) break;
     const d = state.data[m];
     miles += d.mileDelta          || 0;
     sp    += d.savingsDeltaPaypay || 0;
     sc    += d.savingsDeltaCash   || 0;
+    c500  += (d.coin500Save || 0) - (d.coin500Spend || 0);
     // 貯金手数料（楽天→Paypay/現金の振込手数料はPaypay/現金残高には影響しない）
     sp    += d.bankInterest?.['Paypay銀行'] || 0;
     sc    += d.bankInterest?.['現金']       || 0;
@@ -1447,7 +1455,7 @@ function calcBalance(upToMonth) {
       if (t.fromAccount   === '現金')       sc -= amt + fee;
     });
   }
-  return { miles, savingsPaypay: sp, savingsCash: sc };
+  return { miles, savingsPaypay: sp, savingsCash: sc, coin500: c500 };
 }
 
 // ── 投資累計計算 ──
@@ -1906,6 +1914,45 @@ function renderTagPanel() {
 }
 
 // ── 貯金残高 + 目標パネル ──
+function renderCoin500Panel(md) {
+  const bal  = calcBalance(state.currentMonth);
+  const c500 = bal.coin500;
+  const init = state.initialBalances;
+  const count = c500 > 0 ? Math.floor(c500 / 500) : 0;
+  return `
+    <div class="panel">
+      <div class="panel-header" style="background:#fffbeb;color:#744210;border-color:#fbd38d">
+        <span>🪙 500円玉貯金</span>
+        <span style="font-size:13px;font-weight:700;color:#744210">${fmt(c500)}</span>
+      </div>
+      <div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="color:var(--muted);flex:1">今月 貯め入れ</span>
+          <input type="number" value="${md.coin500Save||''}" placeholder="0" min="0" step="500"
+            style="width:80px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right"
+            data-action="editCoin500Save">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="color:var(--muted);flex:1">今月 使用（クレーン/ガチャ）</span>
+          <input type="number" value="${md.coin500Spend||''}" placeholder="0" min="0"
+            style="width:80px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right"
+            data-action="editCoin500Spend">
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:right">≈ ${count}枚</div>
+        <details>
+          <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:2px 0">初期残高</summary>
+          <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--muted);flex:1">開始時の残高</span>
+            <input type="number" value="${init.coin500||''}" placeholder="0" min="0" step="500"
+              style="width:90px;padding:3px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:right"
+              data-action="editInitialCoin500">
+          </div>
+        </details>
+      </div>
+    </div>
+  `;
+}
+
 function renderSavingsPanel(md) {
   const bal         = calcBalance(state.currentMonth);
   const total       = bal.savingsPaypay + bal.savingsCash;
@@ -3892,6 +3939,15 @@ function handleChange(e) {
     saveState(); render();
   } else if (act === 'editInitialCash') {
     state.initialBalances.savingsCash = +e.target.value || 0;
+    saveState(); render();
+  } else if (act === 'editInitialCoin500') {
+    state.initialBalances.coin500 = +e.target.value || 0;
+    saveState(); render();
+  } else if (act === 'editCoin500Save') {
+    const md = getMonth(); md.coin500Save = +e.target.value || 0;
+    saveState(); render();
+  } else if (act === 'editCoin500Spend') {
+    const md = getMonth(); md.coin500Spend = +e.target.value || 0;
     saveState(); render();
   } else if (act === 'editInitialAccount') {
     if (!state.initialBalances.accounts) state.initialBalances.accounts = {};
