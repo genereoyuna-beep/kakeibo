@@ -478,6 +478,7 @@ function migrateMonthData(md) {
   if (md.coin500Spend === undefined) md.coin500Spend = 0;
   (md.expenses||[]).forEach(e => {
     if (e.recurringMonths === undefined) e.recurringMonths = 0; // 0=無期限
+    if (e.tatekae         === undefined) e.tatekae         = 0;
   });
 }
 
@@ -560,11 +561,15 @@ function totalIncome(income) {
 }
 
 function totalExpenses(expenses) {
-  return (expenses||[]).reduce((s,r) => s+(r.amount||0), 0);
+  return (expenses||[]).reduce((s,r) => s+(r.amount||0)-(r.tatekae||0), 0);
 }
 
 function sectionTotal(expenses, section) {
-  return expenses.filter(e=>e.section===section).reduce((s,r)=>s+(r.amount||0),0);
+  return expenses.filter(e=>e.section===section).reduce((s,r)=>s+(r.amount||0)-(r.tatekae||0),0);
+}
+
+function tatekaeTotal(expenses) {
+  return (expenses||[]).reduce((s,r) => s+(r.tatekae||0), 0);
 }
 
 // 必要残高 計算: 支払日ごとに各口座の累計必要額を算出
@@ -648,6 +653,7 @@ function render() {
   const installTotal = sectionTotal(expenses,'installment');
   const varTotal     = sectionTotal(expenses,'variable');
   const expTotal     = totalExpenses(expenses);
+  const tatekaeSum   = tatekaeTotal(expenses);
   const ppFee2       = md.savingsDeltaPaypayFeePt ? 0 : (md.savingsDeltaPaypayFee||0);
   const csFee2       = md.savingsDeltaCashFeePt   ? 0 : (md.savingsDeltaCashFee||0);
   const deductions   = savingsDeltaPaypay + ppFee2 + savingsDeltaCash + csFee2 + xferDeduction(transfers);
@@ -801,6 +807,13 @@ function render() {
         <!-- 支出合計 -->
         <div class="panel">
           <table><tbody>
+            ${tatekaeSum > 0 ? `
+            <tr style="font-size:11px;color:#805ad5">
+              <td></td>
+              <td colspan="5" class="r">立替合計（含む）</td>
+              <td class="r" style="font-variant-numeric:tabular-nums">-${fmt(tatekaeSum)}</td>
+              <td></td>
+            </tr>` : ''}
             <tr class="total-row">
               <td></td>
               <td colspan="5" class="r" style="font-size:11px">支出合計</td>
@@ -963,7 +976,10 @@ function expRow(r) {
       <td class="hide-sp"><span class="chip" data-cat="${esc(r.category)}">${esc(r.category)}</span></td>
       <td class="hide-sp">${r.payment ? `<span class="chip" data-pay="${esc(r.payment)}">${esc(r.payment)}</span>` : '<span class="muted">—</span>'}</td>
       <td class="muted hide-sp">${esc(r.account||'')}</td>
-      <td class="r amount">${fmt(r.amount)}</td>
+      <td class="r amount">
+        ${fmt(r.amount)}
+        ${r.tatekae ? `<div style="font-size:10px;color:#805ad5;margin-top:2px">立替 -${fmt(r.tatekae)}</div>` : ''}
+      </td>
       <td>
         <div class="btn-row">
           <input type="checkbox" class="exp-ck" data-action="toggleExpCk" data-id="${r.id}" data-section="${r.section}" ${selectedExpIds.has(r.id)?'checked':''}>
@@ -2659,9 +2675,15 @@ function expModalHtml(existing, defaultSection) {
           </select>
         </div>
       </div>
-      <div class="field">
-        <label>金額</label>
-        <input id="m-amount" type="number" value="${r.amount||''}" placeholder="0" style="text-align:right">
+      <div class="field-row">
+        <div class="field">
+          <label>金額</label>
+          <input id="m-amount" type="number" value="${r.amount||''}" placeholder="0" style="text-align:right">
+        </div>
+        <div class="field">
+          <label>立替額（後で返ってくる額）</label>
+          <input id="m-tatekae" type="number" value="${r.tatekae||''}" placeholder="0" min="0" style="text-align:right">
+        </div>
       </div>
       <div class="field">
         <label>メモ（任意）</label>
@@ -3330,6 +3352,7 @@ function handleClick(e) {
       payment:  pay || null,
       account:  document.getElementById('m-account').value || null,
       amount:   +document.getElementById('m-amount').value || 0,
+      tatekae:  +document.getElementById('m-tatekae')?.value || 0,
       totalInstallments: sec === 'installment' ? (+document.getElementById('m-total-inst').value || null) : null,
       paidInstallments:  sec === 'installment' ? (+document.getElementById('m-paid-inst').value  || 0)    : null,
       memo: document.getElementById('m-memo')?.value.trim() || null,
