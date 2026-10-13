@@ -1288,6 +1288,7 @@ function renderBalanceCalc(expenses) {
   });
 
   // ⑩ 証券入金（日付ベースで口座から差し引き）
+  const curYM = state.currentMonth; // YYYYMM
   (md.investDeposits || []).forEach(dep => {
     if ((dep.amount || 0) <= 0) return;
     if (dep.byCard) return; // クレカ払いは固定費の引落で処理
@@ -1297,10 +1298,24 @@ function renderBalanceCalc(expenses) {
     const day    = dep.date ? `${dayNum}日` : '日付未設定';
     events.push({ dayNum, day, type: 'transfer', label: '証券入金', changes: { [from]: -(dep.amount) } });
     if ((dep.refundAmount || 0) > 0) {
-      const rDay = dep.refundDate ? +dep.refundDate.slice(8, 10) : dayNum;
-      const rDayLabel = dep.refundDate ? `${rDay}日` : day;
-      events.push({ dayNum: rDay, day: rDayLabel, type: 'income', label: '証券返金', changes: { [from]: +(dep.refundAmount) } });
+      const refM = dep.refundDate ? dep.refundDate.slice(0,4)+dep.refundDate.slice(5,7) : curYM;
+      if (refM === curYM) { // 返金が今月なら今月カレンダーに表示
+        const rDay = dep.refundDate ? +dep.refundDate.slice(8, 10) : dayNum;
+        events.push({ dayNum: rDay, day: `${rDay}日`, type: 'income', label: '証券返金', changes: { [from]: +(dep.refundAmount) } });
+      }
     }
+  });
+  // 前月以前の入金で今月が返金月のものを表示
+  Object.keys(state.data).filter(k => k < curYM).forEach(prevKey => {
+    (state.data[prevKey].investDeposits||[]).forEach(dep => {
+      if (dep.byCard || !(dep.refundAmount||0) || !dep.refundDate) return;
+      const refM = dep.refundDate.slice(0,4)+dep.refundDate.slice(5,7);
+      if (refM !== curYM) return;
+      const from = dep.sourceAccount && (dep.sourceAccount in startBal) ? dep.sourceAccount : '楽天銀行';
+      if (!(from in startBal)) return;
+      const rDay = +dep.refundDate.slice(8,10);
+      events.push({ dayNum: rDay, day: `${rDay}日`, type: 'income', label: '証券返金', changes: { [from]: +(dep.refundAmount) } });
+    });
   });
 
   // 日付順にソート（同日：入金→送金→貯金→引き落とし）
@@ -1549,7 +1564,20 @@ function calcAccountBalances(upToMonth) {
     (d.investDeposits||[]).forEach(dep => {
       if (dep.byCard) return; // クレカ払いは固定費経由で計上済み
       const from = dep.sourceAccount && dep.sourceAccount in bal ? dep.sourceAccount : '楽天銀行';
-      bal[from] -= (dep.amount||0) - (dep.refundAmount||0);
+      bal[from] -= dep.amount||0; // 入金月は全額引く
+      // 返金が同月なら同月に戻す（別月なら後のループで処理）
+      const refM = dep.refundDate ? dep.refundDate.slice(0,4)+dep.refundDate.slice(5,7) : null;
+      if ((dep.refundAmount||0) > 0 && (!refM || refM === m)) bal[from] += dep.refundAmount;
+    });
+    // 過去月の入金で今月が返金月のものを戻す
+    Object.keys(state.data).filter(k => k < m).forEach(prevKey => {
+      (state.data[prevKey].investDeposits||[]).forEach(dep => {
+        if (dep.byCard || !(dep.refundAmount||0)) return;
+        const refM = dep.refundDate ? dep.refundDate.slice(0,4)+dep.refundDate.slice(5,7) : null;
+        if (refM !== m) return;
+        const from = dep.sourceAccount && dep.sourceAccount in bal ? dep.sourceAccount : '楽天銀行';
+        bal[from] += dep.refundAmount;
+      });
     });
     (d.expenses||[]).forEach(e => {
       if (!e.payment || e.payment === 'Appleギフト') {
