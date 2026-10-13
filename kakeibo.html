@@ -469,6 +469,7 @@ function migrateMonthData(md) {
     if (d.byCard     === undefined) d.byCard     = false;
     if (d.cardName   === undefined) d.cardName   = '楽天カード';
     if (d.refundAmount === undefined) d.refundAmount = d.refunded ? (d.amount||0) : 0;
+    if (d.refundDate   === undefined) d.refundDate   = null;
     delete d.refunded;
   });
   if (md.investValuation === undefined) md.investValuation = 0;
@@ -1294,9 +1295,12 @@ function renderBalanceCalc(expenses) {
     if (!(from in startBal)) return;
     const dayNum = dep.date ? +dep.date.slice(8, 10) : 99;
     const day    = dep.date ? `${dayNum}日` : '日付未設定';
-    events.push({ dayNum, day, type: 'transfer',
-      label: `証券入金`,
-      changes: { [from]: -(dep.amount) } });
+    events.push({ dayNum, day, type: 'transfer', label: '証券入金', changes: { [from]: -(dep.amount) } });
+    if ((dep.refundAmount || 0) > 0) {
+      const rDay = dep.refundDate ? +dep.refundDate.slice(8, 10) : dayNum;
+      const rDayLabel = dep.refundDate ? `${rDay}日` : day;
+      events.push({ dayNum: rDay, day: rDayLabel, type: 'income', label: '証券返金', changes: { [from]: +(dep.refundAmount) } });
+    }
   });
 
   // 日付順にソート（同日：入金→送金→貯金→引き落とし）
@@ -2084,10 +2088,13 @@ function renderInvestPanel(md) {
         <button class="btn icon" data-action="delInvestDeposit" data-id="${dep.id}" style="color:#c53030;opacity:0.5;font-size:11px;flex-shrink:0">🗑</button>
       </div>
       <div style="display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap">
-        <span style="font-size:10px;color:#c53030;flex-shrink:0">返金額</span>
+        <span style="font-size:10px;color:#c53030;flex-shrink:0">返金</span>
+        <input type="date" value="${dep.refundDate||''}" placeholder=""
+          style="border:1px solid ${hasRefund?'#fc8181':'var(--border)'};border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0;background:${hasRefund?'#fff5f5':''}"
+          data-action="editInvestDepositRefundDate" data-id="${dep.id}">
         <span style="font-size:11px;color:var(--muted);flex-shrink:0">¥</span>
         <input type="number" value="${refAmt||''}" placeholder="0" min="0"
-          style="width:90px;border:1px solid ${hasRefund?'#fc8181':'var(--border)'};border-radius:4px;padding:2px 6px;font-size:11px;text-align:right;background:${hasRefund?'#fff5f5':''};"
+          style="width:80px;border:1px solid ${hasRefund?'#fc8181':'var(--border)'};border-radius:4px;padding:2px 6px;font-size:11px;text-align:right;background:${hasRefund?'#fff5f5':''};"
           data-action="editInvestDepositRefund" data-id="${dep.id}">
         ${hasRefund ? `<span style="font-size:10px;color:#c53030;font-weight:700">実質 ${fmt(net)}</span>` : ''}
       </div>
@@ -3925,6 +3932,10 @@ function handleChange(e) {
   if (act === 'editInvestDepositRefund') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
     if (d) { d.refundAmount = +e.target.value||0; saveState(); render(); } return;
+  }
+  if (act === 'editInvestDepositRefundDate') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.refundDate = e.target.value||null; saveState(); render(); } return;
   }
   if (act === 'editInvestDepositByCard') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
