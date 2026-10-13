@@ -468,6 +468,7 @@ function migrateMonthData(md) {
   (md.investDeposits||[]).forEach(d => {
     if (d.byCard     === undefined) d.byCard     = false;
     if (d.cardName   === undefined) d.cardName   = '楽天カード';
+    if (d.refunded   === undefined) d.refunded   = false;
   });
   if (md.investValuation === undefined) md.investValuation = 0;
   // 「現金」→「現金（貯金）」移行
@@ -1479,7 +1480,7 @@ function calcInvestBalance(upToMonth) {
   let totalDeposited = state.investInitial || 0;
   for (const m of Object.keys(state.data).sort()) {
     if (m > upToMonth) break;
-    (state.data[m].investDeposits || []).forEach(d => { totalDeposited += d.amount || 0; });
+    (state.data[m].investDeposits || []).forEach(d => { if (!d.refunded) totalDeposited += d.amount || 0; });
   }
   return totalDeposited;
 }
@@ -1544,6 +1545,7 @@ function calcAccountBalances(upToMonth) {
       if (dep.byCard) return; // クレカ払いは固定費経由で計上済み
       const from = dep.sourceAccount && dep.sourceAccount in bal ? dep.sourceAccount : '楽天銀行';
       bal[from] -= dep.amount || 0;
+      if (dep.refunded) bal[from] += dep.amount || 0; // 返金済なら戻す
     });
     (d.expenses||[]).forEach(e => {
       if (!e.payment || e.payment === 'Appleギフト') {
@@ -2047,20 +2049,23 @@ function renderInvestPanel(md) {
   const deposits = md.investDeposits || [];
   const valuation = md.investValuation || 0;
   const totalDeposited = calcInvestBalance(state.currentMonth);
-  const monthDeposited = deposits.reduce((s, d) => s + (d.amount || 0), 0);
+  const monthDeposited = deposits.filter(d => !d.refunded).reduce((s, d) => s + (d.amount || 0), 0);
   const pnl = valuation > 0 ? valuation - totalDeposited : null;
   const pnlColor = pnl === null ? '' : pnl >= 0 ? '#276749' : '#c53030';
   const today = new Date().toISOString().slice(0,10);
 
   const depositRows = deposits.map(dep => `
-    <div style="border:1px solid ${dep.byCard?'#bee3f8':'#c6f6d5'};border-radius:6px;padding:7px 10px;background:${dep.byCard?'#ebf8ff':'#f0fff8'}">
+    <div style="border:1px solid ${dep.refunded?'#fed7d7':dep.byCard?'#bee3f8':'#c6f6d5'};border-radius:6px;padding:7px 10px;background:${dep.refunded?'#fff5f5':dep.byCard?'#ebf8ff':'#f0fff8'};opacity:${dep.refunded?'0.7':'1'}">
       <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
         <input type="date" value="${dep.date||''}"
           style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
           data-action="editInvestDepositDate" data-id="${dep.id}">
-        <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:${dep.byCard?'#2b6cb0':'var(--muted)'};cursor:pointer;flex-shrink:0;white-space:nowrap">
-          <input type="checkbox" ${dep.byCard?'checked':''} data-action="editInvestDepositByCard" data-id="${dep.id}" style="width:11px;height:11px;cursor:pointer">クレカ
+        <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:${dep.refunded?'#c53030':'var(--muted)'};cursor:pointer;flex-shrink:0;white-space:nowrap">
+          <input type="checkbox" ${dep.refunded?'checked':''} data-action="editInvestDepositRefunded" data-id="${dep.id}" style="width:11px;height:11px;cursor:pointer">返金済
         </label>
+        ${!dep.refunded ? `<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:${dep.byCard?'#2b6cb0':'var(--muted)'};cursor:pointer;flex-shrink:0;white-space:nowrap">
+          <input type="checkbox" ${dep.byCard?'checked':''} data-action="editInvestDepositByCard" data-id="${dep.id}" style="width:11px;height:11px;cursor:pointer">クレカ
+        </label>` : ''}
         ${!dep.byCard ? `
         <select style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:11px;flex-shrink:0"
           data-action="editInvestDepositSource" data-id="${dep.id}">
@@ -3906,6 +3911,10 @@ function handleChange(e) {
   if (act === 'editInvestDepositDate') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
     if (d) { d.date = e.target.value; saveState(); render(); } return;
+  }
+  if (act === 'editInvestDepositRefunded') {
+    const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
+    if (d) { d.refunded = e.target.checked; saveState(); render(); } return;
   }
   if (act === 'editInvestDepositByCard') {
     const md = getMonth(); const d = (md.investDeposits||[]).find(d=>d.id===e.target.dataset.id);
