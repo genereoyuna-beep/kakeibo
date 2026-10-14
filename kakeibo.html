@@ -2413,14 +2413,15 @@ function getMonthTrend(n) {
     const key = `${my}${String(mm).padStart(2,'0')}`;
     const d = state.data[key];
     const otherInc = d ? (d.otherIncomes||[]).reduce((s,i)=>s+(i.amount||0),0) : 0;
-    const sav = d ? (d.savingsDeltaPaypay||0) + (d.savingsDeltaCash||0) : 0;
+    const ppGain = d ? calcBalance(key).savingsPaypay - calcBalance(getPrevMonth(key)).savingsPaypay : 0;
+    const sav = d ? ppGain + (d.savingsDeltaCash||0) : 0;
     const catMap = {};
     if (d) CATEGORIES.forEach(c => { catMap[c] = categoryTotals(d.expenses)[c] || 0; });
     result.push({
       label:    `${mm}月`,
       income:   d ? (d.salary||0) + otherInc : 0,
       expenses: d ? totalExpenses(d.expenses) : 0,
-      savings:  Math.max(0, sav),
+      savings:  sav,
       cats:     catMap,
     });
   }
@@ -2455,7 +2456,7 @@ function initTrendChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: { legend: { position:'bottom', labels:{font:{size:10},boxWidth:_trendMode==='category'?8:10,padding:4} } },
       scales: {
-        y: { min:0, ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
+        y: { beginAtZero:true, ticks:{ callback:v=>'¥'+v.toLocaleString(), font:{size:9} }, grid:{color:'#f0f4f8'} },
         x: { ticks:{ font:{size:10} } }
       }
     }
@@ -3922,7 +3923,8 @@ function handleInput(e) {
     md.savingsGoal = +e.target.value || 0;
     saveState();
     const goal = md.savingsGoal;
-    const sav  = (md.savingsDeltaPaypay||0) + (md.savingsDeltaCash||0);
+    const cb   = calcBalance(state.currentMonth), pb = calcBalance(getPrevMonth(state.currentMonth));
+    const sav  = (cb.savingsPaypay + cb.savingsCash) - (pb.savingsPaypay + pb.savingsCash);
     const pct  = goal > 0 ? Math.min(100, Math.round(sav/goal*100)) : 0;
     const over = goal > 0 && sav >= goal;
     const fill = document.querySelector('.prog-fill');
